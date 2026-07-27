@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class FakeCellularCallMonitor(
     override val isTelephonyAvailable: Boolean = true,
+    private val stateAfterStart: CellularCallMonitorState =
+        CellularCallMonitorState.Listening(CellularCallState.UNKNOWN, 1),
 ) : CellularCallMonitor {
     private val mutableState = MutableStateFlow<CellularCallMonitorState>(CellularCallMonitorState.Stopped)
     override val state = mutableState.asStateFlow()
@@ -16,7 +18,7 @@ class FakeCellularCallMonitor(
         if (started) return
         started = true
         startCount++
-        mutableState.value = CellularCallMonitorState.Listening(CellularCallState.UNKNOWN, 1)
+        mutableState.value = stateAfterStart
     }
 
     override fun stop() {

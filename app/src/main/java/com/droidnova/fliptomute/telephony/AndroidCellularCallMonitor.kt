@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,20 +61,44 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
         val baseManager = baseTelephonyManager ?: return registrationError(
             CellularCallMonitorError.TELEPHONY_SERVICE_UNAVAILABLE,
         )
-        try {
-            val managers = activeTelephonyManagers(baseManager)
-            managers.forEachIndexed { token, manager -> register(manager, token) }
+        val managers = activeTelephonyManagers(baseManager)
+        clearRegistrations()
+        isStarting = true
+        var permissionFailure = false
+        managers.forEachIndexed { token, manager ->
+            try {
+                register(manager, token)
+            } catch (_: SecurityException) {
+                permissionFailure = true
+            } catch (_: UnsupportedOperationException) {
+                // Try another active subscription or the default manager below.
+            } catch (_: IllegalStateException) {
+                // Try another active subscription or the default manager below.
+            }
+        }
+        if (registrations.isEmpty() && managers.none { it === baseManager }) {
+            try {
+                register(baseManager, managers.size)
+            } catch (_: SecurityException) {
+                permissionFailure = true
+            } catch (_: UnsupportedOperationException) {
+                // Report a typed registration failure below.
+            } catch (_: IllegalStateException) {
+                // Report a typed registration failure below.
+            }
+        }
+        if (registrations.isNotEmpty()) {
             isListening = true
             isStarting = false
             updateAggregateState()
-        } catch (_: SecurityException) {
+            debugLog("Telephony registration succeeded: ${registrations.size}")
+        } else if (permissionFailure) {
             clearRegistrations()
             mutableState.value = CellularCallMonitorState.PermissionRequired
-        } catch (_: UnsupportedOperationException) {
-            clearRegistrations()
-            mutableState.value = CellularCallMonitorState.TelephonyUnavailable
-        } catch (_: IllegalStateException) {
+            debugLog("Telephony registration failed")
+        } else {
             registrationError(CellularCallMonitorError.REGISTRATION_FAILED)
+            debugLog("Telephony registration failed")
         }
     }
 
@@ -95,7 +120,6 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
     }
 
     private fun register(manager: TelephonyManager, token: Int) {
-        subscriptionStates[token] = CellularCallState.UNKNOWN
         val onChanged: (Int) -> Unit = { androidState -> onCallStateChanged(token, androidState) }
         val registration = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             registerModern(manager, onChanged)
@@ -103,6 +127,7 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
             LegacyRegistration(LegacyCallStateRegistration(manager, onChanged)).also { it.register() }
         }
         registrations += registration
+        subscriptionStates.putIfAbsent(token, CellularCallState.UNKNOWN)
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -121,6 +146,7 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
     private fun updateAggregateState() {
         val aggregate = CellularCallStateAggregator.aggregate(subscriptionStates.values)
         mutableState.value = CellularCallMonitorState.Listening(aggregate, registrations.size)
+        debugLog("Call monitor state changed: $aggregate")
     }
 
     private fun registrationError(error: CellularCallMonitorError) {
@@ -156,6 +182,10 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
         PackageManager.FEATURE_TELEPHONY
     }
 
+    private fun debugLog(message: String) {
+        if (Log.isLoggable(TAG, Log.DEBUG)) Log.d(TAG, message)
+    }
+
     private interface Registration {
         fun unregister()
     }
@@ -174,4 +204,6 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
         fun register() = registration.register()
         override fun unregister() = registration.unregister()
     }
+
+    private companion object { const val TAG = "FlipCallMonitor" }
 }

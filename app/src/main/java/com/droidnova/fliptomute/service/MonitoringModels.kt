@@ -23,3 +23,8 @@ sealed interface MonitoringCommandResult {
     data object Accepted : MonitoringCommandResult
     data class Rejected(val reason: MonitoringFailure) : MonitoringCommandResult
 }
+
+sealed interface MonitoringCoordinatorStartResult {
+    data object Started : MonitoringCoordinatorStartResult
+    data class Failed(val reason: MonitoringFailure) : MonitoringCoordinatorStartResult
+}

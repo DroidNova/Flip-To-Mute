@@ -11,11 +11,13 @@ import com.droidnova.fliptomute.telephony.CellularCallMonitorState
 import com.droidnova.fliptomute.telephony.CellularCallState
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 
 class FlipMonitoringCoordinator(
     private val preferencesRepository: AppPreferencesRepository,
@@ -23,7 +25,6 @@ class FlipMonitoringCoordinator(
     private val orientationMonitor: DeviceOrientationMonitor,
     private val ringerModeController: RingerModeController,
     private val scope: CoroutineScope,
-    private val onReady: () -> Unit,
     private val onFailure: (MonitoringFailure) -> Unit,
 ) {
     private val mutex = Mutex()
@@ -35,17 +36,29 @@ class FlipMonitoringCoordinator(
     private var preferencesJob: Job? = null
     private var callJob: Job? = null
     private var orientationJob: Job? = null
+    private var startupResult = CompletableDeferred<MonitoringCoordinatorStartResult>()
 
-    fun start() {
-        if (started) return
+    suspend fun startAndAwaitReady(): MonitoringCoordinatorStartResult {
+        if (started) {
+            return if (readyReported) MonitoringCoordinatorStartResult.Started else startupResult.await()
+        }
         started = true
         stopping = false
+        startupResult = CompletableDeferred()
         preferencesJob = scope.launch {
             preferencesRepository.preferences.collectLatest { latestAction = it.selectedFlipAction }
         }
         orientationJob = scope.launch { orientationMonitor.state.collectLatest(::handleOrientationState) }
         callJob = scope.launch { callMonitor.state.collectLatest(::handleCallState) }
         callMonitor.start()
+        mapStartupState(callMonitor.state.value)?.let { result ->
+            if (result is MonitoringCoordinatorStartResult.Started) readyReported = true
+            startupResult.complete(result)
+        }
+        val result = withTimeoutOrNull(MONITORING_START_TIMEOUT_MILLIS) { startupResult.await() }
+            ?: MonitoringCoordinatorStartResult.Failed(MonitoringFailure.CALL_MONITOR_FAILED)
+        if (result is MonitoringCoordinatorStartResult.Failed) beginStopping()
+        return result
     }
 
     fun beginStopping() {
@@ -72,7 +85,7 @@ class FlipMonitoringCoordinator(
             is CellularCallMonitorState.Listening -> {
                 if (!readyReported) {
                     readyReported = true
-                    onReady()
+                    startupResult.complete(MonitoringCoordinatorStartResult.Started)
                 }
                 if (state.callState == CellularCallState.RINGING) {
                     if (ringingSession == null) {
@@ -89,9 +102,9 @@ class FlipMonitoringCoordinator(
                     ringingSession = null
                 }
             }
-            CellularCallMonitorState.PermissionRequired -> fail(MonitoringFailure.SETUP_REQUIRED)
-            CellularCallMonitorState.TelephonyUnavailable -> fail(MonitoringFailure.TELEPHONY_UNAVAILABLE)
-            is CellularCallMonitorState.Error -> fail(MonitoringFailure.CALL_MONITOR_FAILED)
+            CellularCallMonitorState.PermissionRequired -> reportFailure(MonitoringFailure.SETUP_REQUIRED)
+            CellularCallMonitorState.TelephonyUnavailable -> reportFailure(MonitoringFailure.TELEPHONY_UNAVAILABLE)
+            is CellularCallMonitorState.Error -> reportFailure(MonitoringFailure.CALL_MONITOR_FAILED)
             CellularCallMonitorState.Stopped -> Unit
         }
     }
@@ -127,8 +140,29 @@ class FlipMonitoringCoordinator(
         onFailure(reason)
     }
 
+    private suspend fun reportFailure(reason: MonitoringFailure) {
+        if (!readyReported) {
+            startupResult.complete(MonitoringCoordinatorStartResult.Failed(reason))
+        } else {
+            fail(reason)
+        }
+    }
+
+    private fun mapStartupState(state: CellularCallMonitorState): MonitoringCoordinatorStartResult? = when (state) {
+        is CellularCallMonitorState.Listening -> MonitoringCoordinatorStartResult.Started
+        CellularCallMonitorState.PermissionRequired ->
+            MonitoringCoordinatorStartResult.Failed(MonitoringFailure.SETUP_REQUIRED)
+        CellularCallMonitorState.TelephonyUnavailable ->
+            MonitoringCoordinatorStartResult.Failed(MonitoringFailure.TELEPHONY_UNAVAILABLE)
+        is CellularCallMonitorState.Error ->
+            MonitoringCoordinatorStartResult.Failed(MonitoringFailure.CALL_MONITOR_FAILED)
+        CellularCallMonitorState.Stopped -> null
+    }
+
     private data class RingingSession(
         val selectedAction: FlipAction,
         val actionHandled: Boolean = false,
     )
+
+    private companion object { const val MONITORING_START_TIMEOUT_MILLIS = 10_000L }
 }

@@ -159,6 +159,10 @@ private fun MainStatusCard(
             Text(stringResource(body))
             if (!state.isSetupComplete) {
                 Button(onClick = onSetupClick) { Text(stringResource(R.string.set_up_app)) }
+            } else if (runtime is MonitoringRuntimeState.Error) {
+                Button(onClick = { onMonitoringChanged(true) }) {
+                    Text(stringResource(R.string.try_again))
+                }
             } else {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

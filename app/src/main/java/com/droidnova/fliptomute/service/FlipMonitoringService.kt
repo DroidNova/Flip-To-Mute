@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.ServiceCompat
 import com.droidnova.fliptomute.app.FlipToMuteApplication
 import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
@@ -50,6 +51,7 @@ class FlipMonitoringService : Service() {
         }
 
     private fun startMonitoring(isRestart: Boolean, startId: Int) {
+        debugLog("Start command received")
         val runtime = container.monitoringStateRepository.state.value
         if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Active) return
         val token = ++generation
@@ -60,6 +62,7 @@ class FlipMonitoringService : Service() {
             }
             return
         }
+        debugLog("Foreground notification started")
         commandJob?.cancel()
         commandJob = serviceScope.launch {
             val recoveryController = container.ringerModeControllerFactory.create()
@@ -70,6 +73,7 @@ class FlipMonitoringService : Service() {
             }
             val storedMonitoring = container.appPreferencesRepository.preferences.first().monitoringEnabled
             container.setupAccessRepository.refresh()
+            debugLog("Setup validation completed")
             if (isRestart) when (
                 val decision = StickyRestartPolicy.decide(
                     storedMonitoring,
@@ -97,16 +101,26 @@ class FlipMonitoringService : Service() {
                 container.deviceOrientationMonitorFactory.create(),
                 container.ringerModeControllerFactory.create(),
                 serviceScope,
-                onReady = {
-                    if (token == generation) {
-                        container.monitoringStateRepository.updateState(MonitoringRuntimeState.Active)
-                        serviceScope.launch {
-                            if (token == generation) container.appPreferencesRepository.setMonitoringEnabled(true)
-                        }
-                    }
-                },
                 onFailure = { reason -> serviceScope.launch { failStart(reason, startId) } },
-            ).also { it.start() }
+            )
+            debugLog("Starting cellular call monitor")
+            when (val result = coordinator?.startAndAwaitReady()) {
+                MonitoringCoordinatorStartResult.Started -> {
+                    debugLog("Coordinator startup succeeded")
+                    if (token != generation) return@launch
+                    container.appPreferencesRepository.setMonitoringEnabled(true)
+                    if (token != generation) return@launch
+                    container.monitoringStateRepository.updateState(MonitoringRuntimeState.Active)
+                    debugLog("Runtime state changed to Active")
+                }
+                is MonitoringCoordinatorStartResult.Failed -> {
+                    if (result.reason == MonitoringFailure.CALL_MONITOR_FAILED) {
+                        debugLog("Coordinator startup failed or timed out")
+                    }
+                    failStart(result.reason, startId)
+                }
+                null -> failStart(MonitoringFailure.CALL_MONITOR_FAILED, startId)
+            }
         }
     }
 
@@ -139,6 +153,7 @@ class FlipMonitoringService : Service() {
 
     private suspend fun failStart(reason: MonitoringFailure, startId: Int) {
         container.monitoringStateRepository.updateState(MonitoringRuntimeState.Error(reason))
+        debugLog("Runtime state changed to Error")
         finishStopped(startId, writePreference = true, preserveError = true)
     }
 
@@ -154,6 +169,7 @@ class FlipMonitoringService : Service() {
         if (foregroundStarted) stopForeground(STOP_FOREGROUND_REMOVE)
         foregroundStarted = false
         stopSelfResult(startId)
+        debugLog("Service cleanup completed")
     }
 
     override fun onDestroy() {
@@ -161,15 +177,24 @@ class FlipMonitoringService : Service() {
         coordinator?.beginStopping()
         coordinator = null
         commandJob?.cancel()
-        container.monitoringStateRepository.updateState(MonitoringRuntimeState.Stopped)
+        if (container.monitoringStateRepository.state.value !is MonitoringRuntimeState.Error) {
+            container.monitoringStateRepository.updateState(MonitoringRuntimeState.Stopped)
+        }
         serviceScope.cancel()
         super.onDestroy()
     }
 
     companion object {
+        private const val TAG = "FlipMonitoring"
+
         fun createStartIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
             .setAction(MonitoringServiceCommandClassifier.START_ACTION)
         fun createStopIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
             .setAction(MonitoringServiceCommandClassifier.STOP_ACTION)
     }
+
+    private fun debugLog(message: String) {
+        if (Log.isLoggable(TAG, Log.DEBUG)) Log.d(TAG, message)
+    }
+
 }

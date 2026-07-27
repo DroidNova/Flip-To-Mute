@@ -59,6 +59,18 @@ class HomeViewModelTest {
         assertEquals(FlipAction.VIBRATE, fixture.viewModel.uiState.value.selectedFlipAction)
     }
 
+    @Test fun runtimeErrorAndStoppedEndProgressAndUncheckSwitch() = runTest {
+        val fixture = fixture(granted = true)
+        collect(fixture.viewModel)
+        fixture.runtime.updateState(MonitoringRuntimeState.Starting)
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
+        fixture.runtime.updateState(MonitoringRuntimeState.Error(MonitoringFailure.CALL_MONITOR_FAILED))
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringChecked)
+        assertTrue(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
+        fixture.runtime.updateState(MonitoringRuntimeState.Stopped)
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringChecked)
+    }
+
     private fun fixture(
         granted: Boolean = false,
         preferences: FakeAppPreferencesRepository = FakeAppPreferencesRepository(),
