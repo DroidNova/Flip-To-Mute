@@ -40,6 +40,8 @@ fun SettingsRoute(
     onBack: () -> Unit,
     onOpenSetup: () -> Unit,
     onCallStateTest: () -> Unit,
+    onSensorTest: () -> Unit,
+    onSoundControlTest: () -> Unit,
     viewModelFactory: ViewModelProvider.Factory,
 ) {
     val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
@@ -50,6 +52,8 @@ fun SettingsRoute(
         onBack = onBack,
         onOpenSetup = onOpenSetup,
         onCallStateTest = onCallStateTest,
+        onSensorTest = onSensorTest,
+        onSoundControlTest = onSoundControlTest,
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
     )
@@ -61,6 +65,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenSetup: () -> Unit,
     onCallStateTest: () -> Unit,
+    onSensorTest: () -> Unit,
+    onSoundControlTest: () -> Unit,
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
 ) {
@@ -148,10 +154,22 @@ fun SettingsScreen(
             }
             item { SectionHeader(stringResource(R.string.diagnostics_section)) }
             item {
+                Button(onClick = onSensorTest, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.test_flip_title))
+                }
+                Text(stringResource(R.string.test_flip_description))
+            }
+            item {
                 Button(onClick = onCallStateTest, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.test_call_detection))
                 }
                 Text(stringResource(R.string.test_call_detection_description))
+            }
+            item {
+                Button(onClick = onSoundControlTest, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.test_sound_control))
+                }
+                Text(stringResource(R.string.test_sound_control_description))
             }
             item { SectionHeader(stringResource(R.string.about_section)) }
             item { SettingsItem(stringResource(R.string.privacy_policy), stringResource(R.string.privacy_policy_unavailable)) }
@@ -165,7 +183,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {})
+        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {})
     }
 }
 
