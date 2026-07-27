@@ -16,8 +16,10 @@ class AndroidSetupAccessRepository(context: Context) : SetupAccessRepository {
     private val mutableAccessState = MutableStateFlow(readAccessState())
     override val accessState: StateFlow<SetupAccessState> = mutableAccessState.asStateFlow()
 
-    override fun refresh() {
-        mutableAccessState.value = readAccessState()
+    override fun refreshAndGet(): SetupAccessState {
+        val refreshed = readAccessState()
+        mutableAccessState.value = refreshed
+        return refreshed
     }
 
     private fun readAccessState() = SetupAccessState(

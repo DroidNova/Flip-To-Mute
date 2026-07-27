@@ -8,9 +8,12 @@ class FakeSetupAccessRepository(initialState: SetupAccessState = SetupAccessStat
     override val accessState = mutableState.asStateFlow()
     var refreshCount = 0
         private set
+    var stateOnRefresh: SetupAccessState? = null
 
-    override fun refresh() {
+    override fun refreshAndGet(): SetupAccessState {
         refreshCount++
+        stateOnRefresh?.let { mutableState.value = it }
+        return accessState.value
     }
 
     fun setState(state: SetupAccessState) {

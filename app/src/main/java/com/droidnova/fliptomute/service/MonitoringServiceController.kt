@@ -2,6 +2,7 @@ package com.droidnova.fliptomute.service
 
 import android.content.Context
 import androidx.core.content.ContextCompat
+import com.droidnova.fliptomute.util.MonitoringLog
 
 interface MonitoringServiceController {
     fun startMonitoring(): MonitoringCommandResult
@@ -12,11 +13,15 @@ class AndroidMonitoringServiceController(context: Context) : MonitoringServiceCo
     private val context = context.applicationContext
 
     override fun startMonitoring(): MonitoringCommandResult = try {
+        MonitoringLog.d(context, "Monitoring start requested")
         ContextCompat.startForegroundService(context, FlipMonitoringService.createStartIntent(context))
+        MonitoringLog.d(context, "Foreground service start intent sent")
         MonitoringCommandResult.Accepted
-    } catch (_: SecurityException) {
+    } catch (error: SecurityException) {
+        MonitoringLog.failure(context, "Foreground service start intent rejected", error)
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
-    } catch (_: IllegalStateException) {
+    } catch (error: IllegalStateException) {
+        MonitoringLog.failure(context, "Foreground service start intent rejected", error)
         // Includes ForegroundServiceStartNotAllowedException on Android 12+.
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     }
