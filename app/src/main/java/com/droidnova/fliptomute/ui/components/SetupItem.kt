@@ -8,7 +8,6 @@ import androidx.compose.ui.res.stringResource
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.data.setup.SetupAccessStatus
 import com.droidnova.fliptomute.data.setup.SetupAccessType
-import com.droidnova.fliptomute.ui.screens.home.SetupItemUiModel
 
 @Composable
 fun SetupItem(item: SetupItemUiModel, onClick: () -> Unit, actionLabel: String? = null) {

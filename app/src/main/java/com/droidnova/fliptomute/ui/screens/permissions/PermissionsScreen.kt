@@ -41,7 +41,7 @@ import com.droidnova.fliptomute.data.setup.SetupAccessStatus
 import com.droidnova.fliptomute.data.setup.SetupAccessType
 import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.SetupItem
-import com.droidnova.fliptomute.ui.screens.home.toSetupItems
+import com.droidnova.fliptomute.ui.components.toSetupItems
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
 import com.droidnova.fliptomute.util.findActivity
 import com.droidnova.fliptomute.util.openAppDetailsSettings
