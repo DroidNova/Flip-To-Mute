@@ -53,31 +53,33 @@ class SoundControlTestViewModel(
     fun startTest() {
         if (runtimeState.value.isTestRunning) return
         setupAccessRepository.refresh()
-        when (val result = ringerModeController.applyTemporaryAction(uiState.value.selectedAction)) {
-            is RingerModeResult.Success -> {
-                if (result.type == RingerModeSuccessType.NO_CHANGE) {
-                    runtimeState.value = RuntimeState(
-                        currentMode = result.currentMode,
-                        result = SoundControlTestResult.ALREADY_SET,
-                    )
-                } else {
-                    runtimeState.value = RuntimeState(
-                        currentMode = result.currentMode,
-                        isTestRunning = true,
-                        remainingSeconds = TEST_DURATION_SECONDS,
-                        result = SoundControlTestResult.TEST_STARTED,
-                    )
-                    startCountdown()
+        viewModelScope.launch {
+            when (val result = ringerModeController.applyTemporaryAction(uiState.value.selectedAction)) {
+                is RingerModeResult.Success -> {
+                    if (result.type == RingerModeSuccessType.NO_CHANGE) {
+                        runtimeState.value = RuntimeState(
+                            currentMode = result.currentMode,
+                            result = SoundControlTestResult.ALREADY_SET,
+                        )
+                    } else {
+                        runtimeState.value = RuntimeState(
+                            currentMode = result.currentMode,
+                            isTestRunning = true,
+                            remainingSeconds = TEST_DURATION_SECONDS,
+                            result = SoundControlTestResult.TEST_STARTED,
+                        )
+                        startCountdown()
+                    }
                 }
+                is RingerModeResult.Failure -> applyFailure(result.reason)
             }
-            is RingerModeResult.Failure -> applyFailure(result.reason)
         }
     }
 
     fun restoreNow() {
         countdownJob?.cancel()
         countdownJob = null
-        applyRestoreResult(ringerModeController.restorePreviousMode())
+        viewModelScope.launch { applyRestoreResult(ringerModeController.restorePreviousMode()) }
     }
 
     fun refreshCurrentMode() {
@@ -88,13 +90,14 @@ class SoundControlTestViewModel(
     fun onScreenLeaving() {
         countdownJob?.cancel()
         countdownJob = null
-        ringerModeController.restorePreviousMode()
-        runtimeState.value = RuntimeState(currentMode = ringerModeController.getCurrentMode())
+        viewModelScope.launch {
+            ringerModeController.restorePreviousMode()
+            runtimeState.value = RuntimeState(currentMode = ringerModeController.getCurrentMode())
+        }
     }
 
     override fun onCleared() {
         countdownJob?.cancel()
-        ringerModeController.restorePreviousMode()
         super.onCleared()
     }
 

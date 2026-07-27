@@ -18,6 +18,7 @@ class ViewModelFactories(container: AppContainer) {
                 container.setupAccessRepository,
                 container.monitoringStateRepository,
                 container.monitoringServiceController,
+                container.appRecoveryManager,
             )
         }
     }

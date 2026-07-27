@@ -48,18 +48,22 @@ class FlipMonitoringCoordinator(
         callMonitor.start()
     }
 
-    fun stop() {
+    fun beginStopping() {
         if (stopping && !started) return
         stopping = true
         orientationMonitor.stop()
         callMonitor.stop()
-        ringerModeController.restorePreviousMode()
         ringingSession = null
         started = false
         preferencesJob?.cancel()
         callJob?.cancel()
         orientationJob?.cancel()
         readyReported = false
+    }
+
+    suspend fun stop() {
+        beginStopping()
+        ringerModeController.restorePreviousMode()
     }
 
     private suspend fun handleCallState(state: CellularCallMonitorState) = mutex.withLock {
@@ -113,7 +117,7 @@ class FlipMonitoringCoordinator(
         }
     }
 
-    private fun fail(reason: MonitoringFailure) {
+    private suspend fun fail(reason: MonitoringFailure) {
         if (stopping) return
         stopping = true
         orientationMonitor.stop()

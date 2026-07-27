@@ -9,6 +9,7 @@ enum class RingerModeFailure {
     CHANGE_NOT_APPLIED,
     NO_ACTIVE_CHANGE,
     UNKNOWN,
+    RECOVERY_STATE_PERSISTENCE_FAILED,
 }
 
 enum class RingerModeSuccessType { NO_CHANGE, APPLIED, RESTORED, MANUAL_CHANGE_PRESERVED }
@@ -21,7 +22,9 @@ sealed interface RingerModeResult {
     data class Failure(val reason: RingerModeFailure) : RingerModeResult
 }
 
-internal data class RingerModeChangeSession(
-    val previousMode: DeviceRingerMode,
-    val appliedMode: DeviceRingerMode,
-)
+sealed interface RingerModeRecoveryResult {
+    data class Restored(val restoredMode: DeviceRingerMode) : RingerModeRecoveryResult
+    data class CurrentModePreserved(val currentMode: DeviceRingerMode) : RingerModeRecoveryResult
+    data object NoPendingChange : RingerModeRecoveryResult
+    data class Failure(val reason: RingerModeFailure) : RingerModeRecoveryResult
+}

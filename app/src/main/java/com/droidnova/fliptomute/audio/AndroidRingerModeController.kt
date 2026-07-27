@@ -3,9 +3,14 @@ package com.droidnova.fliptomute.audio
 import android.app.NotificationManager
 import android.content.Context
 import android.media.AudioManager
+import com.droidnova.fliptomute.data.recovery.RingerRecoveryRepository
 
-class AndroidRingerModeController(context: Context) : RingerModeController by DefaultRingerModeController(
+class AndroidRingerModeController(
+    context: Context,
+    recoveryRepository: RingerRecoveryRepository,
+) : RingerModeController by DefaultRingerModeController(
     AndroidRingerModePlatform(context.applicationContext),
+    recoveryRepository,
 )
 
 private class AndroidRingerModePlatform(context: Context) : RingerModePlatform {

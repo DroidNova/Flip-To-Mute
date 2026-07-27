@@ -8,6 +8,7 @@ import com.droidnova.fliptomute.service.MonitoringCommandResult
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.MonitoringServiceController
 import com.droidnova.fliptomute.service.MonitoringStateRepository
+import com.droidnova.fliptomute.service.AppRecoveryManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ class HomeViewModel(
     private val setupAccessRepository: SetupAccessRepository,
     private val monitoringStateRepository: MonitoringStateRepository,
     private val serviceController: MonitoringServiceController,
+    private val appRecoveryManager: AppRecoveryManager,
 ) : ViewModel() {
     private val message = MutableStateFlow<com.droidnova.fliptomute.service.MonitoringFailure?>(null)
 
@@ -41,16 +43,10 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState())
 
     init {
+        viewModelScope.launch { appRecoveryManager.recoverOnAppLaunch() }
         viewModelScope.launch {
             monitoringStateRepository.state.collect { runtime ->
                 if (runtime is MonitoringRuntimeState.Error) message.value = runtime.reason
-            }
-        }
-        viewModelScope.launch {
-            preferencesRepository.preferences.collect { preferences ->
-                if (preferences.monitoringEnabled && monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
-                    preferencesRepository.setMonitoringEnabled(false)
-                }
             }
         }
     }

@@ -1,92 +1,131 @@
 package com.droidnova.fliptomute.audio
 
+import com.droidnova.fliptomute.data.recovery.RingerRecoveryRepository
+import com.droidnova.fliptomute.data.recovery.RingerRecoverySession
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
+import java.io.IOException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal class DefaultRingerModeController(
     private val platform: RingerModePlatform,
+    private val recoveryRepository: RingerRecoveryRepository,
 ) : RingerModeController {
-    private var session: RingerModeChangeSession? = null
+    private val mutex = Mutex()
 
-    override fun getCurrentMode(): DeviceRingerMode = synchronized(this) {
-        try {
-            if (!platform.isAvailable) return@synchronized DeviceRingerMode.UNKNOWN
-            DeviceRingerModeMapper.fromAndroidMode(platform.getRingerMode())
-        } catch (_: SecurityException) {
-            DeviceRingerMode.UNKNOWN
-        } catch (_: IllegalStateException) {
-            DeviceRingerMode.UNKNOWN
-        }
+    override fun getCurrentMode(): DeviceRingerMode = try {
+        if (!platform.isAvailable) DeviceRingerMode.UNKNOWN
+        else DeviceRingerModeMapper.fromAndroidMode(platform.getRingerMode())
+    } catch (_: SecurityException) {
+        DeviceRingerMode.UNKNOWN
+    } catch (_: IllegalStateException) {
+        DeviceRingerMode.UNKNOWN
     }
 
-    override fun applyTemporaryAction(action: FlipAction): RingerModeResult = synchronized(this) {
-        readinessFailure()?.let { return@synchronized RingerModeResult.Failure(it) }
-        val currentMode = getCurrentMode()
-        val targetMode = when (action) {
-            FlipAction.SILENT -> DeviceRingerMode.SILENT
-            FlipAction.VIBRATE -> DeviceRingerMode.VIBRATE
+    override suspend fun applyTemporaryAction(action: FlipAction): RingerModeResult = mutex.withLock {
+        readinessFailure()?.let { return@withLock RingerModeResult.Failure(it) }
+        val current = getCurrentMode()
+        val target = if (action == FlipAction.SILENT) DeviceRingerMode.SILENT else DeviceRingerMode.VIBRATE
+        if (current == DeviceRingerMode.UNKNOWN) return@withLock RingerModeResult.Failure(RingerModeFailure.UNKNOWN)
+
+        val existing = try {
+            recoveryRepository.getRecoverySession()
+        } catch (_: IOException) {
+            return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
         }
-        if (currentMode == DeviceRingerMode.UNKNOWN) {
-            return@synchronized RingerModeResult.Failure(RingerModeFailure.UNKNOWN)
+        val recovery = existing ?: if (current == target) {
+            return@withLock RingerModeResult.Success(current, RingerModeSuccessType.NO_CHANGE)
+        } else RingerRecoverySession(current, target)
+        val updatedRecovery = if (existing == null) recovery else recovery.copy(appliedMode = target)
+        if (!persist(updatedRecovery)) {
+            return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
         }
-        if (currentMode == targetMode) {
-            return@synchronized RingerModeResult.Success(
-                currentMode,
-                if (session == null) RingerModeSuccessType.NO_CHANGE else RingerModeSuccessType.APPLIED,
-            )
+        if (current == target) return@withLock RingerModeResult.Success(current, RingerModeSuccessType.APPLIED)
+
+        val androidTarget = DeviceRingerModeMapper.toAndroidMode(target)
+            ?: return@withLock RingerModeResult.Failure(RingerModeFailure.UNKNOWN)
+        writeAndVerify(androidTarget, target)?.let { return@withLock RingerModeResult.Failure(it) }
+        RingerModeResult.Success(target, RingerModeSuccessType.APPLIED)
+    }
+
+    override suspend fun restorePreviousMode(): RingerModeResult = mutex.withLock {
+        val session = try {
+            recoveryRepository.getRecoverySession()
+        } catch (_: IOException) {
+            return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
+        } ?: return@withLock RingerModeResult.Failure(RingerModeFailure.NO_ACTIVE_CHANGE)
+        val current = getCurrentMode()
+        if (current == DeviceRingerMode.UNKNOWN) {
+            return@withLock RingerModeResult.Failure(RingerModeFailure.AUDIO_SERVICE_UNAVAILABLE)
         }
-        val androidTarget = DeviceRingerModeMapper.toAndroidMode(targetMode)
-            ?: return@synchronized RingerModeResult.Failure(RingerModeFailure.UNKNOWN)
-        session = session?.copy(appliedMode = targetMode)
-            ?: RingerModeChangeSession(previousMode = currentMode, appliedMode = targetMode)
-        try {
-            platform.setRingerMode(androidTarget)
-            val verifiedMode = getCurrentMode()
-            if (verifiedMode != targetMode) {
-                return@synchronized RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
+        if (current != session.appliedMode) {
+            if (!clearRecovery()) {
+                return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
             }
-            RingerModeResult.Success(verifiedMode, RingerModeSuccessType.APPLIED)
-        } catch (_: SecurityException) {
-            RingerModeResult.Failure(RingerModeFailure.SOUND_CONTROL_ACCESS_REQUIRED)
-        } catch (_: IllegalArgumentException) {
-            RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
-        } catch (_: IllegalStateException) {
-            RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
+            return@withLock RingerModeResult.Success(current, RingerModeSuccessType.MANUAL_CHANGE_PRESERVED)
         }
+        readinessFailure()?.let { return@withLock RingerModeResult.Failure(it) }
+        val target = DeviceRingerModeMapper.toAndroidMode(session.previousMode)
+            ?: return@withLock RingerModeResult.Failure(RingerModeFailure.UNKNOWN)
+        writeAndVerify(target, session.previousMode)?.let { return@withLock RingerModeResult.Failure(it) }
+        if (!clearRecovery()) {
+            return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
+        }
+        RingerModeResult.Success(session.previousMode, RingerModeSuccessType.RESTORED)
     }
 
-    override fun restorePreviousMode(): RingerModeResult = synchronized(this) {
-        val activeSession = session
-            ?: return@synchronized RingerModeResult.Failure(RingerModeFailure.NO_ACTIVE_CHANGE)
-        val currentMode = getCurrentMode()
-        if (currentMode != activeSession.appliedMode) {
-            session = null
-            return@synchronized RingerModeResult.Success(
-                currentMode,
-                RingerModeSuccessType.MANUAL_CHANGE_PRESERVED,
-            )
+    override suspend fun recoverPendingChange(): RingerModeRecoveryResult = mutex.withLock {
+        val session = try {
+            recoveryRepository.getRecoverySession()
+        } catch (_: IOException) {
+            return@withLock RingerModeRecoveryResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
+        } ?: return@withLock RingerModeRecoveryResult.NoPendingChange
+        val current = getCurrentMode()
+        if (current == DeviceRingerMode.UNKNOWN) {
+            return@withLock RingerModeRecoveryResult.Failure(RingerModeFailure.AUDIO_SERVICE_UNAVAILABLE)
         }
-        readinessFailure()?.let { return@synchronized RingerModeResult.Failure(it) }
-        val restoreMode = DeviceRingerModeMapper.toAndroidMode(activeSession.previousMode)
-            ?: return@synchronized RingerModeResult.Failure(RingerModeFailure.UNKNOWN)
-        try {
-            platform.setRingerMode(restoreMode)
-            val verifiedMode = getCurrentMode()
-            if (verifiedMode != activeSession.previousMode) {
-                return@synchronized RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
+        if (current != session.appliedMode) {
+            return@withLock if (clearRecovery()) {
+                RingerModeRecoveryResult.CurrentModePreserved(current)
+            } else {
+                RingerModeRecoveryResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
             }
-            session = null
-            RingerModeResult.Success(verifiedMode, RingerModeSuccessType.RESTORED)
-        } catch (_: SecurityException) {
-            RingerModeResult.Failure(RingerModeFailure.SOUND_CONTROL_ACCESS_REQUIRED)
-        } catch (_: IllegalArgumentException) {
-            RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
-        } catch (_: IllegalStateException) {
-            RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
         }
+        readinessFailure()?.let { return@withLock RingerModeRecoveryResult.Failure(it) }
+        val target = DeviceRingerModeMapper.toAndroidMode(session.previousMode)
+            ?: return@withLock RingerModeRecoveryResult.Failure(RingerModeFailure.UNKNOWN)
+        writeAndVerify(target, session.previousMode)?.let { return@withLock RingerModeRecoveryResult.Failure(it) }
+        if (!clearRecovery()) {
+            return@withLock RingerModeRecoveryResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
+        }
+        RingerModeRecoveryResult.Restored(session.previousMode)
     }
 
-    override fun clearTemporaryChange() = synchronized(this) {
-        session = null
+    override suspend fun clearTemporaryChange() = mutex.withLock { recoveryRepository.clearRecoverySession() }
+
+    private suspend fun persist(session: RingerRecoverySession): Boolean = try {
+        recoveryRepository.saveRecoverySession(session)
+        true
+    } catch (_: IOException) {
+        false
+    }
+
+    private suspend fun clearRecovery(): Boolean = try {
+        recoveryRepository.clearRecoverySession()
+        true
+    } catch (_: IOException) {
+        false
+    }
+
+    private fun writeAndVerify(androidMode: Int, expected: DeviceRingerMode): RingerModeFailure? = try {
+        platform.setRingerMode(androidMode)
+        if (getCurrentMode() == expected) null else RingerModeFailure.CHANGE_NOT_APPLIED
+    } catch (_: SecurityException) {
+        RingerModeFailure.SOUND_CONTROL_ACCESS_REQUIRED
+    } catch (_: IllegalArgumentException) {
+        RingerModeFailure.CHANGE_NOT_APPLIED
+    } catch (_: IllegalStateException) {
+        RingerModeFailure.CHANGE_NOT_APPLIED
     }
 
     private fun readinessFailure(): RingerModeFailure? = try {

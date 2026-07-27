@@ -4,9 +4,10 @@ import com.droidnova.fliptomute.ui.screens.home.FlipAction
 
 interface RingerModeController {
     fun getCurrentMode(): DeviceRingerMode
-    fun applyTemporaryAction(action: FlipAction): RingerModeResult
-    fun restorePreviousMode(): RingerModeResult
-    fun clearTemporaryChange()
+    suspend fun applyTemporaryAction(action: FlipAction): RingerModeResult
+    suspend fun restorePreviousMode(): RingerModeResult
+    suspend fun recoverPendingChange(): RingerModeRecoveryResult
+    suspend fun clearTemporaryChange()
 }
 
 fun interface RingerModeControllerFactory {

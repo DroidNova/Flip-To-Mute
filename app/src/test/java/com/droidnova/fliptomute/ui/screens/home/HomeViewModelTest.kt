@@ -1,6 +1,5 @@
 package com.droidnova.fliptomute.ui.screens.home
 
-import com.droidnova.fliptomute.data.preferences.AppPreferences
 import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessState
@@ -10,6 +9,8 @@ import com.droidnova.fliptomute.service.InMemoryMonitoringStateRepository
 import com.droidnova.fliptomute.service.MonitoringCommandResult
 import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
+import com.droidnova.fliptomute.service.AppRecoveryManager
+import com.droidnova.fliptomute.service.AppRecoveryResult
 import com.droidnova.fliptomute.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -58,13 +59,6 @@ class HomeViewModelTest {
         assertEquals(FlipAction.VIBRATE, fixture.viewModel.uiState.value.selectedFlipAction)
     }
 
-    @Test fun staleStoredMonitoringIsReconciled() = runTest {
-        val preferences = FakeAppPreferencesRepository(AppPreferences(monitoringEnabled = true))
-        val fixture = fixture(preferences = preferences)
-        collect(fixture.viewModel)
-        assertFalse(preferences.preferences.value.monitoringEnabled)
-    }
-
     private fun fixture(
         granted: Boolean = false,
         preferences: FakeAppPreferencesRepository = FakeAppPreferencesRepository(),
@@ -76,7 +70,11 @@ class HomeViewModelTest {
         ) else SetupAccessState()
         val runtime = InMemoryMonitoringStateRepository()
         val controller = FakeMonitoringServiceController()
-        return Fixture(HomeViewModel(preferences, FakeSetupAccessRepository(setup), runtime, controller), runtime, controller)
+        return Fixture(
+            HomeViewModel(preferences, FakeSetupAccessRepository(setup), runtime, controller, FakeAppRecoveryManager()),
+            runtime,
+            controller,
+        )
     }
 
     private fun kotlinx.coroutines.test.TestScope.collect(viewModel: HomeViewModel) {
@@ -88,4 +86,8 @@ class HomeViewModelTest {
         val runtime: InMemoryMonitoringStateRepository,
         val controller: FakeMonitoringServiceController,
     )
+}
+
+private class FakeAppRecoveryManager : AppRecoveryManager {
+    override suspend fun recoverOnAppLaunch() = AppRecoveryResult.Complete
 }

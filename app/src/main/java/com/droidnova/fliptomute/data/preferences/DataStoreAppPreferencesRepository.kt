@@ -7,21 +7,16 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
-private const val PREFERENCES_FILE_NAME = "flip_to_mute_preferences"
-
-private val Context.appPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = PREFERENCES_FILE_NAME,
-)
-
-class DataStoreAppPreferencesRepository(context: Context) : AppPreferencesRepository {
-    private val dataStore = context.applicationContext.appPreferencesDataStore
+class DataStoreAppPreferencesRepository(
+    private val dataStore: DataStore<Preferences>,
+) : AppPreferencesRepository {
+    constructor(context: Context) : this(context.applicationContext.appDataStore)
 
     override val preferences: Flow<AppPreferences> = dataStore.data
         .catch { exception ->

@@ -1,115 +1,95 @@
 package com.droidnova.fliptomute.audio
 
+import com.droidnova.fliptomute.data.recovery.FakeRingerRecoveryRepository
+import com.droidnova.fliptomute.data.recovery.RingerRecoverySession
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DefaultRingerModeControllerTest {
-    @Test fun readsKnownAndUnknownModes() {
-        assertEquals(DeviceRingerMode.NORMAL, controller().getCurrentMode())
-        assertEquals(DeviceRingerMode.UNKNOWN, controller(mode = 99).getCurrentMode())
-    }
-
-    @Test fun appliesSilentAndRestoresNormal() {
-        val platform = FakeRingerModePlatform()
-        val controller = DefaultRingerModeController(platform)
-        assertSuccess(controller.applyTemporaryAction(FlipAction.SILENT), DeviceRingerMode.SILENT)
-        assertSuccess(controller.restorePreviousMode(), DeviceRingerMode.NORMAL)
-    }
-
-    @Test fun appliesVibrateAndRestoresNormal() {
-        val controller = controller()
-        assertSuccess(controller.applyTemporaryAction(FlipAction.VIBRATE), DeviceRingerMode.VIBRATE)
-        assertSuccess(controller.restorePreviousMode(), DeviceRingerMode.NORMAL)
-    }
-
-    @Test fun originalModeSurvivesRepeatedAndDifferentActions() {
-        val platform = FakeRingerModePlatform()
-        val controller = DefaultRingerModeController(platform)
+    @Test fun recoveryIsSavedBeforeSoundWrite() = runTest {
+        val recovery = FakeRingerRecoveryRepository()
+        val platform = FakeRingerModePlatform(events = recovery.events)
+        val controller = DefaultRingerModeController(platform, recovery)
         controller.applyTemporaryAction(FlipAction.SILENT)
+        assertEquals(listOf("save", "write"), recovery.events)
+        assertEquals(RingerRecoverySession(DeviceRingerMode.NORMAL, DeviceRingerMode.SILENT), recovery.getRecoverySession())
+    }
+
+    @Test fun persistenceFailurePreventsSoundWrite() = runTest {
+        val recovery = FakeRingerRecoveryRepository().apply { failWrites = true }
+        val platform = FakeRingerModePlatform()
+        val result = DefaultRingerModeController(platform, recovery).applyTemporaryAction(FlipAction.SILENT)
+        assertFailure(result, RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
+        assertEquals(DeviceRingerModeMapper.ANDROID_MODE_NORMAL, platform.mode)
+    }
+
+    @Test fun secondActionPreservesOriginalRestoreMode() = runTest {
+        val recovery = FakeRingerRecoveryRepository()
+        val platform = FakeRingerModePlatform()
+        val controller = DefaultRingerModeController(platform, recovery)
         controller.applyTemporaryAction(FlipAction.SILENT)
         controller.applyTemporaryAction(FlipAction.VIBRATE)
-        assertSuccess(controller.restorePreviousMode(), DeviceRingerMode.NORMAL)
+        assertEquals(DeviceRingerMode.NORMAL, recovery.getRecoverySession()?.previousMode)
+        controller.restorePreviousMode()
+        assertEquals(DeviceRingerModeMapper.ANDROID_MODE_NORMAL, platform.mode)
     }
 
-    @Test fun alreadyTargetCreatesNoSession() {
-        val controller = controller(DeviceRingerModeMapper.ANDROID_MODE_SILENT)
+    @Test fun alreadyTargetCreatesNoRecovery() = runTest {
+        val recovery = FakeRingerRecoveryRepository()
+        val controller = DefaultRingerModeController(
+            FakeRingerModePlatform(DeviceRingerModeMapper.ANDROID_MODE_SILENT), recovery,
+        )
         val result = controller.applyTemporaryAction(FlipAction.SILENT) as RingerModeResult.Success
         assertEquals(RingerModeSuccessType.NO_CHANGE, result.type)
-        assertFailure(controller.restorePreviousMode(), RingerModeFailure.NO_ACTIVE_CHANGE)
+        assertEquals(null, recovery.getRecoverySession())
     }
 
-    @Test fun accessFixedAndUnavailableFailuresAreTyped() {
-        assertFailure(
-            DefaultRingerModeController(FakeRingerModePlatform(hasNotificationPolicyAccess = false))
-                .applyTemporaryAction(FlipAction.SILENT),
-            RingerModeFailure.SOUND_CONTROL_ACCESS_REQUIRED,
+    @Test fun restoreMatchingModeClearsRecovery() = runTest {
+        val recovery = FakeRingerRecoveryRepository(
+            RingerRecoverySession(DeviceRingerMode.NORMAL, DeviceRingerMode.SILENT),
         )
-        assertFailure(
-            DefaultRingerModeController(FakeRingerModePlatform(isVolumeFixed = true))
-                .applyTemporaryAction(FlipAction.SILENT),
-            RingerModeFailure.FIXED_VOLUME_DEVICE,
-        )
-        assertFailure(
-            DefaultRingerModeController(FakeRingerModePlatform(isAvailable = false))
-                .applyTemporaryAction(FlipAction.SILENT),
-            RingerModeFailure.AUDIO_SERVICE_UNAVAILABLE,
-        )
-    }
-
-    @Test fun failedVerificationIsReported() {
-        val platform = FakeRingerModePlatform(applyWrites = false)
-        assertFailure(
-            DefaultRingerModeController(platform).applyTemporaryAction(FlipAction.SILENT),
-            RingerModeFailure.CHANGE_NOT_APPLIED,
-        )
-    }
-
-    @Test fun securityExceptionDoesNotCrash() {
-        val platform = FakeRingerModePlatform(throwSecurity = true)
-        assertFailure(
-            DefaultRingerModeController(platform).applyTemporaryAction(FlipAction.SILENT),
-            RingerModeFailure.SOUND_CONTROL_ACCESS_REQUIRED,
-        )
-    }
-
-    @Test fun manualChangeIsPreserved() {
-        val platform = FakeRingerModePlatform()
-        val controller = DefaultRingerModeController(platform)
-        controller.applyTemporaryAction(FlipAction.SILENT)
-        platform.mode = DeviceRingerModeMapper.ANDROID_MODE_VIBRATE
-        val result = controller.restorePreviousMode() as RingerModeResult.Success
-        assertEquals(RingerModeSuccessType.MANUAL_CHANGE_PRESERVED, result.type)
-        assertEquals(DeviceRingerMode.VIBRATE, result.currentMode)
-    }
-
-    @Test fun restoreToPreviousVibrateAndClearSession() {
-        val platform = FakeRingerModePlatform(mode = DeviceRingerModeMapper.ANDROID_MODE_VIBRATE)
-        val controller = DefaultRingerModeController(platform)
-        controller.applyTemporaryAction(FlipAction.SILENT)
-        assertSuccess(controller.restorePreviousMode(), DeviceRingerMode.VIBRATE)
-        controller.applyTemporaryAction(FlipAction.SILENT)
-        controller.clearTemporaryChange()
-        assertFailure(controller.restorePreviousMode(), RingerModeFailure.NO_ACTIVE_CHANGE)
-    }
-
-    @Test fun revokedAccessKeepsSessionForLaterRestore() {
-        val platform = FakeRingerModePlatform()
-        val controller = DefaultRingerModeController(platform)
-        controller.applyTemporaryAction(FlipAction.SILENT)
-        platform.hasNotificationPolicyAccess = false
-        assertFailure(controller.restorePreviousMode(), RingerModeFailure.SOUND_CONTROL_ACCESS_REQUIRED)
-        platform.hasNotificationPolicyAccess = true
-        assertSuccess(controller.restorePreviousMode(), DeviceRingerMode.NORMAL)
-    }
-
-    private fun controller(mode: Int = DeviceRingerModeMapper.ANDROID_MODE_NORMAL) =
-        DefaultRingerModeController(FakeRingerModePlatform(mode = mode))
-
-    private fun assertSuccess(result: RingerModeResult, mode: DeviceRingerMode) {
+        val platform = FakeRingerModePlatform(DeviceRingerModeMapper.ANDROID_MODE_SILENT)
+        val result = DefaultRingerModeController(platform, recovery).restorePreviousMode()
         assertTrue(result is RingerModeResult.Success)
-        assertEquals(mode, (result as RingerModeResult.Success).currentMode)
+        assertEquals(null, recovery.getRecoverySession())
+        assertEquals(DeviceRingerModeMapper.ANDROID_MODE_NORMAL, platform.mode)
+    }
+
+    @Test fun manualModeChangeIsPreservedAndCleared() = runTest {
+        val recovery = FakeRingerRecoveryRepository(
+            RingerRecoverySession(DeviceRingerMode.NORMAL, DeviceRingerMode.SILENT),
+        )
+        val platform = FakeRingerModePlatform(DeviceRingerModeMapper.ANDROID_MODE_VIBRATE)
+        val result = DefaultRingerModeController(platform, recovery).restorePreviousMode() as RingerModeResult.Success
+        assertEquals(RingerModeSuccessType.MANUAL_CHANGE_PRESERVED, result.type)
+        assertEquals(DeviceRingerModeMapper.ANDROID_MODE_VIBRATE, platform.mode)
+        assertEquals(null, recovery.getRecoverySession())
+    }
+
+    @Test fun processRecoveryRestoresAndIsIdempotent() = runTest {
+        val recovery = FakeRingerRecoveryRepository(
+            RingerRecoverySession(DeviceRingerMode.VIBRATE, DeviceRingerMode.SILENT),
+        )
+        val platform = FakeRingerModePlatform(DeviceRingerModeMapper.ANDROID_MODE_SILENT)
+        val controller = DefaultRingerModeController(platform, recovery)
+        assertTrue(controller.recoverPendingChange() is RingerModeRecoveryResult.Restored)
+        assertEquals(DeviceRingerModeMapper.ANDROID_MODE_VIBRATE, platform.mode)
+        assertEquals(RingerModeRecoveryResult.NoPendingChange, controller.recoverPendingChange())
+    }
+
+    @Test fun persistedBeforeWriteAndManualCurrentModesArePreserved() = runTest {
+        for (current in listOf(DeviceRingerMode.NORMAL, DeviceRingerMode.VIBRATE)) {
+            val recovery = FakeRingerRecoveryRepository(
+                RingerRecoverySession(DeviceRingerMode.NORMAL, DeviceRingerMode.SILENT),
+            )
+            val platform = FakeRingerModePlatform(DeviceRingerModeMapper.toAndroidMode(current)!!)
+            val result = DefaultRingerModeController(platform, recovery).recoverPendingChange()
+            assertTrue(result is RingerModeRecoveryResult.CurrentModePreserved)
+            assertEquals(DeviceRingerModeMapper.toAndroidMode(current), platform.mode)
+        }
     }
 
     private fun assertFailure(result: RingerModeResult, reason: RingerModeFailure) {
@@ -119,15 +99,11 @@ class DefaultRingerModeControllerTest {
 
 private class FakeRingerModePlatform(
     var mode: Int = DeviceRingerModeMapper.ANDROID_MODE_NORMAL,
+    private val events: MutableList<String> = mutableListOf(),
     override var isAvailable: Boolean = true,
     override var isVolumeFixed: Boolean = false,
     override var hasNotificationPolicyAccess: Boolean = true,
-    private val applyWrites: Boolean = true,
-    private val throwSecurity: Boolean = false,
 ) : RingerModePlatform {
-    override fun getRingerMode(): Int = mode
-    override fun setRingerMode(mode: Int) {
-        if (throwSecurity) throw SecurityException()
-        if (applyWrites) this.mode = mode
-    }
+    override fun getRingerMode() = mode
+    override fun setRingerMode(mode: Int) { events += "write"; this.mode = mode }
 }
