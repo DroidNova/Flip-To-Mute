@@ -3,6 +3,7 @@ package com.droidnova.fliptomute.ui.screens.settings
 import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.util.MainDispatcherRule
+import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -21,14 +22,14 @@ class SettingsViewModelTest {
 
     @Test
     fun detectionFeedbackDefaultsToEnabled() {
-        val viewModel = SettingsViewModel(FakeAppPreferencesRepository())
+        val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
 
         assertTrue(viewModel.uiState.value.detectionFeedbackEnabled)
     }
 
     @Test
     fun changingDetectionFeedbackUpdatesState() = runTest {
-        val viewModel = SettingsViewModel(FakeAppPreferencesRepository())
+        val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
 
         viewModel.onDetectionFeedbackChanged(false)
@@ -38,7 +39,7 @@ class SettingsViewModelTest {
 
     @Test
     fun changingFlipActionUpdatesState() = runTest {
-        val viewModel = SettingsViewModel(FakeAppPreferencesRepository())
+        val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
 
         viewModel.onFlipActionSelected(FlipAction.VIBRATE)

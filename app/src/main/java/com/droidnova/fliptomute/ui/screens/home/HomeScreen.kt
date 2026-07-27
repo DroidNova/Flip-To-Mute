@@ -35,6 +35,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.droidnova.fliptomute.R
+import com.droidnova.fliptomute.data.setup.SetupAccessType
 import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.FlipActionOption
 import com.droidnova.fliptomute.ui.components.InformationCard
@@ -42,6 +43,7 @@ import com.droidnova.fliptomute.ui.components.SectionHeader
 import com.droidnova.fliptomute.ui.components.SetupItem
 import com.droidnova.fliptomute.ui.components.StatusCard
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
+import com.droidnova.fliptomute.ui.util.RefreshOnResume
 
 @Composable
 fun HomeRoute(
@@ -51,14 +53,12 @@ fun HomeRoute(
     viewModelFactory: ViewModelProvider.Factory,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
+    RefreshOnResume(viewModel::refreshAccessState)
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     HomeScreen(
         state = state,
         onFlipActionSelected = viewModel::onFlipActionSelected,
-        onSetupItemClick = { type ->
-            viewModel.onSetupItemClick(type)
-            onPermissionsClick()
-        },
+        onSetupItemClick = { onPermissionsClick() },
         onSettingsClick = onSettingsClick,
         onSensorTestClick = onSensorTestClick,
     )
@@ -68,7 +68,7 @@ fun HomeRoute(
 fun HomeScreen(
     state: HomeUiState,
     onFlipActionSelected: (FlipAction) -> Unit,
-    onSetupItemClick: (SetupItemType) -> Unit,
+    onSetupItemClick: (SetupAccessType) -> Unit,
     onSettingsClick: () -> Unit,
     onSensorTestClick: () -> Unit,
 ) {

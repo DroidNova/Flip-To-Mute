@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Button
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,17 +32,22 @@ import com.droidnova.fliptomute.ui.components.SectionHeader
 import com.droidnova.fliptomute.ui.components.SettingsItem
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
+import com.droidnova.fliptomute.data.setup.SetupAccessStatus
+import com.droidnova.fliptomute.ui.util.RefreshOnResume
 
 @Composable
 fun SettingsRoute(
     onBack: () -> Unit,
+    onOpenSetup: () -> Unit,
     viewModelFactory: ViewModelProvider.Factory,
 ) {
     val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
+    RefreshOnResume(viewModel::refreshAccessState)
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     SettingsScreen(
         state = state,
         onBack = onBack,
+        onOpenSetup = onOpenSetup,
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
     )
@@ -51,6 +57,7 @@ fun SettingsRoute(
 fun SettingsScreen(
     state: SettingsUiState,
     onBack: () -> Unit,
+    onOpenSetup: () -> Unit,
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
 ) {
@@ -106,6 +113,30 @@ fun SettingsScreen(
                     ),
                 )
             }
+            item { SectionHeader(stringResource(R.string.setup_section)) }
+            item {
+                SettingsItem(
+                    stringResource(R.string.phone_access_title),
+                    accessStatusText(state.accessState.phoneStateStatus),
+                )
+            }
+            item {
+                SettingsItem(
+                    stringResource(R.string.sound_access_title),
+                    accessStatusText(state.accessState.soundControlStatus),
+                )
+            }
+            item {
+                SettingsItem(
+                    stringResource(R.string.notifications_title),
+                    accessStatusText(state.accessState.notificationStatus),
+                )
+            }
+            item {
+                Button(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.open_app_setup))
+                }
+            }
             item {
                 SettingsItem(
                     stringResource(R.string.notifications_title),
@@ -124,6 +155,15 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {})
+        SettingsScreen(SettingsUiState(), {}, {}, {}, {})
     }
 }
+
+@Composable
+private fun accessStatusText(status: SetupAccessStatus) = stringResource(
+    when (status) {
+        SetupAccessStatus.GRANTED -> R.string.allowed
+        SetupAccessStatus.NOT_GRANTED -> R.string.not_allowed
+        SetupAccessStatus.NOT_SUPPORTED -> R.string.not_supported
+    },
+)

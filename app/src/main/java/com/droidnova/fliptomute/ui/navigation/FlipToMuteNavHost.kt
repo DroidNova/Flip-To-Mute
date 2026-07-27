@@ -9,7 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.droidnova.fliptomute.app.ViewModelFactories
 import com.droidnova.fliptomute.ui.screens.home.HomeRoute
-import com.droidnova.fliptomute.ui.screens.permissions.PermissionsScreen
+import com.droidnova.fliptomute.ui.screens.permissions.PermissionsRoute
 import com.droidnova.fliptomute.ui.screens.sensor_test.SensorTestScreen
 import com.droidnova.fliptomute.ui.screens.settings.SettingsRoute
 
@@ -33,10 +33,16 @@ fun FlipToMuteNavHost(
                 viewModelFactory = viewModelFactories.home,
             )
         }
-        composable(Destination.Permissions.route) { PermissionsScreen { navController.navigateUp() } }
+        composable(Destination.Permissions.route) {
+            PermissionsRoute(
+                onBack = { navController.navigateUp() },
+                viewModelFactory = viewModelFactories.permissions,
+            )
+        }
         composable(Destination.Settings.route) {
             SettingsRoute(
                 onBack = { navController.navigateUp() },
+                onOpenSetup = { navController.navigateTo(Destination.Permissions) },
                 viewModelFactory = viewModelFactories.settings,
             )
         }

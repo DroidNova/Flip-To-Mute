@@ -4,24 +4,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
+import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val preferencesRepository: AppPreferencesRepository,
+    private val setupAccessRepository: SetupAccessRepository,
 ) : ViewModel() {
-    val uiState: StateFlow<SettingsUiState> = preferencesRepository.preferences
-        .map { preferences ->
-            SettingsUiState(
-                selectedFlipAction = preferences.selectedFlipAction,
-                detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
-                monitoringEnabled = preferences.monitoringEnabled,
-            )
-        }
-        .stateIn(
+    val uiState: StateFlow<SettingsUiState> = combine(
+        preferencesRepository.preferences,
+        setupAccessRepository.accessState,
+    ) { preferences, accessState ->
+        SettingsUiState(
+            selectedFlipAction = preferences.selectedFlipAction,
+            detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
+            monitoringEnabled = preferences.monitoringEnabled,
+            accessState = accessState,
+        )
+    }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = SettingsUiState(),
@@ -34,6 +38,8 @@ class SettingsViewModel(
     fun onDetectionFeedbackChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setDetectionFeedbackEnabled(enabled) }
     }
+
+    fun refreshAccessState() = setupAccessRepository.refresh()
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
