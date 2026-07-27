@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">Flip To Mute</string>
+    <string name="app_name">Flip to Mute</string>
+    <string name="home_supporting_text">Flip your phone face down to control incoming call sound.</string>
+    <string name="setup_status">Setup not completed</string>
+    <string name="setup_action">Set up app</string>
+    <string name="permissions_title">Permissions</string>
+    <string name="settings_title">Settings</string>
+    <string name="sensor_test_title">Sensor Test</string>
 </resources>
