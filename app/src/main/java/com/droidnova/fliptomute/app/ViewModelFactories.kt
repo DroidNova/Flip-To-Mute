@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.droidnova.fliptomute.ui.screens.home.HomeViewModel
 import com.droidnova.fliptomute.ui.screens.permissions.PermissionsViewModel
 import com.droidnova.fliptomute.ui.screens.settings.SettingsViewModel
+import com.droidnova.fliptomute.ui.screens.sensor_test.SensorTestViewModel
 
 class ViewModelFactories(container: AppContainer) {
     val home: ViewModelProvider.Factory = viewModelFactory {
@@ -26,6 +27,12 @@ class ViewModelFactories(container: AppContainer) {
     val settings: ViewModelProvider.Factory = viewModelFactory {
         initializer {
             SettingsViewModel(container.appPreferencesRepository, container.setupAccessRepository)
+        }
+    }
+
+    val sensorTest: ViewModelProvider.Factory = viewModelFactory {
+        initializer {
+            SensorTestViewModel(container.deviceOrientationMonitorFactory.create())
         }
     }
 }

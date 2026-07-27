@@ -47,7 +47,10 @@ fun FlipToMuteNavHost(
             )
         }
         composable(Destination.SensorTest.route) {
-            SensorTestScreen(onBack = { navController.navigateUp() })
+            SensorTestScreen(
+                onBack = { navController.navigateUp() },
+                viewModelFactory = viewModelFactories.sensorTest,
+            )
         }
     }
 }
