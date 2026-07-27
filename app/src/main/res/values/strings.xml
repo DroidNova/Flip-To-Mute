@@ -57,7 +57,10 @@
     <string name="behaviour_section">Behaviour</string>
     <string name="selected_flip_action">Selected flip action</string>
     <string name="detection_feedback">Detection feedback vibration</string>
-    <string name="detection_feedback_description">Vibrate briefly when a flip is detected</string>
+    <string name="detection_feedback_description">Vibrate briefly when a face-down gesture is recognised.</string>
+    <string name="monitoring_status">Monitoring status</string>
+    <string name="setting_enabled">Enabled</string>
+    <string name="setting_disabled">Disabled</string>
     <string name="monitoring_section">Monitoring</string>
     <string name="about_section">About</string>
     <string name="privacy_policy">Privacy policy</string>

@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.droidnova.fliptomute.R
@@ -47,12 +48,13 @@ fun HomeRoute(
     onSettingsClick: () -> Unit,
     onPermissionsClick: () -> Unit,
     onSensorTestClick: () -> Unit,
-    viewModel: HomeViewModel = viewModel(),
+    viewModelFactory: ViewModelProvider.Factory,
 ) {
+    val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     HomeScreen(
         state = state,
-        onFlipActionSelected = viewModel::selectFlipAction,
+        onFlipActionSelected = viewModel::onFlipActionSelected,
         onSetupItemClick = { type ->
             viewModel.onSetupItemClick(type)
             onPermissionsClick()

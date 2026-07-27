@@ -1,46 +1,38 @@
-package com.droidnova.fliptomute.ui.screens.home
+package com.droidnova.fliptomute.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class HomeViewModel(
+class SettingsViewModel(
     private val preferencesRepository: AppPreferencesRepository,
 ) : ViewModel() {
-    val uiState: StateFlow<HomeUiState> = preferencesRepository.preferences
+    val uiState: StateFlow<SettingsUiState> = preferencesRepository.preferences
         .map { preferences ->
-            HomeUiState(
-                monitoringStatus = MonitoringStatus.SETUP_REQUIRED,
-                isMonitoringEnabled = false,
+            SettingsUiState(
                 selectedFlipAction = preferences.selectedFlipAction,
+                detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
+                monitoringEnabled = preferences.monitoringEnabled,
             )
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-            initialValue = HomeUiState(),
+            initialValue = SettingsUiState(),
         )
 
     fun onFlipActionSelected(action: FlipAction) {
         viewModelScope.launch { preferencesRepository.setFlipAction(action) }
     }
 
-    fun onMonitoringEnabledChanged(enabled: Boolean) {
-        if (!enabled) {
-            viewModelScope.launch { preferencesRepository.setMonitoringEnabled(false) }
-        }
-    }
-
-    fun onSetupItemClick(type: SetupItemType) = when (type) {
-        SetupItemType.PHONE,
-        SetupItemType.SOUND_CONTROL,
-        SetupItemType.NOTIFICATIONS,
-        -> Unit
+    fun onDetectionFeedbackChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setDetectionFeedbackEnabled(enabled) }
     }
 
     private companion object {
