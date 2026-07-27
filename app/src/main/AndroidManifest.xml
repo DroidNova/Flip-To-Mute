@@ -9,6 +9,10 @@
         android:name="android.hardware.sensor.accelerometer"
         android:required="false" />
 
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
     <application
         android:name=".app.FlipToMuteApplication"
         android:allowBackup="true"

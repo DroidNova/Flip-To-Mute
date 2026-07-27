@@ -7,11 +7,14 @@ import com.droidnova.fliptomute.data.setup.AndroidSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import com.droidnova.fliptomute.sensor.AndroidDeviceOrientationMonitor
 import com.droidnova.fliptomute.sensor.DeviceOrientationMonitorFactory
+import com.droidnova.fliptomute.telephony.AndroidCellularCallMonitor
+import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
 
 interface AppContainer {
     val appPreferencesRepository: AppPreferencesRepository
     val setupAccessRepository: SetupAccessRepository
     val deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
+    val cellularCallMonitorFactory: CellularCallMonitorFactory
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -21,5 +24,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
         AndroidSetupAccessRepository(context.applicationContext)
     override val deviceOrientationMonitorFactory = DeviceOrientationMonitorFactory {
         AndroidDeviceOrientationMonitor(context.applicationContext)
+    }
+    override val cellularCallMonitorFactory = CellularCallMonitorFactory {
+        AndroidCellularCallMonitor(context.applicationContext)
     }
 }

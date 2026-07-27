@@ -39,6 +39,7 @@ import com.droidnova.fliptomute.ui.util.RefreshOnResume
 fun SettingsRoute(
     onBack: () -> Unit,
     onOpenSetup: () -> Unit,
+    onCallStateTest: () -> Unit,
     viewModelFactory: ViewModelProvider.Factory,
 ) {
     val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
@@ -48,6 +49,7 @@ fun SettingsRoute(
         state = state,
         onBack = onBack,
         onOpenSetup = onOpenSetup,
+        onCallStateTest = onCallStateTest,
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
     )
@@ -58,6 +60,7 @@ fun SettingsScreen(
     state: SettingsUiState,
     onBack: () -> Unit,
     onOpenSetup: () -> Unit,
+    onCallStateTest: () -> Unit,
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
 ) {
@@ -143,6 +146,13 @@ fun SettingsScreen(
                     stringResource(R.string.monitoring_notification_description),
                 )
             }
+            item { SectionHeader(stringResource(R.string.diagnostics_section)) }
+            item {
+                Button(onClick = onCallStateTest, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.test_call_detection))
+                }
+                Text(stringResource(R.string.test_call_detection_description))
+            }
             item { SectionHeader(stringResource(R.string.about_section)) }
             item { SettingsItem(stringResource(R.string.privacy_policy), stringResource(R.string.privacy_policy_unavailable)) }
             item { SettingsItem(stringResource(R.string.app_version), stringResource(R.string.app_version_value)) }
@@ -155,7 +165,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {}, {})
+        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {})
     }
 }
 
