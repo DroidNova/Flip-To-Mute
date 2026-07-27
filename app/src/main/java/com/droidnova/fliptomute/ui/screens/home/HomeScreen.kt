@@ -1,31 +1,33 @@
 package com.droidnova.fliptomute.ui.screens.home
 
-import android.content.res.Configuration
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ScreenRotation
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -35,13 +37,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.droidnova.fliptomute.R
-import com.droidnova.fliptomute.data.setup.SetupAccessType
+import com.droidnova.fliptomute.service.MonitoringRuntimeState
+import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.FlipActionOption
-import com.droidnova.fliptomute.ui.components.InformationCard
 import com.droidnova.fliptomute.ui.components.SectionHeader
-import com.droidnova.fliptomute.ui.components.SetupItem
-import com.droidnova.fliptomute.ui.components.StatusCard
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
 
@@ -49,33 +49,48 @@ import com.droidnova.fliptomute.ui.util.RefreshOnResume
 fun HomeRoute(
     onSettingsClick: () -> Unit,
     onPermissionsClick: () -> Unit,
-    onSensorTestClick: () -> Unit,
     viewModelFactory: ViewModelProvider.Factory,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
     RefreshOnResume(viewModel::refreshAccessState)
-    val state = viewModel.uiState.collectAsStateWithLifecycle().value
     HomeScreen(
-        state = state,
+        state = viewModel.uiState.collectAsStateWithLifecycle().value,
+        onMonitoringChanged = viewModel::onMonitoringChanged,
         onFlipActionSelected = viewModel::onFlipActionSelected,
-        onSetupItemClick = { onPermissionsClick() },
+        onSetupClick = onPermissionsClick,
         onSettingsClick = onSettingsClick,
-        onSensorTestClick = onSensorTestClick,
+        onMessageShown = viewModel::onMessageShown,
     )
 }
 
 @Composable
 fun HomeScreen(
     state: HomeUiState,
+    onMonitoringChanged: (Boolean) -> Unit,
     onFlipActionSelected: (FlipAction) -> Unit,
-    onSetupItemClick: (SetupAccessType) -> Unit,
+    onSetupClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onSensorTestClick: () -> Unit,
+    onMessageShown: () -> Unit,
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    state.message?.let { failure ->
+        val text = stringResource(
+            if (failure == MonitoringFailure.SETUP_REQUIRED) {
+                R.string.monitoring_setup_error
+            } else {
+                R.string.monitoring_start_error
+            },
+        )
+        LaunchedEffect(failure) {
+            snackbarHostState.showSnackbar(text)
+            onMessageShown()
+        }
+    }
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            AppTopBar(title = stringResource(R.string.app_name)) {
+            AppTopBar(stringResource(R.string.app_name)) {
                 IconButton(onClick = onSettingsClick) {
                     Icon(Icons.Default.Settings, stringResource(R.string.settings_content_description))
                 }
@@ -83,48 +98,34 @@ fun HomeScreen(
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { StatusCard(state.monitoringStatus, state.isMonitoringEnabled) }
-            item { SectionHeader(stringResource(R.string.flip_action_section)) }
+            item { MainStatusCard(state, onMonitoringChanged, onSetupClick) }
+            item { SectionHeader(stringResource(R.string.when_i_flip)) }
             item {
                 FlipActionOption(
-                    title = stringResource(R.string.silent_title),
-                    description = stringResource(R.string.silent_description),
-                    icon = Icons.Default.VolumeOff,
-                    selected = state.selectedFlipAction == FlipAction.SILENT,
-                    onClick = { onFlipActionSelected(FlipAction.SILENT) },
+                    stringResource(R.string.silent_title),
+                    stringResource(R.string.mute_ringtone),
+                    Icons.Default.VolumeOff,
+                    state.selectedFlipAction == FlipAction.SILENT,
+                    { onFlipActionSelected(FlipAction.SILENT) },
                 )
             }
             item {
                 FlipActionOption(
-                    title = stringResource(R.string.vibrate_title),
-                    description = stringResource(R.string.vibrate_description),
-                    icon = Icons.Default.Vibration,
-                    selected = state.selectedFlipAction == FlipAction.VIBRATE,
-                    onClick = { onFlipActionSelected(FlipAction.VIBRATE) },
-                )
-            }
-            item { SectionHeader(stringResource(R.string.required_setup)) }
-            items(state.setupItems.size, key = { state.setupItems[it].type }) { index ->
-                val item = state.setupItems[index]
-                SetupItem(item, onClick = { onSetupItemClick(item.type) })
-            }
-            item { SensorTestCard(onSensorTestClick) }
-            item { HowItWorks() }
-            item {
-                InformationCard(
-                    text = stringResource(R.string.privacy_description),
-                    icon = Icons.Default.Security,
-                    title = stringResource(R.string.privacy_title),
+                    stringResource(R.string.vibrate_title),
+                    stringResource(R.string.switch_to_vibration),
+                    Icons.Default.Vibration,
+                    state.selectedFlipAction == FlipAction.VIBRATE,
+                    { onFlipActionSelected(FlipAction.VIBRATE) },
                 )
             }
             item {
-                InformationCard(
-                    text = stringResource(R.string.monitoring_notification_description),
-                    icon = Icons.Default.Info,
+                Text(
+                    stringResource(R.string.home_compact_explanation),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -132,41 +133,58 @@ fun HomeScreen(
 }
 
 @Composable
-private fun SensorTestCard(onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Default.ScreenRotation, contentDescription = null)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.test_flip_title), style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(R.string.test_flip_description), style = MaterialTheme.typography.bodyMedium)
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null)
-        }
+private fun MainStatusCard(
+    state: HomeUiState,
+    onMonitoringChanged: (Boolean) -> Unit,
+    onSetupClick: () -> Unit,
+) {
+    val runtime = state.monitoringState
+    val title = when {
+        !state.isSetupComplete -> R.string.home_setup_title
+        runtime is MonitoringRuntimeState.Starting -> R.string.turning_on
+        runtime is MonitoringRuntimeState.Active -> R.string.monitoring_notification_title
+        runtime is MonitoringRuntimeState.Stopping -> R.string.turning_off
+        runtime is MonitoringRuntimeState.Error -> R.string.monitoring_start_error
+        else -> R.string.flip_to_mute_off
     }
-}
-
-@Composable
-private fun HowItWorks() {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(stringResource(R.string.how_it_works))
-        listOf(R.string.how_step_one, R.string.how_step_two, R.string.how_step_three).forEachIndexed { i, text ->
-            Text(
-                text = stringResource(R.string.numbered_step, i + 1, stringResource(text)),
-                style = MaterialTheme.typography.bodyMedium,
-            )
+    val body = when {
+        !state.isSetupComplete -> R.string.home_setup_description
+        runtime is MonitoringRuntimeState.Active -> R.string.monitoring_notification_text
+        runtime is MonitoringRuntimeState.Starting -> R.string.preparing_monitoring
+        else -> R.string.home_off_description
+    }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp), Arrangement.spacedBy(12.dp), Alignment.Start) {
+            Text(stringResource(title), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(body))
+            if (!state.isSetupComplete) {
+                Button(onClick = onSetupClick) { Text(stringResource(R.string.set_up_app)) }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Switch(
+                        checked = state.isMonitoringChecked,
+                        onCheckedChange = onMonitoringChanged,
+                        enabled = state.isMonitoringSwitchEnabled,
+                    )
+                    if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Stopping) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
         }
     }
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun HomeScreenPreview() {
+private fun HomePreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        HomeScreen(HomeUiState(), {}, {}, {}, {})
+        HomeScreen(
+            HomeUiState(isSetupComplete = true, isMonitoringSwitchEnabled = true),
+            {}, {}, {}, {}, {},
+        )
     }
 }

@@ -162,4 +162,22 @@
     <string name="app_version_value">1.0</string>
     <string name="about_app">About Flip to Mute</string>
     <string name="about_app_description">Control incoming call sound by placing your phone face down.</string>
+    <string name="monitoring_channel_description">Shows when Flip to Mute is active.</string>
+    <string name="monitoring_notification_title">Flip to Mute is on</string>
+    <string name="monitoring_notification_text">Flip your phone face down when it rings.</string>
+    <string name="turn_off">Turn off</string>
+    <string name="home_setup_title">Set up Flip to Mute</string>
+    <string name="home_setup_description">Complete a few required steps before turning it on.</string>
+    <string name="set_up_app">Set up app</string>
+    <string name="flip_to_mute_off">Flip to Mute is off</string>
+    <string name="home_off_description">Turn it on to control incoming call sound by flipping your phone.</string>
+    <string name="turning_on">Turning on…</string>
+    <string name="turning_off">Turning off…</string>
+    <string name="preparing_monitoring">Preparing call monitoring.</string>
+    <string name="when_i_flip">When I flip my phone</string>
+    <string name="mute_ringtone">Mute the ringtone</string>
+    <string name="switch_to_vibration">Switch to vibration</string>
+    <string name="home_compact_explanation">When a cellular call rings, place your phone screen-down.</string>
+    <string name="monitoring_start_error">Flip to Mute could not start.</string>
+    <string name="monitoring_setup_error">Complete app setup and try again.</string>
 </resources>

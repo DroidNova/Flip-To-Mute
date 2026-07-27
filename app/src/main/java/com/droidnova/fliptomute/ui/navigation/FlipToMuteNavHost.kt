@@ -31,7 +31,6 @@ fun FlipToMuteNavHost(
             HomeRoute(
                 onSettingsClick = { navController.navigateTo(Destination.Settings) },
                 onPermissionsClick = { navController.navigateTo(Destination.Permissions) },
-                onSensorTestClick = { navController.navigateTo(Destination.SensorTest) },
                 viewModelFactory = viewModelFactories.home,
             )
         }

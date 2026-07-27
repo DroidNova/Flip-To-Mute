@@ -13,7 +13,12 @@ import com.droidnova.fliptomute.ui.screens.sound_control_test.SoundControlTestVi
 class ViewModelFactories(container: AppContainer) {
     val home: ViewModelProvider.Factory = viewModelFactory {
         initializer {
-            HomeViewModel(container.appPreferencesRepository, container.setupAccessRepository)
+            HomeViewModel(
+                container.appPreferencesRepository,
+                container.setupAccessRepository,
+                container.monitoringStateRepository,
+                container.monitoringServiceController,
+            )
         }
     }
 

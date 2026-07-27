@@ -15,9 +15,11 @@ class FakeRingerModeController(
 ) : RingerModeController {
     var applyCount = 0
     var restoreCount = 0
+    val appliedActions = mutableListOf<FlipAction>()
     override fun getCurrentMode() = currentMode
     override fun applyTemporaryAction(action: FlipAction): RingerModeResult {
         applyCount++
+        appliedActions += action
         (applyResult as? RingerModeResult.Success)?.let { currentMode = it.currentMode }
         return applyResult
     }

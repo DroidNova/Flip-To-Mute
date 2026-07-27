@@ -11,6 +11,10 @@ import com.droidnova.fliptomute.telephony.AndroidCellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
 import com.droidnova.fliptomute.audio.AndroidRingerModeController
 import com.droidnova.fliptomute.audio.RingerModeControllerFactory
+import com.droidnova.fliptomute.service.AndroidMonitoringServiceController
+import com.droidnova.fliptomute.service.InMemoryMonitoringStateRepository
+import com.droidnova.fliptomute.service.MonitoringServiceController
+import com.droidnova.fliptomute.service.MonitoringStateRepository
 
 interface AppContainer {
     val appPreferencesRepository: AppPreferencesRepository
@@ -18,9 +22,12 @@ interface AppContainer {
     val deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
     val cellularCallMonitorFactory: CellularCallMonitorFactory
     val ringerModeControllerFactory: RingerModeControllerFactory
+    val monitoringStateRepository: MonitoringStateRepository
+    val monitoringServiceController: MonitoringServiceController
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
+    private val applicationContext = context.applicationContext
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(context.applicationContext)
     override val setupAccessRepository: SetupAccessRepository =
@@ -32,6 +39,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
         AndroidCellularCallMonitor(context.applicationContext)
     }
     override val ringerModeControllerFactory = RingerModeControllerFactory {
-        AndroidRingerModeController(context.applicationContext)
+        AndroidRingerModeController(applicationContext)
     }
+    override val monitoringStateRepository: MonitoringStateRepository = InMemoryMonitoringStateRepository()
+    override val monitoringServiceController: MonitoringServiceController =
+        AndroidMonitoringServiceController(applicationContext)
 }
