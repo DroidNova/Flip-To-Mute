@@ -2,10 +2,10 @@ package com.droidnova.fliptomute.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val Blue80 = Color(0xFFAFC6FF)
+val Slate80 = Color(0xFFC2C6D6)
+val Teal80 = Color(0xFFA4D0C5)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Blue40 = Color(0xFF345D9D)
+val Slate40 = Color(0xFF595E6B)
+val Teal40 = Color(0xFF3E665E)
