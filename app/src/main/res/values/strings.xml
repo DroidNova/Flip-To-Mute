@@ -180,4 +180,6 @@
     <string name="home_compact_explanation">When a cellular call rings, place your phone screen-down.</string>
     <string name="monitoring_start_error">Flip to Mute could not start.</string>
     <string name="monitoring_setup_error">Complete app setup and try again.</string>
+    <string name="monitoring_telephony_error">Cellular call detection is unavailable on this device.</string>
+    <string name="monitoring_notification_error">Allow notifications before turning on Flip to Mute.</string>
 </resources>

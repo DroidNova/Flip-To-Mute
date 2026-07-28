@@ -74,13 +74,12 @@ fun HomeScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     state.message?.let { failure ->
-        val text = stringResource(
-            if (failure == MonitoringFailure.SETUP_REQUIRED) {
-                R.string.monitoring_setup_error
-            } else {
-                R.string.monitoring_start_error
-            },
-        )
+        val text = stringResource(when (failure) {
+            MonitoringFailure.SETUP_REQUIRED -> R.string.monitoring_setup_error
+            MonitoringFailure.TELEPHONY_UNAVAILABLE -> R.string.monitoring_telephony_error
+            MonitoringFailure.NOTIFICATION_UNAVAILABLE -> R.string.monitoring_notification_error
+            else -> R.string.monitoring_start_error
+        })
         LaunchedEffect(failure) {
             snackbarHostState.showSnackbar(text)
             onMessageShown()

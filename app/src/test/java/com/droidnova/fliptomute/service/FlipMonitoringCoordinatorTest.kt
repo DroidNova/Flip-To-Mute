@@ -22,6 +22,11 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FlipMonitoringCoordinatorTest {
+    @Test fun listeningWithUnknownCallStateIsReady() = runTest {
+        val fixture = fixture(backgroundScope, callStartState = listening(CellularCallState.UNKNOWN))
+        assertEquals(MonitoringCoordinatorStartResult.Started, fixture.coordinator.startAndAwaitReady())
+    }
+
     @Test fun startIsIdempotentAndLeavesSensorStopped() = runTest {
         val fixture = fixture(backgroundScope)
         assertEquals(MonitoringCoordinatorStartResult.Started, fixture.coordinator.startAndAwaitReady())
