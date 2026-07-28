@@ -26,7 +26,12 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
     private val mutableState = MutableStateFlow<CellularCallMonitorState>(CellularCallMonitorState.Stopped)
     override val state: StateFlow<CellularCallMonitorState> = mutableState.asStateFlow()
     override val isTelephonyAvailable: Boolean
-        get() = baseTelephonyManager != null && packageManager.hasSystemFeature(telephonyFeature())
+        get() = TelephonyAvailabilityPolicy.canAttemptRegistration(
+            telephonyManagerAvailable = baseTelephonyManager != null,
+            hasBaseFeature = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY),
+            hasCallingFeature = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING),
+        )
     private var isStarting = false
     private var isListening = false
 
@@ -46,8 +51,13 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
 
     private fun startOnMainThread() {
         if (!isStarting || isListening) return
-        debugLog("Telephony availability result: $isTelephonyAvailable")
-        if (!isTelephonyAvailable) {
+        val hasBaseFeature = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+        val hasCallingFeature = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING)
+        debugLog("FEATURE_TELEPHONY: $hasBaseFeature")
+        debugLog("FEATURE_TELEPHONY_CALLING: $hasCallingFeature")
+        debugLog("TelephonyManager available: ${baseTelephonyManager != null}")
+        if (baseTelephonyManager == null) {
             isStarting = false
             mutableState.value = CellularCallMonitorState.TelephonyUnavailable
             return
@@ -59,48 +69,67 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
             mutableState.value = CellularCallMonitorState.PermissionRequired
             return
         }
-        val baseManager = baseTelephonyManager ?: return registrationError(
-            CellularCallMonitorError.TELEPHONY_SERVICE_UNAVAILABLE,
-        )
+        val baseManager = baseTelephonyManager
         val managers = activeTelephonyManagers(baseManager)
         debugLog("Active subscription count: ${managers.size}")
         clearRegistrations()
         isStarting = true
         var permissionFailure = false
+        var attemptCount = 0
+        var unsupportedCount = 0
         managers.forEachIndexed { token, manager ->
             debugLog("Attempting subscription-specific registration")
+            attemptCount++
             try {
                 register(manager, token)
             } catch (error: SecurityException) {
                 permissionFailure = true
                 logRegistrationFailure(error)
+            } catch (error: UnsupportedOperationException) {
+                unsupportedCount++
+                logRegistrationFailure(error)
             } catch (error: RuntimeException) {
                 logRegistrationFailure(error)
             }
         }
-        if (registrations.isEmpty() && managers.none { it === baseManager }) {
+        debugLog("Subscription callback registration success count: ${registrations.size}")
+        if (registrations.isEmpty()) {
             debugLog("Attempting default TelephonyManager fallback")
+            attemptCount++
             try {
                 register(baseManager, managers.size)
+                debugLog("Default TelephonyManager registration succeeded")
             } catch (error: SecurityException) {
                 permissionFailure = true
-                logRegistrationFailure(error)
+                logDefaultRegistrationFailure(error)
+            } catch (error: UnsupportedOperationException) {
+                unsupportedCount++
+                logDefaultRegistrationFailure(error)
             } catch (error: RuntimeException) {
-                logRegistrationFailure(error)
+                logDefaultRegistrationFailure(error)
             }
         }
+        debugLog("Final successful registration count: ${registrations.size}")
         if (registrations.isNotEmpty()) {
             isListening = true
             isStarting = false
             updateAggregateState()
             debugLog("Successful telephony registration count: ${registrations.size}")
-        } else if (permissionFailure) {
-            clearRegistrations()
-            mutableState.value = CellularCallMonitorState.PermissionRequired
-            debugLog("Telephony registration failed")
-        } else {
-            registrationError(CellularCallMonitorError.REGISTRATION_FAILED)
-            debugLog("Telephony registration failed")
+        } else when (TelephonyRegistrationResult.resolve(attemptCount, unsupportedCount, permissionFailure)) {
+            TelephonyRegistrationFailure.PERMISSION_REQUIRED -> {
+                clearRegistrations()
+                mutableState.value = CellularCallMonitorState.PermissionRequired
+                debugLog("Telephony registration failed: PermissionRequired")
+            }
+            TelephonyRegistrationFailure.UNSUPPORTED -> {
+                clearRegistrations()
+                mutableState.value = CellularCallMonitorState.TelephonyUnavailable
+                debugLog("Telephony registration failed: TelephonyUnavailable")
+            }
+            TelephonyRegistrationFailure.REGISTRATION_FAILED -> {
+                registrationError(CellularCallMonitorError.REGISTRATION_FAILED)
+                debugLog("Telephony registration failed: REGISTRATION_FAILED")
+            }
         }
     }
 
@@ -185,18 +214,15 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
         if (Looper.myLooper() == Looper.getMainLooper()) block() else mainHandler.post(block)
     }
 
-    private fun telephonyFeature(): String = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        PackageManager.FEATURE_TELEPHONY_CALLING
-    } else {
-        PackageManager.FEATURE_TELEPHONY
-    }
-
     private fun debugLog(message: String) {
         MonitoringLog.d(applicationContext, message)
     }
 
     private fun logRegistrationFailure(error: RuntimeException) =
         MonitoringLog.failure(applicationContext, "Telephony registration attempt failed", error)
+
+    private fun logDefaultRegistrationFailure(error: RuntimeException) =
+        MonitoringLog.failure(applicationContext, "Default TelephonyManager registration failed", error)
 
     private interface Registration {
         fun unregister()

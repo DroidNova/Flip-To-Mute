@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.telephony.TelephonyManager
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +30,7 @@ class AndroidSetupAccessRepository(context: Context) : SetupAccessRepository {
     )
 
     private fun phoneStateStatus(): SetupAccessStatus {
-        if (!applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (applicationContext.getSystemService(TelephonyManager::class.java) == null) {
             return SetupAccessStatus.NOT_SUPPORTED
         }
         return permissionStatus(Manifest.permission.READ_PHONE_STATE)
