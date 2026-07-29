@@ -5,6 +5,11 @@
     <string name="setup_action">Set up app</string>
     <string name="permissions_title">Permissions</string>
     <string name="settings_title">Settings</string>
+    <string name="about_title">About</string>
+    <string name="more_options">More options</string>
+    <string name="vibrate_phone">Vibrate phone</string>
+    <string name="permissions_sheet_title">Allow access</string>
+    <string name="permissions_sheet_body">A few permissions are needed before monitoring can start.</string>
     <string name="sensor_test_title">Sensor Test</string>
     <string name="settings_content_description">Open settings</string>
     <string name="back_content_description">Go back</string>

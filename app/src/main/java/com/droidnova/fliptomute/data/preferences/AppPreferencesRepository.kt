@@ -8,6 +8,11 @@ interface AppPreferencesRepository {
 
     suspend fun setFlipAction(action: FlipAction)
 
+    suspend fun setCallActionSelection(selection: CallActionSelection) {
+        require(selection.isValid)
+        setFlipAction(if (selection.vibratePhone) FlipAction.VIBRATE else FlipAction.SILENT)
+    }
+
     suspend fun setMonitoringEnabled(enabled: Boolean)
 
     suspend fun setDetectionFeedbackEnabled(enabled: Boolean)

@@ -7,6 +7,7 @@ import com.droidnova.fliptomute.audio.IncomingCallVibrationController
 import com.droidnova.fliptomute.audio.IncomingCallVibrationResult
 import com.droidnova.fliptomute.audio.VibrationAvailability
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.preferences.CallActionSelection
 import com.droidnova.fliptomute.sensor.DeviceOrientation
 import com.droidnova.fliptomute.sensor.DeviceOrientationMonitor
 import com.droidnova.fliptomute.sensor.FaceDownDetectionState
@@ -50,7 +51,7 @@ class FlipMonitoringCoordinator(
         }, scope, onFailure,
     )
     private val mutex = Mutex()
-    private var latestAction = FlipAction.SILENT
+    private var latestSelection = CallActionSelection()
     private var ringingSession: RingingSession? = null
     private var started = false
     private var stopping = false
@@ -68,7 +69,7 @@ class FlipMonitoringCoordinator(
         stopping = false
         startupResult = CompletableDeferred()
         preferencesJob = scope.launch {
-            preferencesRepository.preferences.collectLatest { latestAction = it.selectedFlipAction }
+            preferencesRepository.preferences.collectLatest { latestSelection = it.callActionSelection }
         }
         orientationJob = scope.launch { orientationMonitor.state.collectLatest(::handleOrientationState) }
         callJob = scope.launch { callMonitor.state.collectLatest(::handleCallState) }
@@ -115,7 +116,7 @@ class FlipMonitoringCoordinator(
                         if (!orientationMonitor.isSensorAvailable) {
                             fail(MonitoringFailure.SENSOR_UNAVAILABLE)
                         } else {
-                            ringingSession = RingingSession(latestAction)
+                            ringingSession = RingingSession(latestSelection)
                             orientationMonitor.start()
                         }
                     }
@@ -139,12 +140,13 @@ class FlipMonitoringCoordinator(
             is FaceDownDetectionState.Detecting -> {
                 val session = ringingSession ?: return@withLock
                 if (state.orientation != DeviceOrientation.FACE_DOWN || session.actionHandled) return@withLock
-                if (session.selectedAction == FlipAction.SILENT) vibrationController.stop()
-                val result = ringerModeController.applyTemporaryAction(session.selectedAction)
+                if (!session.selection.vibratePhone) vibrationController.stop()
+                val modeAction = if (session.selection.muteRingtone) FlipAction.SILENT else FlipAction.VIBRATE
+                val result = ringerModeController.applyTemporaryAction(modeAction)
                 when (result) {
                     is RingerModeResult.Success -> {
-                        val handled = if (session.selectedAction == FlipAction.VIBRATE) {
-                            result.currentMode == DeviceRingerMode.VIBRATE &&
+                        val handled = if (session.selection.vibratePhone) {
+                            (session.selection.muteRingtone || result.currentMode == DeviceRingerMode.VIBRATE) &&
                                 vibrationController.getAvailability() == VibrationAvailability.AVAILABLE &&
                                 vibrationController.start() is IncomingCallVibrationResult.Started
                         } else true
@@ -156,7 +158,7 @@ class FlipMonitoringCoordinator(
                         orientationMonitor.stop()
                     }
                     is RingerModeResult.Failure -> {
-                        if (session.selectedAction == FlipAction.VIBRATE) {
+                        if (session.selection.vibratePhone) {
                             vibrationController.stop()
                             when (ringerModeController.applyTemporaryAction(FlipAction.SILENT)) {
                                 is RingerModeResult.Success -> {
@@ -207,7 +209,7 @@ class FlipMonitoringCoordinator(
     }
 
     private data class RingingSession(
-        val selectedAction: FlipAction,
+        val selection: CallActionSelection,
         val actionHandled: Boolean = false,
     )
 
