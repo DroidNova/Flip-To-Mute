@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -28,6 +31,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -40,7 +46,6 @@ import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.ui.components.AppTopBar
-import com.droidnova.fliptomute.ui.components.FlipActionOption
 import com.droidnova.fliptomute.ui.components.SectionHeader
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
@@ -48,6 +53,7 @@ import com.droidnova.fliptomute.ui.util.RefreshOnResume
 @Composable
 fun HomeRoute(
     onSettingsClick: () -> Unit,
+    onAboutClick: () -> Unit,
     onPermissionsClick: () -> Unit,
     viewModelFactory: ViewModelProvider.Factory,
 ) {
@@ -56,10 +62,13 @@ fun HomeRoute(
     HomeScreen(
         state = viewModel.uiState.collectAsStateWithLifecycle().value,
         onMonitoringChanged = viewModel::onMonitoringChanged,
-        onFlipActionSelected = viewModel::onFlipActionSelected,
+        onMuteRingtoneChanged = viewModel::onMuteRingtoneChanged,
+        onVibratePhoneChanged = viewModel::onVibratePhoneChanged,
         onSetupClick = onPermissionsClick,
         onSettingsClick = onSettingsClick,
+        onAboutClick = onAboutClick,
         onMessageShown = viewModel::onMessageShown,
+        onDismissPermissions = viewModel::dismissPermissionsSheet,
     )
 }
 
@@ -67,10 +76,13 @@ fun HomeRoute(
 fun HomeScreen(
     state: HomeUiState,
     onMonitoringChanged: (Boolean) -> Unit,
-    onFlipActionSelected: (FlipAction) -> Unit,
+    onMuteRingtoneChanged: (Boolean) -> Unit,
+    onVibratePhoneChanged: (Boolean) -> Unit,
     onSetupClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onAboutClick: () -> Unit,
     onMessageShown: () -> Unit,
+    onDismissPermissions: () -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     state.message?.let { failure ->
@@ -85,13 +97,25 @@ fun HomeScreen(
             onMessageShown()
         }
     }
+    var menuExpanded by remember { mutableStateOf(false) }
+    if (state.showPermissionsSheet) {
+        PermissionsSheet(onDismissPermissions, onSetupClick)
+    }
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(stringResource(R.string.app_name)) {
-                IconButton(onClick = onSettingsClick) {
-                    Icon(Icons.Default.Settings, stringResource(R.string.settings_content_description))
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_title)) }, onClick = {
+                        menuExpanded = false; onSettingsClick()
+                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.about_title)) }, onClick = {
+                        menuExpanded = false; onAboutClick()
+                    })
                 }
             }
         },
@@ -103,24 +127,8 @@ fun HomeScreen(
         ) {
             item { MainStatusCard(state, onMonitoringChanged, onSetupClick) }
             item { SectionHeader(stringResource(R.string.when_i_flip)) }
-            item {
-                FlipActionOption(
-                    stringResource(R.string.silent_title),
-                    stringResource(R.string.mute_ringtone),
-                    Icons.Default.VolumeOff,
-                    state.selectedFlipAction == FlipAction.SILENT,
-                    { onFlipActionSelected(FlipAction.SILENT) },
-                )
-            }
-            item {
-                FlipActionOption(
-                    stringResource(R.string.vibrate_title),
-                    stringResource(R.string.switch_to_vibration),
-                    Icons.Default.Vibration,
-                    state.selectedFlipAction == FlipAction.VIBRATE,
-                    { onFlipActionSelected(FlipAction.VIBRATE) },
-                )
-            }
+            item { ActionCheckbox(stringResource(R.string.mute_ringtone), state.callActionSelection.muteRingtone, onMuteRingtoneChanged) }
+            item { ActionCheckbox(stringResource(R.string.vibrate_phone), state.callActionSelection.vibratePhone, onVibratePhoneChanged) }
             item {
                 Text(
                     stringResource(R.string.home_compact_explanation),
@@ -128,6 +136,31 @@ fun HomeScreen(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PermissionsSheet(onDismiss: () -> Unit, onContinue: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(stringResource(R.string.permissions_sheet_title), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.permissions_sheet_body))
+            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.continue_action))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionCheckbox(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Text(label)
     }
 }
 
@@ -187,7 +220,7 @@ private fun HomePreview() {
     FlipToMuteTheme(dynamicColor = false) {
         HomeScreen(
             HomeUiState(isSetupComplete = true, isMonitoringSwitchEnabled = true),
-            {}, {}, {}, {}, {},
+            {}, {}, {}, {}, {}, {}, {}, {},
         )
     }
 }

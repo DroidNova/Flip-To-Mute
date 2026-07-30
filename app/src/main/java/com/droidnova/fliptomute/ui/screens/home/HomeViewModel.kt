@@ -24,21 +24,26 @@ class HomeViewModel(
     private val appRecoveryManager: AppRecoveryManager,
 ) : ViewModel() {
     private val message = MutableStateFlow<com.droidnova.fliptomute.service.MonitoringFailure?>(null)
+    private val permissionsSheet = MutableStateFlow(false)
+    private var enableAfterSetup = false
 
     val uiState: StateFlow<HomeUiState> = combine(
         preferencesRepository.preferences,
         setupAccessRepository.accessState,
         monitoringStateRepository.state,
         message,
-    ) { preferences, access, runtime, currentMessage ->
+        permissionsSheet,
+    ) { preferences, access, runtime, currentMessage, showPermissions ->
         val transitional = runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Stopping
         HomeUiState(
             isSetupComplete = access.isSetupComplete,
             selectedFlipAction = preferences.selectedFlipAction,
+            callActionSelection = preferences.callActionSelection,
             monitoringState = runtime,
             isMonitoringChecked = runtime is MonitoringRuntimeState.Active || runtime is MonitoringRuntimeState.Starting,
-            isMonitoringSwitchEnabled = access.isSetupComplete && !transitional,
+            isMonitoringSwitchEnabled = !transitional,
             message = currentMessage,
+            showPermissionsSheet = showPermissions,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState())
 
@@ -53,7 +58,12 @@ class HomeViewModel(
 
     fun onMonitoringChanged(enabled: Boolean) {
         if (enabled) {
-            if (!setupAccessRepository.accessState.value.isSetupComplete) return
+            if (!setupAccessRepository.accessState.value.isSetupComplete) {
+                enableAfterSetup = true
+                permissionsSheet.value = true
+                return
+            }
+            enableAfterSetup = false
             when (val result = serviceController.startMonitoring()) {
                 MonitoringCommandResult.Accepted -> Unit
                 is MonitoringCommandResult.Rejected -> message.value = result.reason
@@ -67,6 +77,25 @@ class HomeViewModel(
         viewModelScope.launch { preferencesRepository.setFlipAction(action) }
     }
 
+    fun onMuteRingtoneChanged(selected: Boolean) = updateSelection(mute = selected)
+    fun onVibratePhoneChanged(selected: Boolean) = updateSelection(vibrate = selected)
+
+    private fun updateSelection(mute: Boolean? = null, vibrate: Boolean? = null) {
+        val current = uiState.value.callActionSelection
+        val updated = current.copy(
+            muteRingtone = mute ?: current.muteRingtone,
+            vibratePhone = vibrate ?: current.vibratePhone,
+        )
+        if (updated.isValid) viewModelScope.launch { preferencesRepository.setCallActionSelection(updated) }
+    }
+
     fun onMessageShown() { message.value = null }
-    fun refreshAccessState() = setupAccessRepository.refresh()
+    fun dismissPermissionsSheet() { permissionsSheet.value = false }
+    fun refreshAccessState() {
+        val access = setupAccessRepository.refreshAndGet()
+        if (enableAfterSetup && access.isSetupComplete) {
+            permissionsSheet.value = false
+            onMonitoringChanged(true)
+        }
+    }
 }

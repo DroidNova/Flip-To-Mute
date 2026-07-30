@@ -12,7 +12,19 @@ class FakeAppPreferencesRepository(
     override val preferences = mutablePreferences.asStateFlow()
 
     override suspend fun setFlipAction(action: FlipAction) {
-        mutablePreferences.update { it.copy(selectedFlipAction = action) }
+        mutablePreferences.update {
+            it.copy(
+                selectedFlipAction = action,
+                callActionSelection = CallActionSelection(
+                    muteRingtone = action == FlipAction.SILENT,
+                    vibratePhone = action == FlipAction.VIBRATE,
+                ),
+            )
+        }
+    }
+
+    override suspend fun setCallActionSelection(selection: CallActionSelection) {
+        mutablePreferences.update { it.copy(callActionSelection = selection) }
     }
 
     override suspend fun setMonitoringEnabled(enabled: Boolean) {

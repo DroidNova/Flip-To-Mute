@@ -110,6 +110,7 @@ class FlipMonitoringService : Service() {
                 container.cellularCallMonitorFactory.create(),
                 container.deviceOrientationMonitorFactory.create(),
                 container.ringerModeControllerFactory.create(),
+                container.incomingCallVibrationControllerFactory.create(),
                 serviceScope,
                 onFailure = { reason -> serviceScope.launch { failStart(reason, startId) } },
             )
