@@ -12,6 +12,9 @@ data class FaceDownDetectionConfiguration(
     val minimumGravityMagnitude: Float = 7f,
     val maximumGravityMagnitude: Float = 12.5f,
     val accelerometerFilterAlpha: Float = 0.8f,
+    val flatOrientationThreshold: Float = 0.9f,
+    val maximumStableVectorDelta: Float = 0.35f,
+    val minimumFlatStableDurationMillis: Long = 600L,
 )
 
 sealed interface FaceDownDetectionState {
@@ -26,6 +29,8 @@ sealed interface FaceDownDetectionState {
         val gravityX: Float,
         val gravityY: Float,
         val gravityZ: Float,
+        val isFlatAndStable: Boolean = false,
+        val isNearlyHorizontal: Boolean = false,
     ) : FaceDownDetectionState
 
     data object SensorUnavailable : FaceDownDetectionState

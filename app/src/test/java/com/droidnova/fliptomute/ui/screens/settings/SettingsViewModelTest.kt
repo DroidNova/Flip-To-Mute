@@ -38,6 +38,16 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun flatSurfaceRequirementDefaultsOffAndCanBeEnabled() = runTest {
+        val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+
+        assertFalse(viewModel.uiState.value.requireFlatSurfaceBeforeFlip)
+        viewModel.onRequireFlatSurfaceBeforeFlipChanged(true)
+        assertTrue(viewModel.uiState.value.requireFlatSurfaceBeforeFlip)
+    }
+
+    @Test
     fun changingFlipActionUpdatesState() = runTest {
         val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }

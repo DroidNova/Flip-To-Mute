@@ -32,9 +32,20 @@ class FakeDeviceOrientationMonitor(
         }
     }
 
-    fun emit(orientation: DeviceOrientation) {
+    fun emit(
+        orientation: DeviceOrientation,
+        isFlatAndStable: Boolean = false,
+        isNearlyHorizontal: Boolean = isFlatAndStable,
+    ) {
+        val z = if (orientation == DeviceOrientation.FACE_DOWN) -9.81f else 9.81f
         mutableState.value = FaceDownDetectionState.Detecting(
-            orientation, OrientationSensorSource.GRAVITY, 0f, 0f, 9.81f,
+            orientation,
+            OrientationSensorSource.GRAVITY,
+            0f,
+            0f,
+            z,
+            isFlatAndStable,
+            isNearlyHorizontal,
         )
     }
 

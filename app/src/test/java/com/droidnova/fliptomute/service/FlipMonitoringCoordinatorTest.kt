@@ -69,6 +69,38 @@ class FlipMonitoringCoordinatorTest {
         assertEquals(1, fixture.call.stopCount)
     }
 
+    @Test fun flatRequirementAllowsStableFaceUpThenStableFaceDown() = runTest {
+        val preferences = FakeAppPreferencesRepository()
+        preferences.setRequireFlatSurfaceBeforeFlip(true)
+        val fixture = fixture(backgroundScope, preferences = preferences)
+        fixture.coordinator.startAndAwaitReady(); runCurrent()
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_UP, isFlatAndStable = true); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.MOVING); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, isFlatAndStable = true); runCurrent()
+        assertEquals(1, fixture.ringer.applyCount)
+    }
+
+    @Test fun flatRequirementAllowsAlreadyStableFaceDownWhenCallBegins() = runTest {
+        val preferences = FakeAppPreferencesRepository()
+        preferences.setRequireFlatSurfaceBeforeFlip(true)
+        val fixture = fixture(backgroundScope, preferences = preferences)
+        fixture.coordinator.startAndAwaitReady(); runCurrent()
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, isFlatAndStable = true); runCurrent()
+        assertEquals(1, fixture.ringer.applyCount)
+    }
+
+    @Test fun flatRequirementRejectsFaceDownThatIsNotFlatAndStable() = runTest {
+        val preferences = FakeAppPreferencesRepository()
+        preferences.setRequireFlatSurfaceBeforeFlip(true)
+        val fixture = fixture(backgroundScope, preferences = preferences)
+        fixture.coordinator.startAndAwaitReady(); runCurrent()
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, isFlatAndStable = false); runCurrent()
+        assertEquals(0, fixture.ringer.applyCount)
+    }
+
     @Test fun actionIsCapturedForCurrentCallAndUpdatedForNextCall() = runTest {
         val preferences = FakeAppPreferencesRepository(AppPreferences(selectedFlipAction = FlipAction.SILENT))
         val fixture = fixture(backgroundScope, preferences = preferences)

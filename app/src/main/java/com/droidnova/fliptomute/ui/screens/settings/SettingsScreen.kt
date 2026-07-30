@@ -56,6 +56,7 @@ fun SettingsRoute(
         onSoundControlTest = onSoundControlTest,
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
+        onRequireFlatSurfaceBeforeFlipChanged = viewModel::onRequireFlatSurfaceBeforeFlipChanged,
     )
 }
 
@@ -69,6 +70,7 @@ fun SettingsScreen(
     onSoundControlTest: () -> Unit,
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
+    onRequireFlatSurfaceBeforeFlipChanged: (Boolean) -> Unit,
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -97,6 +99,21 @@ fun SettingsScreen(
                     selected = state.selectedFlipAction == FlipAction.VIBRATE,
                     onClick = { onFlipActionSelected(FlipAction.VIBRATE) },
                 )
+            }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.only_when_lying_flat))
+                        Text(stringResource(R.string.only_when_lying_flat_description))
+                    }
+                    Switch(
+                        checked = state.requireFlatSurfaceBeforeFlip,
+                        onCheckedChange = onRequireFlatSurfaceBeforeFlipChanged,
+                    )
+                }
             }
             item {
                 Row(
@@ -183,7 +200,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {})
+        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {}, {})
     }
 }
 

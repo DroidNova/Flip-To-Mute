@@ -29,7 +29,19 @@ class DataStoreAppPreferencesRepository(
         .map(::mapPreferences)
 
     override suspend fun setFlipAction(action: FlipAction) {
-        dataStore.edit { preferences -> preferences[Keys.SELECTED_FLIP_ACTION] = action.name }
+        setCallActionSelection(
+            CallActionSelection(muteRingtone = action == FlipAction.SILENT, vibratePhone = action == FlipAction.VIBRATE),
+        )
+    }
+
+    override suspend fun setCallActionSelection(selection: CallActionSelection) {
+        require(selection.isValid) { "At least one call action must be selected" }
+        dataStore.edit { preferences ->
+            preferences[Keys.MUTE_RINGTONE] = selection.muteRingtone
+            preferences[Keys.VIBRATE_PHONE] = selection.vibratePhone
+            preferences[Keys.SELECTED_FLIP_ACTION] =
+                if (selection.vibratePhone && !selection.muteRingtone) FlipAction.VIBRATE.name else FlipAction.SILENT.name
+        }
     }
 
     override suspend fun setMonitoringEnabled(enabled: Boolean) {
@@ -38,6 +50,10 @@ class DataStoreAppPreferencesRepository(
 
     override suspend fun setDetectionFeedbackEnabled(enabled: Boolean) {
         dataStore.edit { preferences -> preferences[Keys.DETECTION_FEEDBACK_ENABLED] = enabled }
+    }
+
+    override suspend fun setRequireFlatSurfaceBeforeFlip(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP] = enabled }
     }
 
     override suspend fun setOnboardingCompleted(completed: Boolean) {
@@ -49,10 +65,23 @@ class DataStoreAppPreferencesRepository(
             ?.let { storedValue -> FlipAction.entries.firstOrNull { it.name == storedValue } }
             ?: FlipAction.SILENT
 
+        val selection = if (Keys.MUTE_RINGTONE in preferences || Keys.VIBRATE_PHONE in preferences) {
+            CallActionSelection(
+                muteRingtone = preferences[Keys.MUTE_RINGTONE] ?: false,
+                vibratePhone = preferences[Keys.VIBRATE_PHONE] ?: false,
+            ).takeIf { it.isValid } ?: CallActionSelection()
+        } else {
+            CallActionSelection(
+                muteRingtone = selectedAction == FlipAction.SILENT,
+                vibratePhone = selectedAction == FlipAction.VIBRATE,
+            )
+        }
         return AppPreferences(
             selectedFlipAction = selectedAction,
+            callActionSelection = selection,
             monitoringEnabled = preferences[Keys.MONITORING_ENABLED] ?: false,
             detectionFeedbackEnabled = preferences[Keys.DETECTION_FEEDBACK_ENABLED] ?: true,
+            requireFlatSurfaceBeforeFlip = preferences[Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP] ?: false,
             onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
         )
     }
@@ -62,5 +91,8 @@ class DataStoreAppPreferencesRepository(
         val MONITORING_ENABLED = booleanPreferencesKey("monitoring_enabled")
         val DETECTION_FEEDBACK_ENABLED = booleanPreferencesKey("detection_feedback_enabled")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val MUTE_RINGTONE = booleanPreferencesKey("mute_ringtone")
+        val VIBRATE_PHONE = booleanPreferencesKey("vibrate_phone")
+        val REQUIRE_FLAT_SURFACE_BEFORE_FLIP = booleanPreferencesKey("require_flat_surface_before_flip")
     }
 }

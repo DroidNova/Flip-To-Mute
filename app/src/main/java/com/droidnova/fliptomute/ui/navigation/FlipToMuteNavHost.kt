@@ -14,6 +14,7 @@ import com.droidnova.fliptomute.ui.screens.sensor_test.SensorTestScreen
 import com.droidnova.fliptomute.ui.screens.settings.SettingsRoute
 import com.droidnova.fliptomute.ui.screens.call_state_test.CallStateTestScreen
 import com.droidnova.fliptomute.ui.screens.sound_control_test.SoundControlTestScreen
+import com.droidnova.fliptomute.ui.screens.about.AboutScreen
 
 @Composable
 fun FlipToMuteNavHost(
@@ -30,9 +31,13 @@ fun FlipToMuteNavHost(
         composable(Destination.Home.route) {
             HomeRoute(
                 onSettingsClick = { navController.navigateTo(Destination.Settings) },
+                onAboutClick = { navController.navigateTo(Destination.About) },
                 onPermissionsClick = { navController.navigateTo(Destination.Permissions) },
                 viewModelFactory = viewModelFactories.home,
             )
+        }
+        composable(Destination.About.route) {
+            AboutScreen(onBack = { navController.navigateUp() })
         }
         composable(Destination.Permissions.route) {
             PermissionsRoute(
