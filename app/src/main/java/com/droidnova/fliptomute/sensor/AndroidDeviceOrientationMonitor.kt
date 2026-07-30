@@ -8,6 +8,8 @@ import android.hardware.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.math.abs
+import kotlin.math.sqrt
 
 class AndroidDeviceOrientationMonitor(
     context: Context,
@@ -24,6 +26,7 @@ class AndroidDeviceOrientationMonitor(
     }
     private val classifier = DeviceOrientationClassifier(configuration)
     private val accelerometerFilter = AccelerometerGravityFilter(configuration.accelerometerFilterAlpha)
+    private val flatStabilityDetector = FlatSurfaceStabilityDetector(configuration)
     private val mutableState = MutableStateFlow(initialState())
     override val state: StateFlow<FaceDownDetectionState> = mutableState.asStateFlow()
     override val isSensorAvailable: Boolean get() = selectedSensor != null
@@ -71,6 +74,8 @@ class AndroidDeviceOrientationMonitor(
             gravityX = x,
             gravityY = y,
             gravityZ = z,
+            isFlatAndStable = flatStabilityDetector.processSample(x, y, z, event.timestamp),
+            isNearlyHorizontal = isNearlyHorizontal(x, y, z),
         )
     }
 
@@ -79,12 +84,19 @@ class AndroidDeviceOrientationMonitor(
     private fun resetProcessing() {
         classifier.reset()
         accelerometerFilter.reset()
+        flatStabilityDetector.reset()
     }
 
     private fun initialState(): FaceDownDetectionState = if (isSensorAvailable) {
         FaceDownDetectionState.Idle(true, sensorSource)
     } else {
         FaceDownDetectionState.SensorUnavailable
+    }
+
+    private fun isNearlyHorizontal(x: Float, y: Float, z: Float): Boolean {
+        val magnitude = sqrt(x * x + y * y + z * z)
+        return magnitude.isFinite() && magnitude > 0f &&
+            abs(z / magnitude) >= configuration.flatOrientationThreshold
     }
 
     private companion object {

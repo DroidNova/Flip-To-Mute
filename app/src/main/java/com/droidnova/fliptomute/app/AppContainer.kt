@@ -14,6 +14,10 @@ import com.droidnova.fliptomute.telephony.AndroidCellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
 import com.droidnova.fliptomute.audio.AndroidRingerModeController
 import com.droidnova.fliptomute.audio.RingerModeControllerFactory
+import com.droidnova.fliptomute.audio.AndroidIncomingCallVibrationController
+import com.droidnova.fliptomute.audio.AndroidVibrationCapabilityRepository
+import com.droidnova.fliptomute.audio.IncomingCallVibrationControllerFactory
+import com.droidnova.fliptomute.audio.VibrationCapabilityRepository
 import com.droidnova.fliptomute.service.AndroidMonitoringServiceController
 import com.droidnova.fliptomute.service.InMemoryMonitoringStateRepository
 import com.droidnova.fliptomute.service.MonitoringServiceController
@@ -27,6 +31,8 @@ interface AppContainer {
     val deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
     val cellularCallMonitorFactory: CellularCallMonitorFactory
     val ringerModeControllerFactory: RingerModeControllerFactory
+    val vibrationCapabilityRepository: VibrationCapabilityRepository
+    val incomingCallVibrationControllerFactory: IncomingCallVibrationControllerFactory
     val monitoringStateRepository: MonitoringStateRepository
     val monitoringServiceController: MonitoringServiceController
     val ringerRecoveryRepository: RingerRecoveryRepository
@@ -48,6 +54,10 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
     override val ringerModeControllerFactory = RingerModeControllerFactory {
         AndroidRingerModeController(applicationContext, ringerRecoveryRepository)
+    }
+    override val vibrationCapabilityRepository = AndroidVibrationCapabilityRepository(applicationContext)
+    override val incomingCallVibrationControllerFactory = IncomingCallVibrationControllerFactory {
+        AndroidIncomingCallVibrationController(applicationContext, vibrationCapabilityRepository)
     }
     override val monitoringStateRepository: MonitoringStateRepository = InMemoryMonitoringStateRepository()
     override val monitoringServiceController: MonitoringServiceController =
