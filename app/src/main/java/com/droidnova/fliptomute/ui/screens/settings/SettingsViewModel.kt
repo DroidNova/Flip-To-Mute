@@ -22,6 +22,7 @@ class SettingsViewModel(
         SettingsUiState(
             selectedFlipAction = preferences.selectedFlipAction,
             detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
+            requireFlatSurfaceBeforeFlip = preferences.requireFlatSurfaceBeforeFlip,
             monitoringEnabled = preferences.monitoringEnabled,
             accessState = accessState,
         )
@@ -37,6 +38,10 @@ class SettingsViewModel(
 
     fun onDetectionFeedbackChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setDetectionFeedbackEnabled(enabled) }
+    }
+
+    fun onRequireFlatSurfaceBeforeFlipChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setRequireFlatSurfaceBeforeFlip(enabled) }
     }
 
     fun refreshAccessState() = setupAccessRepository.refresh()

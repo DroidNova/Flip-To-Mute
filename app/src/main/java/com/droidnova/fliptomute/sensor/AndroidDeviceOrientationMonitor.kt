@@ -8,6 +8,7 @@ import android.hardware.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.math.sqrt
 
 class AndroidDeviceOrientationMonitor(
     context: Context,
@@ -65,12 +66,21 @@ class AndroidDeviceOrientationMonitor(
             z = accelerometerFilter.z
         }
         val source = sensorSource ?: return
+        val magnitude = sqrt(x * x + y * y + z * z)
+        val normalizedZ = if (magnitude > MINIMUM_NORMALIZATION_MAGNITUDE && magnitude.isFinite()) {
+            (z / magnitude).takeIf(Float::isFinite) ?: Float.NaN
+        } else {
+            Float.NaN
+        }
         mutableState.value = FaceDownDetectionState.Detecting(
             orientation = classifier.processSample(x, y, z, event.timestamp),
             sensorSource = source,
             gravityX = x,
             gravityY = y,
             gravityZ = z,
+            normalizedZ = normalizedZ,
+            gravityMagnitude = magnitude.takeIf(Float::isFinite) ?: Float.NaN,
+            timestampNanos = event.timestamp,
         )
     }
 
@@ -89,5 +99,6 @@ class AndroidDeviceOrientationMonitor(
 
     private companion object {
         const val VECTOR_SIZE = 3
+        const val MINIMUM_NORMALIZATION_MAGNITUDE = 0.001f
     }
 }

@@ -49,7 +49,11 @@ class DataStoreAppPreferencesRepository(
     }
 
     override suspend fun setDetectionFeedbackEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[Keys.DETECTION_FEEDBACK_ENABLED] = enabled }
+        updateBoolean(Keys.DETECTION_FEEDBACK_ENABLED, enabled)
+    }
+
+    override suspend fun setRequireFlatSurfaceBeforeFlip(enabled: Boolean) {
+        updateBoolean(Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP, enabled)
     }
 
     override suspend fun setOnboardingCompleted(completed: Boolean) {
@@ -77,8 +81,15 @@ class DataStoreAppPreferencesRepository(
             callActionSelection = selection,
             monitoringEnabled = preferences[Keys.MONITORING_ENABLED] ?: false,
             detectionFeedbackEnabled = preferences[Keys.DETECTION_FEEDBACK_ENABLED] ?: true,
+            requireFlatSurfaceBeforeFlip = preferences[Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP] ?: false,
             onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
         )
+    }
+
+    private suspend fun updateBoolean(key: Preferences.Key<Boolean>, value: Boolean) {
+        dataStore.edit { preferences ->
+            if (preferences[key] != value) preferences[key] = value
+        }
     }
 
     private object Keys {
@@ -88,5 +99,6 @@ class DataStoreAppPreferencesRepository(
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val MUTE_RINGTONE = booleanPreferencesKey("mute_ringtone")
         val VIBRATE_PHONE = booleanPreferencesKey("vibrate_phone")
+        val REQUIRE_FLAT_SURFACE_BEFORE_FLIP = booleanPreferencesKey("require_flat_surface_before_flip")
     }
 }

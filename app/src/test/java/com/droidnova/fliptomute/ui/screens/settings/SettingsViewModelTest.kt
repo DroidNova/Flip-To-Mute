@@ -25,6 +25,19 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
 
         assertTrue(viewModel.uiState.value.detectionFeedbackEnabled)
+        assertFalse(viewModel.uiState.value.requireFlatSurfaceBeforeFlip)
+    }
+
+    @Test
+    fun changingFlatSurfaceRequirementUpdatesState() = runTest {
+        val repository = FakeAppPreferencesRepository()
+        val viewModel = SettingsViewModel(repository, FakeSetupAccessRepository())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+
+        viewModel.onRequireFlatSurfaceBeforeFlipChanged(true)
+        assertTrue(viewModel.uiState.value.requireFlatSurfaceBeforeFlip)
+        viewModel.onRequireFlatSurfaceBeforeFlipChanged(false)
+        assertFalse(viewModel.uiState.value.requireFlatSurfaceBeforeFlip)
     }
 
     @Test

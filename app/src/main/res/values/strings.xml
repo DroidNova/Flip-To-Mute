@@ -153,6 +153,8 @@
     <string name="sound_test_started">Sound mode changed temporarily.</string>
     <string name="sound_test_note">The app will temporarily change the phone’s sound mode and restore it after 5 seconds.</string>
     <string name="behaviour_section">Behaviour</string>
+    <string name="only_when_lying_flat">Only when lying flat</string>
+    <string name="only_when_lying_flat_description">Trigger only when the phone is resting flat before it is flipped.</string>
     <string name="selected_flip_action">Selected flip action</string>
     <string name="detection_feedback">Detection feedback vibration</string>
     <string name="detection_feedback_description">Vibrate briefly when a face-down gesture is recognised.</string>

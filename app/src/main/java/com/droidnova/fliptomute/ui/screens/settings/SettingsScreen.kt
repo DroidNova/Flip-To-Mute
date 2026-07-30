@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +58,7 @@ fun SettingsRoute(
         onSoundControlTest = onSoundControlTest,
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
+        onRequireFlatSurfaceBeforeFlipChanged = viewModel::onRequireFlatSurfaceBeforeFlipChanged,
     )
 }
 
@@ -69,6 +72,7 @@ fun SettingsScreen(
     onSoundControlTest: () -> Unit,
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
+    onRequireFlatSurfaceBeforeFlipChanged: (Boolean) -> Unit,
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -80,6 +84,26 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { SectionHeader(stringResource(R.string.behaviour_section)) }
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onRequireFlatSurfaceBeforeFlipChanged(!state.requireFlatSurfaceBeforeFlip)
+                        }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.only_when_lying_flat))
+                        Text(stringResource(R.string.only_when_lying_flat_description))
+                    }
+                    Checkbox(
+                        checked = state.requireFlatSurfaceBeforeFlip,
+                        onCheckedChange = null,
+                    )
+                }
+            }
             item {
                 FlipActionOption(
                     title = stringResource(R.string.silent_title),
@@ -183,7 +207,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {})
+        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {}, {})
     }
 }
 

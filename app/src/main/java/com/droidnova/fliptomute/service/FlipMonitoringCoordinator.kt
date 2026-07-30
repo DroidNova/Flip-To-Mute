@@ -8,9 +8,12 @@ import com.droidnova.fliptomute.audio.IncomingCallVibrationResult
 import com.droidnova.fliptomute.audio.VibrationAvailability
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.preferences.CallActionSelection
+import com.droidnova.fliptomute.data.preferences.AppPreferences
 import com.droidnova.fliptomute.sensor.DeviceOrientation
 import com.droidnova.fliptomute.sensor.DeviceOrientationMonitor
 import com.droidnova.fliptomute.sensor.FaceDownDetectionState
+import com.droidnova.fliptomute.sensor.FlatSurfaceFlipGate
+import com.droidnova.fliptomute.sensor.FlatSurfaceFlipResult
 import com.droidnova.fliptomute.telephony.CellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitorState
 import com.droidnova.fliptomute.telephony.CellularCallState
@@ -51,7 +54,8 @@ class FlipMonitoringCoordinator(
         }, scope, onFailure,
     )
     private val mutex = Mutex()
-    private var latestSelection = CallActionSelection()
+    private var latestPreferences = AppPreferences()
+    private val flatSurfaceFlipGate = FlatSurfaceFlipGate()
     private var ringingSession: RingingSession? = null
     private var started = false
     private var stopping = false
@@ -69,7 +73,7 @@ class FlipMonitoringCoordinator(
         stopping = false
         startupResult = CompletableDeferred()
         preferencesJob = scope.launch {
-            preferencesRepository.preferences.collectLatest { latestSelection = it.callActionSelection }
+            preferencesRepository.preferences.collectLatest { latestPreferences = it }
         }
         orientationJob = scope.launch { orientationMonitor.state.collectLatest(::handleOrientationState) }
         callJob = scope.launch { callMonitor.state.collectLatest(::handleCallState) }
@@ -89,6 +93,7 @@ class FlipMonitoringCoordinator(
         stopping = true
         vibrationController.stop()
         orientationMonitor.stop()
+        flatSurfaceFlipGate.reset()
         callMonitor.stop()
         ringingSession = null
         started = false
@@ -116,13 +121,18 @@ class FlipMonitoringCoordinator(
                         if (!orientationMonitor.isSensorAvailable) {
                             fail(MonitoringFailure.SENSOR_UNAVAILABLE)
                         } else {
-                            ringingSession = RingingSession(latestSelection)
+                            flatSurfaceFlipGate.reset()
+                            ringingSession = RingingSession(
+                                latestPreferences.callActionSelection,
+                                latestPreferences.requireFlatSurfaceBeforeFlip,
+                            )
                             orientationMonitor.start()
                         }
                     }
                 } else if (ringingSession != null) {
                     vibrationController.stop()
                     orientationMonitor.stop()
+                    flatSurfaceFlipGate.reset()
                     ringerModeController.restorePreviousMode()
                     ringingSession = null
                 }
@@ -139,7 +149,18 @@ class FlipMonitoringCoordinator(
         when (state) {
             is FaceDownDetectionState.Detecting -> {
                 val session = ringingSession ?: return@withLock
-                if (state.orientation != DeviceOrientation.FACE_DOWN || session.actionHandled) return@withLock
+                if (session.actionHandled) return@withLock
+                val allowed = if (session.requireFlatSurfaceBeforeFlip) {
+                    flatSurfaceFlipGate.onSample(
+                        state.orientation,
+                        state.normalizedZ,
+                        state.gravityMagnitude,
+                        state.timestampNanos,
+                    ) == FlatSurfaceFlipResult.Allowed
+                } else {
+                    state.orientation == DeviceOrientation.FACE_DOWN
+                }
+                if (!allowed) return@withLock
                 if (!session.selection.vibratePhone) vibrationController.stop()
                 val modeAction = if (session.selection.muteRingtone) FlipAction.SILENT else FlipAction.VIBRATE
                 val result = ringerModeController.applyTemporaryAction(modeAction)
@@ -156,6 +177,7 @@ class FlipMonitoringCoordinator(
                         }
                         ringingSession = session.copy(actionHandled = true)
                         orientationMonitor.stop()
+                        flatSurfaceFlipGate.reset()
                     }
                     is RingerModeResult.Failure -> {
                         if (session.selection.vibratePhone) {
@@ -164,6 +186,7 @@ class FlipMonitoringCoordinator(
                                 is RingerModeResult.Success -> {
                                     ringingSession = session.copy(actionHandled = true)
                                     orientationMonitor.stop()
+                                    flatSurfaceFlipGate.reset()
                                 }
                                 is RingerModeResult.Failure -> fail(MonitoringFailure.SOUND_CONTROL_FAILED)
                             }
@@ -183,6 +206,7 @@ class FlipMonitoringCoordinator(
         stopping = true
         vibrationController.stop()
         orientationMonitor.stop()
+        flatSurfaceFlipGate.reset()
         callMonitor.stop()
         ringerModeController.restorePreviousMode()
         ringingSession = null
@@ -210,6 +234,7 @@ class FlipMonitoringCoordinator(
 
     private data class RingingSession(
         val selection: CallActionSelection,
+        val requireFlatSurfaceBeforeFlip: Boolean,
         val actionHandled: Boolean = false,
     )
 
