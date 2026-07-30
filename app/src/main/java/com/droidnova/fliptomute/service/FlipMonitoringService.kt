@@ -61,7 +61,7 @@ class FlipMonitoringService : Service() {
         val runtime = container.monitoringStateRepository.state.value
         if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Active) return
         val token = ++generation
-        container.monitoringStateRepository.updateState(MonitoringRuntimeState.Starting)
+        publishMonitoringState(MonitoringRuntimeState.Starting)
         if (!promoteToForeground()) {
             commandJob = serviceScope.launch {
                 failStart(MonitoringFailure.NOTIFICATION_UNAVAILABLE, startId)
@@ -128,7 +128,7 @@ class FlipMonitoringService : Service() {
                         return@launch
                     }
                     if (token != generation) return@launch
-                    container.monitoringStateRepository.updateState(MonitoringRuntimeState.Active)
+                    publishMonitoringState(MonitoringRuntimeState.Active)
                     debugLog("Runtime state changed to Active")
                 }
                 is MonitoringCoordinatorStartResult.Failed -> {
@@ -171,12 +171,13 @@ class FlipMonitoringService : Service() {
         ++generation
         commandJob?.cancel()
         coordinator?.beginStopping()
+        publishMonitoringState(MonitoringRuntimeState.Stopping)
         commandJob = serviceScope.launch { finishStopped(startId, writePreference = true) }
     }
 
     private suspend fun failStart(reason: MonitoringFailure, startId: Int) {
         debugLog("Monitoring runtime failure reason: ${reason.name}")
-        container.monitoringStateRepository.updateState(MonitoringRuntimeState.Error(reason))
+        publishMonitoringState(MonitoringRuntimeState.Error(reason))
         debugLog("Runtime state changed to Error")
         finishStopped(startId, writePreference = true, preserveError = true)
     }
@@ -197,7 +198,7 @@ class FlipMonitoringService : Service() {
                 MonitoringLog.failure(this, "Clearing monitoring preference failed", error)
             }
         }
-        if (!preserveError) container.monitoringStateRepository.updateState(MonitoringRuntimeState.Stopped)
+        if (!preserveError) publishMonitoringState(MonitoringRuntimeState.Stopped)
         if (foregroundStarted) stopForeground(STOP_FOREGROUND_REMOVE)
         foregroundStarted = false
         stopSelfResult(startId)
@@ -210,7 +211,7 @@ class FlipMonitoringService : Service() {
         coordinator = null
         commandJob?.cancel()
         if (container.monitoringStateRepository.state.value !is MonitoringRuntimeState.Error) {
-            container.monitoringStateRepository.updateState(MonitoringRuntimeState.Stopped)
+            publishMonitoringState(MonitoringRuntimeState.Stopped)
         }
         serviceScope.cancel()
         super.onDestroy()
@@ -225,6 +226,11 @@ class FlipMonitoringService : Service() {
 
     private fun debugLog(message: String) {
         MonitoringLog.d(this, message)
+    }
+
+    private fun publishMonitoringState(state: MonitoringRuntimeState) {
+        container.monitoringStateRepository.updateState(state)
+        container.quickSettingsTileUpdateRequester.requestUpdate()
     }
 
 }

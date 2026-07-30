@@ -56,9 +56,13 @@ fun HomeRoute(
     onAboutClick: () -> Unit,
     onPermissionsClick: () -> Unit,
     viewModelFactory: ViewModelProvider.Factory,
+    externalEnableRequest: Long = 0L,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
     RefreshOnResume(viewModel::refreshAccessState)
+    LaunchedEffect(externalEnableRequest) {
+        if (externalEnableRequest > 0L) viewModel.onMonitoringChanged(true)
+    }
     HomeScreen(
         state = viewModel.uiState.collectAsStateWithLifecycle().value,
         onMonitoringChanged = viewModel::onMonitoringChanged,

@@ -47,6 +47,22 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="User-enabled monitoring of incoming cellular calls. Device orientation is checked only while a call is ringing so the selected silent or vibrate action can be applied when the phone is face down." />
         </service>
+        <service
+            android:name=".quicksettings.FlipToMuteTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_qs_flip_to_mute"
+            android:label="@string/quick_settings_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="true" />
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
     </application>
 
 </manifest>

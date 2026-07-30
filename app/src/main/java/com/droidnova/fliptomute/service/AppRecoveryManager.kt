@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
 
 sealed interface AppRecoveryResult {
     data object Complete : AppRecoveryResult
@@ -23,6 +24,7 @@ class DefaultAppRecoveryManager(
     private val preferencesRepository: AppPreferencesRepository,
     private val monitoringStateRepository: MonitoringStateRepository,
     private val ringerModeController: RingerModeController,
+    private val tileUpdateRequester: QuickSettingsTileUpdateRequester = QuickSettingsTileUpdateRequester {},
 ) : AppRecoveryManager {
     private val mutex = Mutex()
     private var completed = false
@@ -35,6 +37,7 @@ class DefaultAppRecoveryManager(
             monitoringStateRepository.updateState(
                 MonitoringRuntimeState.Error(MonitoringFailure.SOUND_CONTROL_FAILED),
             )
+            tileUpdateRequester.requestUpdate()
             return@withLock AppRecoveryResult.SoundRecoveryFailed(recovery.reason)
         }
         val stored = preferencesRepository.preferences.first().monitoringEnabled
@@ -42,6 +45,7 @@ class DefaultAppRecoveryManager(
             delay(STICKY_RESTART_GRACE_MILLIS)
             if (monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
                 preferencesRepository.setMonitoringEnabled(false)
+                tileUpdateRequester.requestUpdate()
                 completed = true
                 return@withLock AppRecoveryResult.StaleMonitoringCleared
             }

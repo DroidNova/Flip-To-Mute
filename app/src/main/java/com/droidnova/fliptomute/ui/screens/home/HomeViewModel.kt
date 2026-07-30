@@ -90,7 +90,10 @@ class HomeViewModel(
     }
 
     fun onMessageShown() { message.value = null }
-    fun dismissPermissionsSheet() { permissionsSheet.value = false }
+    fun dismissPermissionsSheet() {
+        enableAfterSetup = false
+        permissionsSheet.value = false
+    }
     fun refreshAccessState() {
         val access = setupAccessRepository.refreshAndGet()
         if (enableAfterSetup && access.isSetupComplete) {

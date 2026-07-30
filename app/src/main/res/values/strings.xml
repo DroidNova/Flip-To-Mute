@@ -1,5 +1,24 @@
 <resources>
     <string name="app_name">Flip to Mute</string>
+    <string name="quick_settings_tile_label">Flip to Mute</string>
+    <string name="quick_settings_tile_on">On</string>
+    <string name="quick_settings_tile_off">Off</string>
+    <string name="quick_settings_tile_starting">Turning on</string>
+    <string name="quick_settings_tile_stopping">Turning off</string>
+    <string name="quick_settings_tile_setup_required">Setup needed</string>
+    <string name="quick_settings_tile_start_failed">Could not start</string>
+    <string name="convenience_section">Convenience</string>
+    <string name="quick_settings_tile_title">Quick Settings tile</string>
+    <string name="quick_settings_tile_description">Turn Flip to Mute on or off without opening the app.</string>
+    <string name="add_tile">Add tile</string>
+    <string name="quick_settings_tile_added">Flip to Mute was added to Quick Settings.</string>
+    <string name="quick_settings_tile_already_added">The Quick Settings tile is already added.</string>
+    <string name="quick_settings_tile_not_added">The tile was not added.</string>
+    <string name="quick_settings_tile_request_in_progress">A tile request is already open.</string>
+    <string name="quick_settings_tile_add_failed">Could not add the Quick Settings tile.</string>
+    <string name="add_quick_settings_tile_title">Add Quick Settings tile</string>
+    <string name="add_quick_settings_tile_instructions">1. Swipe down twice to open Quick Settings.\n2. Tap Edit.\n3. Find Flip to Mute.\n4. Drag it into your active tiles.</string>
+    <string name="got_it">Got it</string>
     <string name="home_supporting_text">Flip your phone face down to control incoming call sound.</string>
     <string name="setup_status">Setup not completed</string>
     <string name="setup_action">Set up app</string>
