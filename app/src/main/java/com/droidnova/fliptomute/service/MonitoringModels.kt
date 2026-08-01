@@ -15,6 +15,9 @@ sealed interface MonitoringRuntimeState {
     data object Stopped : MonitoringRuntimeState
     data object Starting : MonitoringRuntimeState
     data object Active : MonitoringRuntimeState
+    data object Pausing : MonitoringRuntimeState
+    data object Paused : MonitoringRuntimeState
+    data object Resuming : MonitoringRuntimeState
     data object Stopping : MonitoringRuntimeState
     data class Error(val reason: MonitoringFailure) : MonitoringRuntimeState
 }

@@ -14,5 +14,9 @@ class MainActivityLaunchRequestParserTest {
             MainActivityLaunchRequest.OpenSetupAndEnableMonitoring,
             MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.OPEN_SETUP_AND_ENABLE_ACTION),
         )
+        assertEquals(
+            MainActivityLaunchRequest.OpenSetupAndResumeMonitoring,
+            MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.OPEN_SETUP_AND_RESUME_ACTION),
+        )
     }
 }

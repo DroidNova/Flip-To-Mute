@@ -26,6 +26,8 @@ import com.droidnova.fliptomute.service.AppRecoveryManager
 import com.droidnova.fliptomute.service.DefaultAppRecoveryManager
 import com.droidnova.fliptomute.quicksettings.AndroidQuickSettingsTileUpdateRequester
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
+import com.droidnova.fliptomute.notification.MonitoringNotificationManager
+import com.droidnova.fliptomute.notification.PausedNotificationController
 
 interface AppContainer {
     val appPreferencesRepository: AppPreferencesRepository
@@ -40,6 +42,7 @@ interface AppContainer {
     val ringerRecoveryRepository: RingerRecoveryRepository
     val appRecoveryManager: AppRecoveryManager
     val quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester
+    val pausedNotificationController: PausedNotificationController
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -67,12 +70,15 @@ class DefaultAppContainer(context: Context) : AppContainer {
         AndroidMonitoringServiceController(applicationContext)
     override val quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester =
         AndroidQuickSettingsTileUpdateRequester(applicationContext)
+    override val pausedNotificationController: PausedNotificationController =
+        MonitoringNotificationManager(applicationContext)
     override val appRecoveryManager: AppRecoveryManager by lazy {
         DefaultAppRecoveryManager(
             appPreferencesRepository,
             monitoringStateRepository,
             ringerModeControllerFactory.create(),
             quickSettingsTileUpdateRequester,
+            pausedNotificationController,
         )
     }
 }

@@ -5,6 +5,10 @@ class FakeMonitoringServiceController(
 ) : MonitoringServiceController {
     var startCount = 0
     var stopCount = 0
+    var pauseCount = 0
+    var resumeCount = 0
     override fun startMonitoring(): MonitoringCommandResult { startCount++; return startResult }
-    override fun stopMonitoring() { stopCount++ }
+    override fun pauseMonitoring(): MonitoringCommandResult { pauseCount++; return MonitoringCommandResult.Accepted }
+    override fun resumeMonitoring(): MonitoringCommandResult { resumeCount++; return MonitoringCommandResult.Accepted }
+    override fun stopMonitoring(): MonitoringCommandResult { stopCount++; return MonitoringCommandResult.Accepted }
 }

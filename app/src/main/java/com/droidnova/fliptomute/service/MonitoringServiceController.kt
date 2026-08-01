@@ -6,7 +6,9 @@ import com.droidnova.fliptomute.util.MonitoringLog
 
 interface MonitoringServiceController {
     fun startMonitoring(): MonitoringCommandResult
-    fun stopMonitoring()
+    fun pauseMonitoring(): MonitoringCommandResult
+    fun resumeMonitoring(): MonitoringCommandResult
+    fun stopMonitoring(): MonitoringCommandResult
 }
 
 class AndroidMonitoringServiceController(context: Context) : MonitoringServiceController {
@@ -26,13 +28,33 @@ class AndroidMonitoringServiceController(context: Context) : MonitoringServiceCo
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     }
 
-    override fun stopMonitoring() {
-        try {
-            context.startService(FlipMonitoringService.createStopIntent(context))
-        } catch (_: SecurityException) {
-            // The service is already inaccessible, so there is nothing left to stop.
-        } catch (_: IllegalStateException) {
-            // A background stop command can be rejected when the service is already gone.
-        }
+    override fun resumeMonitoring(): MonitoringCommandResult = sendForegroundCommand(
+        FlipMonitoringService.createResumeIntent(context),
+    )
+
+    override fun pauseMonitoring(): MonitoringCommandResult = sendServiceCommand(
+        FlipMonitoringService.createPauseIntent(context),
+    )
+
+    override fun stopMonitoring(): MonitoringCommandResult = sendServiceCommand(
+        FlipMonitoringService.createStopIntent(context),
+    )
+
+    private fun sendForegroundCommand(intent: android.content.Intent): MonitoringCommandResult = try {
+        ContextCompat.startForegroundService(context, intent)
+        MonitoringCommandResult.Accepted
+    } catch (_: SecurityException) {
+        MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
+    } catch (_: IllegalStateException) {
+        MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
+    }
+
+    private fun sendServiceCommand(intent: android.content.Intent): MonitoringCommandResult = try {
+        context.startService(intent)
+        MonitoringCommandResult.Accepted
+    } catch (_: SecurityException) {
+        MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
+    } catch (_: IllegalStateException) {
+        MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     }
 }

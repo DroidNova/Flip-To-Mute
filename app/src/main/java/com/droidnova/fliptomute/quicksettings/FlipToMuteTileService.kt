@@ -70,12 +70,24 @@ class FlipToMuteTileService : TileService() {
                     refreshTile()
                 }
             }
-            QuickSettingsTileClickAction.StopMonitoring -> {
+            QuickSettingsTileClickAction.PauseMonitoring -> {
                 commandPending = true
-                updateTile(QuickSettingsTileStatus.STOPPING)
-                container.monitoringServiceController.stopMonitoring()
+                updateTile(QuickSettingsTileStatus.PAUSING)
+                if (container.monitoringServiceController.pauseMonitoring() is MonitoringCommandResult.Rejected) {
+                    commandPending = false
+                    refreshTile()
+                }
             }
-            QuickSettingsTileClickAction.OpenSetupAndEnable -> unlockAndRun { openSetupAndEnable() }
+            QuickSettingsTileClickAction.ResumeMonitoring -> {
+                commandPending = true
+                updateTile(QuickSettingsTileStatus.RESUMING)
+                if (container.monitoringServiceController.resumeMonitoring() is MonitoringCommandResult.Rejected) {
+                    commandPending = false
+                    refreshTile()
+                }
+            }
+            QuickSettingsTileClickAction.OpenSetupAndEnable -> unlockAndRun { openSetup(resume = false) }
+            QuickSettingsTileClickAction.OpenSetupAndResume -> unlockAndRun { openSetup(resume = true) }
             QuickSettingsTileClickAction.Ignore -> refreshTile()
         }
     }
@@ -98,7 +110,9 @@ class FlipToMuteTileService : TileService() {
         tile.icon = Icon.createWithResource(this, R.drawable.ic_qs_flip_to_mute)
         tile.state = when (status) {
             QuickSettingsTileStatus.ON -> Tile.STATE_ACTIVE
-            QuickSettingsTileStatus.STARTING, QuickSettingsTileStatus.STOPPING -> Tile.STATE_UNAVAILABLE
+            QuickSettingsTileStatus.STARTING, QuickSettingsTileStatus.PAUSING,
+            QuickSettingsTileStatus.RESUMING, QuickSettingsTileStatus.STOPPING,
+            -> Tile.STATE_UNAVAILABLE
             else -> Tile.STATE_INACTIVE
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -109,9 +123,12 @@ class FlipToMuteTileService : TileService() {
         tile.updateTile()
     }
 
-    private fun openSetupAndEnable() {
+    private fun openSetup(resume: Boolean) {
         val intent = Intent(this, MainActivity::class.java)
-            .setAction(MainActivityLaunchRequestParser.OPEN_SETUP_AND_ENABLE_ACTION)
+            .setAction(
+                if (resume) MainActivityLaunchRequestParser.OPEN_SETUP_AND_RESUME_ACTION
+                else MainActivityLaunchRequestParser.OPEN_SETUP_AND_ENABLE_ACTION,
+            )
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val wrapper = PendingIntentActivityWrapper(
             this,
@@ -127,6 +144,9 @@ class FlipToMuteTileService : TileService() {
         QuickSettingsTileStatus.ON -> R.string.quick_settings_tile_on
         QuickSettingsTileStatus.OFF -> R.string.quick_settings_tile_off
         QuickSettingsTileStatus.STARTING -> R.string.quick_settings_tile_starting
+        QuickSettingsTileStatus.PAUSING -> R.string.quick_settings_tile_pausing
+        QuickSettingsTileStatus.PAUSED -> R.string.quick_settings_tile_paused
+        QuickSettingsTileStatus.RESUMING -> R.string.quick_settings_tile_resuming
         QuickSettingsTileStatus.STOPPING -> R.string.quick_settings_tile_stopping
         QuickSettingsTileStatus.SETUP_REQUIRED -> R.string.quick_settings_tile_setup_required
         QuickSettingsTileStatus.ERROR -> R.string.quick_settings_tile_start_failed

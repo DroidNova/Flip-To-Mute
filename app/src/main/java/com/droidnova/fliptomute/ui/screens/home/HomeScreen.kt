@@ -28,6 +28,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -49,6 +50,8 @@ import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.SectionHeader
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
+import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
+import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
 
 @Composable
 fun HomeRoute(
@@ -56,16 +59,26 @@ fun HomeRoute(
     onAboutClick: () -> Unit,
     onPermissionsClick: () -> Unit,
     viewModelFactory: ViewModelProvider.Factory,
-    externalEnableRequest: Long = 0L,
+    externalMonitoringRequest: MainActivityLaunchEvent = MainActivityLaunchEvent(),
+    onExternalMonitoringRequestConsumed: () -> Unit = {},
 ) {
     val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
     RefreshOnResume(viewModel::refreshAccessState)
-    LaunchedEffect(externalEnableRequest) {
-        if (externalEnableRequest > 0L) viewModel.onMonitoringChanged(true)
+    LaunchedEffect(externalMonitoringRequest.sequence) {
+        when (externalMonitoringRequest.request) {
+            MainActivityLaunchRequest.OpenSetupAndEnableMonitoring -> viewModel.onMonitoringChanged(true)
+            MainActivityLaunchRequest.OpenSetupAndResumeMonitoring -> viewModel.onResumeMonitoring()
+            MainActivityLaunchRequest.None -> Unit
+        }
+        if (externalMonitoringRequest.request != MainActivityLaunchRequest.None) {
+            onExternalMonitoringRequestConsumed()
+        }
     }
     HomeScreen(
         state = viewModel.uiState.collectAsStateWithLifecycle().value,
         onMonitoringChanged = viewModel::onMonitoringChanged,
+        onPauseMonitoring = viewModel::onPauseMonitoring,
+        onResumeMonitoring = viewModel::onResumeMonitoring,
         onMuteRingtoneChanged = viewModel::onMuteRingtoneChanged,
         onVibratePhoneChanged = viewModel::onVibratePhoneChanged,
         onSetupClick = onPermissionsClick,
@@ -80,6 +93,8 @@ fun HomeRoute(
 fun HomeScreen(
     state: HomeUiState,
     onMonitoringChanged: (Boolean) -> Unit,
+    onPauseMonitoring: () -> Unit,
+    onResumeMonitoring: () -> Unit,
     onMuteRingtoneChanged: (Boolean) -> Unit,
     onVibratePhoneChanged: (Boolean) -> Unit,
     onSetupClick: () -> Unit,
@@ -129,7 +144,7 @@ fun HomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { MainStatusCard(state, onMonitoringChanged, onSetupClick) }
+            item { MainStatusCard(state, onMonitoringChanged, onPauseMonitoring, onResumeMonitoring, onSetupClick) }
             item { SectionHeader(stringResource(R.string.when_i_flip)) }
             item { ActionCheckbox(stringResource(R.string.mute_ringtone), state.callActionSelection.muteRingtone, onMuteRingtoneChanged) }
             item { ActionCheckbox(stringResource(R.string.vibrate_phone), state.callActionSelection.vibratePhone, onVibratePhoneChanged) }
@@ -172,20 +187,28 @@ private fun ActionCheckbox(label: String, checked: Boolean, onCheckedChange: (Bo
 private fun MainStatusCard(
     state: HomeUiState,
     onMonitoringChanged: (Boolean) -> Unit,
+    onPauseMonitoring: () -> Unit,
+    onResumeMonitoring: () -> Unit,
     onSetupClick: () -> Unit,
 ) {
     val runtime = state.monitoringState
     val title = when {
-        !state.isSetupComplete -> R.string.home_setup_title
+        runtime is MonitoringRuntimeState.Paused -> R.string.monitoring_paused_title
+        !state.isSetupComplete && !state.isMonitoringChecked -> R.string.home_setup_title
         runtime is MonitoringRuntimeState.Starting -> R.string.turning_on
         runtime is MonitoringRuntimeState.Active -> R.string.monitoring_notification_title
+        runtime is MonitoringRuntimeState.Pausing -> R.string.monitoring_pausing_title
+        runtime is MonitoringRuntimeState.Resuming -> R.string.monitoring_resuming_title
         runtime is MonitoringRuntimeState.Stopping -> R.string.turning_off
         runtime is MonitoringRuntimeState.Error -> R.string.monitoring_start_error
         else -> R.string.flip_to_mute_off
     }
     val body = when {
-        !state.isSetupComplete -> R.string.home_setup_description
+        runtime is MonitoringRuntimeState.Paused -> R.string.monitoring_paused_home_text
+        !state.isSetupComplete && !state.isMonitoringChecked -> R.string.home_setup_description
         runtime is MonitoringRuntimeState.Active -> R.string.monitoring_notification_text
+        runtime is MonitoringRuntimeState.Pausing -> R.string.monitoring_pausing_text
+        runtime is MonitoringRuntimeState.Resuming -> R.string.preparing_monitoring
         runtime is MonitoringRuntimeState.Starting -> R.string.preparing_monitoring
         else -> R.string.home_off_description
     }
@@ -193,9 +216,9 @@ private fun MainStatusCard(
         Column(Modifier.padding(20.dp), Arrangement.spacedBy(12.dp), Alignment.Start) {
             Text(stringResource(title), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(body))
-            if (!state.isSetupComplete) {
+            if (!state.isSetupComplete && !state.isMonitoringChecked) {
                 Button(onClick = onSetupClick) { Text(stringResource(R.string.set_up_app)) }
-            } else if (runtime is MonitoringRuntimeState.Error) {
+            } else if (runtime is MonitoringRuntimeState.Error && !state.isMonitoringChecked) {
                 Button(onClick = { onMonitoringChanged(true) }) {
                     Text(stringResource(R.string.try_again))
                 }
@@ -209,8 +232,20 @@ private fun MainStatusCard(
                         onCheckedChange = onMonitoringChanged,
                         enabled = state.isMonitoringSwitchEnabled,
                     )
-                    if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Stopping) {
+                    if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Pausing ||
+                        runtime is MonitoringRuntimeState.Resuming || runtime is MonitoringRuntimeState.Stopping
+                    ) {
                         CircularProgressIndicator()
+                    }
+                }
+                if (runtime is MonitoringRuntimeState.Active) {
+                    TextButton(onClick = onPauseMonitoring) { Text(stringResource(R.string.pause_monitoring)) }
+                } else if (runtime is MonitoringRuntimeState.Paused ||
+                    (runtime is MonitoringRuntimeState.Error && state.isMonitoringChecked)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = onResumeMonitoring) { Text(stringResource(R.string.resume_monitoring)) }
+                        TextButton(onClick = { onMonitoringChanged(false) }) { Text(stringResource(R.string.turn_off)) }
                     }
                 }
             }
@@ -224,7 +259,7 @@ private fun HomePreview() {
     FlipToMuteTheme(dynamicColor = false) {
         HomeScreen(
             HomeUiState(isSetupComplete = true, isMonitoringSwitchEnabled = true),
-            {}, {}, {}, {}, {}, {}, {}, {},
+            {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
         )
     }
 }

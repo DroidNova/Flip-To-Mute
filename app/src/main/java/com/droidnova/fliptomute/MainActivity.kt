@@ -11,10 +11,11 @@ import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import android.content.Intent
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
+import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
-    private val externalEnableRequest = MutableStateFlow(0L)
+    private val externalMonitoringRequest = MutableStateFlow(MainActivityLaunchEvent())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +26,8 @@ class MainActivity : ComponentActivity() {
             FlipToMuteTheme {
                 FlipToMuteNavHost(
                     viewModelFactories = factories,
-                    externalEnableRequest = externalEnableRequest,
+                    externalMonitoringRequest = externalMonitoringRequest,
+                    onExternalMonitoringRequestConsumed = ::clearLaunchRequest,
                 )
             }
         }
@@ -38,11 +40,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun consumeLaunchRequest(intent: Intent?) {
-        if (MainActivityLaunchRequestParser.parse(intent) ==
-            MainActivityLaunchRequest.OpenSetupAndEnableMonitoring
-        ) {
-            externalEnableRequest.value += 1L
+        val request = MainActivityLaunchRequestParser.parse(intent)
+        if (request != MainActivityLaunchRequest.None) {
+            externalMonitoringRequest.value = MainActivityLaunchEvent(
+                sequence = externalMonitoringRequest.value.sequence + 1L,
+                request = request,
+            )
             intent?.action = null
         }
+    }
+
+    private fun clearLaunchRequest() {
+        externalMonitoringRequest.value = externalMonitoringRequest.value.copy(
+            request = MainActivityLaunchRequest.None,
+        )
     }
 }

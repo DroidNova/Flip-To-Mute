@@ -6,6 +6,7 @@ data class AppPreferences(
     val selectedFlipAction: FlipAction = FlipAction.SILENT,
     val callActionSelection: CallActionSelection = CallActionSelection(),
     val monitoringEnabled: Boolean = false,
+    val monitoringPaused: Boolean = false,
     val detectionFeedbackEnabled: Boolean = true,
     val requireFlatSurfaceBeforeFlip: Boolean = false,
     val onboardingCompleted: Boolean = false,

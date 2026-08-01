@@ -12,6 +12,7 @@ import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 
 class DataStoreAppPreferencesRepository(
     private val dataStore: DataStore<Preferences>,
@@ -24,6 +25,11 @@ class DataStoreAppPreferencesRepository(
                 emit(emptyPreferences())
             } else {
                 throw exception
+            }
+        }
+        .onEach { preferences ->
+            if (preferences[Keys.MONITORING_ENABLED] != true && preferences[Keys.MONITORING_PAUSED] == true) {
+                dataStore.edit { stored -> stored[Keys.MONITORING_PAUSED] = false }
             }
         }
         .map(::mapPreferences)
@@ -45,7 +51,17 @@ class DataStoreAppPreferencesRepository(
     }
 
     override suspend fun setMonitoringEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[Keys.MONITORING_ENABLED] = enabled }
+        dataStore.edit { preferences ->
+            preferences[Keys.MONITORING_ENABLED] = enabled
+            if (!enabled) preferences[Keys.MONITORING_PAUSED] = false
+        }
+    }
+
+    override suspend fun setMonitoringPaused(paused: Boolean) {
+        dataStore.edit { preferences ->
+            if (paused) preferences[Keys.MONITORING_ENABLED] = true
+            if (preferences[Keys.MONITORING_PAUSED] != paused) preferences[Keys.MONITORING_PAUSED] = paused
+        }
     }
 
     override suspend fun setDetectionFeedbackEnabled(enabled: Boolean) {
@@ -76,10 +92,12 @@ class DataStoreAppPreferencesRepository(
                 vibratePhone = selectedAction == FlipAction.VIBRATE,
             )
         }
+        val monitoringEnabled = preferences[Keys.MONITORING_ENABLED] ?: false
         return AppPreferences(
             selectedFlipAction = selectedAction,
             callActionSelection = selection,
-            monitoringEnabled = preferences[Keys.MONITORING_ENABLED] ?: false,
+            monitoringEnabled = monitoringEnabled,
+            monitoringPaused = monitoringEnabled && (preferences[Keys.MONITORING_PAUSED] ?: false),
             detectionFeedbackEnabled = preferences[Keys.DETECTION_FEEDBACK_ENABLED] ?: true,
             requireFlatSurfaceBeforeFlip = preferences[Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP] ?: false,
             onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
@@ -100,5 +118,6 @@ class DataStoreAppPreferencesRepository(
         val MUTE_RINGTONE = booleanPreferencesKey("mute_ringtone")
         val VIBRATE_PHONE = booleanPreferencesKey("vibrate_phone")
         val REQUIRE_FLAT_SURFACE_BEFORE_FLIP = booleanPreferencesKey("require_flat_surface_before_flip")
+        val MONITORING_PAUSED = booleanPreferencesKey("monitoring_paused")
     }
 }

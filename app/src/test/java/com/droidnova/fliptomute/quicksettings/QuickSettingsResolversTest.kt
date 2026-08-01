@@ -12,6 +12,9 @@ class QuickSettingsResolversTest {
     @Test fun runtimeStatesMapToTileStatuses() {
         assertEquals(QuickSettingsTileStatus.ON, stateResolver.resolve(MonitoringRuntimeState.Active, false))
         assertEquals(QuickSettingsTileStatus.STARTING, stateResolver.resolve(MonitoringRuntimeState.Starting, true))
+        assertEquals(QuickSettingsTileStatus.PAUSING, stateResolver.resolve(MonitoringRuntimeState.Pausing, true))
+        assertEquals(QuickSettingsTileStatus.PAUSED, stateResolver.resolve(MonitoringRuntimeState.Paused, true))
+        assertEquals(QuickSettingsTileStatus.RESUMING, stateResolver.resolve(MonitoringRuntimeState.Resuming, true))
         assertEquals(QuickSettingsTileStatus.STOPPING, stateResolver.resolve(MonitoringRuntimeState.Stopping, true))
         assertEquals(QuickSettingsTileStatus.OFF, stateResolver.resolve(MonitoringRuntimeState.Stopped, true))
         assertEquals(QuickSettingsTileStatus.SETUP_REQUIRED, stateResolver.resolve(MonitoringRuntimeState.Stopped, false))
@@ -22,9 +25,16 @@ class QuickSettingsResolversTest {
     }
 
     @Test fun clicksMapToExactlyOneSafeAction() {
-        assertEquals(QuickSettingsTileClickAction.StopMonitoring, clickResolver.resolve(MonitoringRuntimeState.Active, true))
+        assertEquals(QuickSettingsTileClickAction.PauseMonitoring, clickResolver.resolve(MonitoringRuntimeState.Active, true))
+        assertEquals(QuickSettingsTileClickAction.ResumeMonitoring, clickResolver.resolve(MonitoringRuntimeState.Paused, true))
+        assertEquals(
+            QuickSettingsTileClickAction.OpenSetupAndResume,
+            clickResolver.resolve(MonitoringRuntimeState.Paused, false),
+        )
         assertEquals(QuickSettingsTileClickAction.Ignore, clickResolver.resolve(MonitoringRuntimeState.Starting, true))
         assertEquals(QuickSettingsTileClickAction.Ignore, clickResolver.resolve(MonitoringRuntimeState.Stopping, true))
+        assertEquals(QuickSettingsTileClickAction.Ignore, clickResolver.resolve(MonitoringRuntimeState.Pausing, true))
+        assertEquals(QuickSettingsTileClickAction.Ignore, clickResolver.resolve(MonitoringRuntimeState.Resuming, true))
         assertEquals(QuickSettingsTileClickAction.StartMonitoring, clickResolver.resolve(MonitoringRuntimeState.Stopped, true))
         assertEquals(
             QuickSettingsTileClickAction.StartMonitoring,

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
+import com.droidnova.fliptomute.notification.PausedNotificationController
 
 sealed interface AppRecoveryResult {
     data object Complete : AppRecoveryResult
@@ -25,23 +26,47 @@ class DefaultAppRecoveryManager(
     private val monitoringStateRepository: MonitoringStateRepository,
     private val ringerModeController: RingerModeController,
     private val tileUpdateRequester: QuickSettingsTileUpdateRequester = QuickSettingsTileUpdateRequester {},
+    private val pausedNotificationController: PausedNotificationController = object : PausedNotificationController {
+        override fun showPausedNotification() = Unit
+        override fun cancelPausedNotification() = Unit
+    },
 ) : AppRecoveryManager {
     private val mutex = Mutex()
     private var completed = false
 
     override suspend fun recoverOnAppLaunch(): AppRecoveryResult = mutex.withLock {
         if (completed) return@withLock AppRecoveryResult.Complete
+        val preferences = preferencesRepository.preferences.first()
         val recovery = ringerModeController.recoverPendingChange()
         if (recovery is RingerModeRecoveryResult.Failure) {
             completed = true
-            monitoringStateRepository.updateState(
-                MonitoringRuntimeState.Error(MonitoringFailure.SOUND_CONTROL_FAILED),
-            )
+            if (preferences.monitoringEnabled && preferences.monitoringPaused) {
+                monitoringStateRepository.updateState(MonitoringRuntimeState.Paused)
+                pausedNotificationController.showPausedNotification()
+            } else {
+                monitoringStateRepository.updateState(
+                    MonitoringRuntimeState.Error(MonitoringFailure.SOUND_CONTROL_FAILED),
+                )
+            }
             tileUpdateRequester.requestUpdate()
             return@withLock AppRecoveryResult.SoundRecoveryFailed(recovery.reason)
         }
-        val stored = preferencesRepository.preferences.first().monitoringEnabled
-        if (stored && monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
+        if (!preferences.monitoringEnabled) {
+            preferencesRepository.setMonitoringPaused(false)
+            monitoringStateRepository.updateState(MonitoringRuntimeState.Stopped)
+            pausedNotificationController.cancelPausedNotification()
+            tileUpdateRequester.requestUpdate()
+            completed = true
+            return@withLock AppRecoveryResult.Complete
+        }
+        if (preferences.monitoringPaused) {
+            monitoringStateRepository.updateState(MonitoringRuntimeState.Paused)
+            pausedNotificationController.showPausedNotification()
+            tileUpdateRequester.requestUpdate()
+            completed = true
+            return@withLock AppRecoveryResult.Complete
+        }
+        if (monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
             delay(STICKY_RESTART_GRACE_MILLIS)
             if (monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
                 preferencesRepository.setMonitoringEnabled(false)

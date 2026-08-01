@@ -28,7 +28,11 @@ class FakeAppPreferencesRepository(
     }
 
     override suspend fun setMonitoringEnabled(enabled: Boolean) {
-        mutablePreferences.update { it.copy(monitoringEnabled = enabled) }
+        mutablePreferences.update { it.copy(monitoringEnabled = enabled, monitoringPaused = it.monitoringPaused && enabled) }
+    }
+
+    override suspend fun setMonitoringPaused(paused: Boolean) {
+        mutablePreferences.update { it.copy(monitoringEnabled = it.monitoringEnabled || paused, monitoringPaused = paused) }
     }
 
     override suspend fun setDetectionFeedbackEnabled(enabled: Boolean) {
