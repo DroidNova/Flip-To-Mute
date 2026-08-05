@@ -26,6 +26,19 @@ class SettingsViewModelTest {
 
         assertTrue(viewModel.uiState.value.detectionFeedbackEnabled)
         assertFalse(viewModel.uiState.value.requireFlatSurfaceBeforeFlip)
+        assertFalse(viewModel.uiState.value.startAfterPhoneRestart)
+    }
+
+    @Test
+    fun changingStartAfterRestartUpdatesOnlyThatSetting() = runTest {
+        val repository = FakeAppPreferencesRepository()
+        val viewModel = SettingsViewModel(repository, FakeSetupAccessRepository())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        viewModel.onStartAfterPhoneRestartChanged(true)
+        assertTrue(viewModel.uiState.value.startAfterPhoneRestart)
+        assertFalse(repository.preferences.value.monitoringEnabled)
+        viewModel.onStartAfterPhoneRestartChanged(false)
+        assertFalse(viewModel.uiState.value.startAfterPhoneRestart)
     }
 
     @Test

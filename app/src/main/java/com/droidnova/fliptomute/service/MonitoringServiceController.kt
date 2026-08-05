@@ -26,6 +26,9 @@ class AndroidMonitoringServiceController(context: Context) : MonitoringServiceCo
         MonitoringLog.failure(context, "Foreground service start intent rejected", error)
         // Includes ForegroundServiceStartNotAllowedException on Android 12+.
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
+    } catch (error: IllegalArgumentException) {
+        MonitoringLog.failure(context, "Foreground service start intent rejected", error)
+        MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     }
 
     override fun resumeMonitoring(): MonitoringCommandResult = sendForegroundCommand(
@@ -47,6 +50,8 @@ class AndroidMonitoringServiceController(context: Context) : MonitoringServiceCo
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     } catch (_: IllegalStateException) {
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
+    } catch (_: IllegalArgumentException) {
+        MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     }
 
     private fun sendServiceCommand(intent: android.content.Intent): MonitoringCommandResult = try {
@@ -55,6 +60,8 @@ class AndroidMonitoringServiceController(context: Context) : MonitoringServiceCo
     } catch (_: SecurityException) {
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     } catch (_: IllegalStateException) {
+        MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
+    } catch (_: IllegalArgumentException) {
         MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
     }
 }

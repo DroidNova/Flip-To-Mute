@@ -24,6 +24,7 @@ class SettingsViewModel(
             detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
             requireFlatSurfaceBeforeFlip = preferences.requireFlatSurfaceBeforeFlip,
             monitoringEnabled = preferences.monitoringEnabled,
+            startAfterPhoneRestart = preferences.startAfterPhoneRestart,
             accessState = accessState,
         )
     }.stateIn(
@@ -42,6 +43,10 @@ class SettingsViewModel(
 
     fun onRequireFlatSurfaceBeforeFlipChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setRequireFlatSurfaceBeforeFlip(enabled) }
+    }
+
+    fun onStartAfterPhoneRestartChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setStartAfterPhoneRestart(enabled) }
     }
 
     fun refreshAccessState() = setupAccessRepository.refresh()

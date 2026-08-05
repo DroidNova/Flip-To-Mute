@@ -35,6 +35,10 @@ class FakeAppPreferencesRepository(
         mutablePreferences.update { it.copy(monitoringEnabled = it.monitoringEnabled || paused, monitoringPaused = paused) }
     }
 
+    override suspend fun setStartAfterPhoneRestart(enabled: Boolean) {
+        mutablePreferences.update { it.copy(startAfterPhoneRestart = enabled) }
+    }
+
     override suspend fun setDetectionFeedbackEnabled(enabled: Boolean) {
         mutablePreferences.update { it.copy(detectionFeedbackEnabled = enabled) }
     }

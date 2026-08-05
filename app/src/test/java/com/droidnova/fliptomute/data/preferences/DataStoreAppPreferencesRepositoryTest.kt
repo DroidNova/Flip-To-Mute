@@ -19,6 +19,19 @@ class DataStoreAppPreferencesRepositoryTest {
         val preferences = repository.preferences.first()
         assertFalse(preferences.monitoringEnabled)
         assertFalse(preferences.monitoringPaused)
+        assertFalse(preferences.startAfterPhoneRestart)
+    }
+
+    @Test fun restartPreferencePersistsWithoutChangingMonitoringIntent() = runTest {
+        val repository = repository("restart.preferences_pb")
+        repository.setStartAfterPhoneRestart(true)
+        var preferences = repository.preferences.first()
+        assertTrue(preferences.startAfterPhoneRestart)
+        assertFalse(preferences.monitoringEnabled)
+        assertFalse(preferences.monitoringPaused)
+        repository.setStartAfterPhoneRestart(false)
+        preferences = repository.preferences.first()
+        assertFalse(preferences.startAfterPhoneRestart)
     }
 
     @Test fun pausedIntentSurvivesRepositoryRecreation() = runTest {

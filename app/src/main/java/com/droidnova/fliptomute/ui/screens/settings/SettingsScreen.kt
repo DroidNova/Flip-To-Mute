@@ -88,6 +88,7 @@ fun SettingsRoute(
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
         onRequireFlatSurfaceBeforeFlipChanged = viewModel::onRequireFlatSurfaceBeforeFlipChanged,
+        onStartAfterPhoneRestartChanged = viewModel::onStartAfterPhoneRestartChanged,
         onAddQuickSettingsTile = onAddTile,
         snackbarHostState = snackbar,
         showManualTileInstructions = showManualInstructions,
@@ -106,6 +107,7 @@ fun SettingsScreen(
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
     onRequireFlatSurfaceBeforeFlipChanged: (Boolean) -> Unit,
+    onStartAfterPhoneRestartChanged: (Boolean) -> Unit,
     onAddQuickSettingsTile: () -> Unit,
     snackbarHostState: SnackbarHostState,
     showManualTileInstructions: Boolean,
@@ -188,6 +190,21 @@ fun SettingsScreen(
             item { SectionHeader(stringResource(R.string.convenience_section)) }
             item {
                 Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onStartAfterPhoneRestartChanged(!state.startAfterPhoneRestart) }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.start_after_phone_restart))
+                        Text(stringResource(R.string.start_after_phone_restart_description))
+                    }
+                    Switch(checked = state.startAfterPhoneRestart, onCheckedChange = null)
+                }
+            }
+            item {
+                Row(
                     modifier = Modifier.fillMaxWidth().clickable(onClick = onAddQuickSettingsTile).padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -268,7 +285,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {}, {}, {}, remember { SnackbarHostState() }, false, {})
+        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, remember { SnackbarHostState() }, false, {})
     }
 }
 

@@ -7,6 +7,7 @@ data class AppPreferences(
     val callActionSelection: CallActionSelection = CallActionSelection(),
     val monitoringEnabled: Boolean = false,
     val monitoringPaused: Boolean = false,
+    val startAfterPhoneRestart: Boolean = false,
     val detectionFeedbackEnabled: Boolean = true,
     val requireFlatSurfaceBeforeFlip: Boolean = false,
     val onboardingCompleted: Boolean = false,

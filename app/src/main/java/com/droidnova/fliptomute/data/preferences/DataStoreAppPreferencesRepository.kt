@@ -64,6 +64,10 @@ class DataStoreAppPreferencesRepository(
         }
     }
 
+    override suspend fun setStartAfterPhoneRestart(enabled: Boolean) {
+        updateBoolean(Keys.START_AFTER_PHONE_RESTART, enabled)
+    }
+
     override suspend fun setDetectionFeedbackEnabled(enabled: Boolean) {
         updateBoolean(Keys.DETECTION_FEEDBACK_ENABLED, enabled)
     }
@@ -98,6 +102,7 @@ class DataStoreAppPreferencesRepository(
             callActionSelection = selection,
             monitoringEnabled = monitoringEnabled,
             monitoringPaused = monitoringEnabled && (preferences[Keys.MONITORING_PAUSED] ?: false),
+            startAfterPhoneRestart = preferences[Keys.START_AFTER_PHONE_RESTART] ?: false,
             detectionFeedbackEnabled = preferences[Keys.DETECTION_FEEDBACK_ENABLED] ?: true,
             requireFlatSurfaceBeforeFlip = preferences[Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP] ?: false,
             onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
@@ -119,5 +124,6 @@ class DataStoreAppPreferencesRepository(
         val VIBRATE_PHONE = booleanPreferencesKey("vibrate_phone")
         val REQUIRE_FLAT_SURFACE_BEFORE_FLIP = booleanPreferencesKey("require_flat_surface_before_flip")
         val MONITORING_PAUSED = booleanPreferencesKey("monitoring_paused")
+        val START_AFTER_PHONE_RESTART = booleanPreferencesKey("start_after_phone_restart")
     }
 }

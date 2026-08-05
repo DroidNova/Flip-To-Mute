@@ -8,5 +8,6 @@ data class SettingsUiState(
     val detectionFeedbackEnabled: Boolean = true,
     val requireFlatSurfaceBeforeFlip: Boolean = false,
     val monitoringEnabled: Boolean = false,
+    val startAfterPhoneRestart: Boolean = false,
     val accessState: SetupAccessState = SetupAccessState(),
 )
