@@ -47,6 +47,10 @@ class FakeAppPreferencesRepository(
         mutablePreferences.update { it.copy(requireFlatSurfaceBeforeFlip = enabled) }
     }
 
+    override suspend fun setPocketProtectionEnabled(enabled: Boolean) {
+        mutablePreferences.update { it.copy(pocketProtectionEnabled = enabled) }
+    }
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         mutablePreferences.update { it.copy(onboardingCompleted = completed) }
     }

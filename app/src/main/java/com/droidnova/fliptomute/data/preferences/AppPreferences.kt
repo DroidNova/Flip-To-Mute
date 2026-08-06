@@ -10,6 +10,7 @@ data class AppPreferences(
     val startAfterPhoneRestart: Boolean = false,
     val detectionFeedbackEnabled: Boolean = true,
     val requireFlatSurfaceBeforeFlip: Boolean = false,
+    val pocketProtectionEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
 )
 

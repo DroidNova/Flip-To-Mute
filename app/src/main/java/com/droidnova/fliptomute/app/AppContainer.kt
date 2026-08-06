@@ -10,6 +10,10 @@ import com.droidnova.fliptomute.data.setup.AndroidSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import com.droidnova.fliptomute.sensor.AndroidDeviceOrientationMonitor
 import com.droidnova.fliptomute.sensor.DeviceOrientationMonitorFactory
+import com.droidnova.fliptomute.sensor.AndroidProximityMonitor
+import com.droidnova.fliptomute.sensor.AndroidProximitySensorCapability
+import com.droidnova.fliptomute.sensor.ProximityMonitorFactory
+import com.droidnova.fliptomute.sensor.ProximitySensorCapability
 import com.droidnova.fliptomute.telephony.AndroidCellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
 import com.droidnova.fliptomute.audio.AndroidRingerModeController
@@ -36,6 +40,8 @@ interface AppContainer {
     val appPreferencesRepository: AppPreferencesRepository
     val setupAccessRepository: SetupAccessRepository
     val deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
+    val proximityMonitorFactory: ProximityMonitorFactory
+    val proximitySensorCapability: ProximitySensorCapability
     val cellularCallMonitorFactory: CellularCallMonitorFactory
     val ringerModeControllerFactory: RingerModeControllerFactory
     val vibrationCapabilityRepository: VibrationCapabilityRepository
@@ -59,6 +65,11 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val deviceOrientationMonitorFactory = DeviceOrientationMonitorFactory {
         AndroidDeviceOrientationMonitor(context.applicationContext)
     }
+    override val proximityMonitorFactory = ProximityMonitorFactory {
+        AndroidProximityMonitor(applicationContext)
+    }
+    override val proximitySensorCapability: ProximitySensorCapability =
+        AndroidProximitySensorCapability(applicationContext)
     override val cellularCallMonitorFactory = CellularCallMonitorFactory {
         AndroidCellularCallMonitor(context.applicationContext)
     }

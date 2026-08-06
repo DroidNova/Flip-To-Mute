@@ -1,4 +1,7 @@
 <resources>
+    <string name="pocket_protection">Pocket protection</string>
+    <string name="pocket_protection_description">Avoid accidental actions while the phone is in a pocket or bag.</string>
+    <string name="pocket_protection_unavailable">Pocket protection is not available on this device.</string>
     <string name="app_name">Flip to Mute</string>
     <string name="quick_settings_tile_label">Flip to Mute</string>
     <string name="quick_settings_tile_on">On</string>
