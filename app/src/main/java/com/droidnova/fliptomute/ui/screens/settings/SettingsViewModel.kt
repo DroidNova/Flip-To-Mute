@@ -10,10 +10,14 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.droidnova.fliptomute.sensor.ProximitySensorCapability
 
 class SettingsViewModel(
     private val preferencesRepository: AppPreferencesRepository,
     private val setupAccessRepository: SetupAccessRepository,
+    private val proximitySensorCapability: ProximitySensorCapability = object : ProximitySensorCapability {
+        override val isAvailable = true
+    },
 ) : ViewModel() {
     val uiState: StateFlow<SettingsUiState> = combine(
         preferencesRepository.preferences,
@@ -23,6 +27,8 @@ class SettingsViewModel(
             selectedFlipAction = preferences.selectedFlipAction,
             detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
             requireFlatSurfaceBeforeFlip = preferences.requireFlatSurfaceBeforeFlip,
+            pocketProtectionEnabled = preferences.pocketProtectionEnabled,
+            isProximitySensorAvailable = proximitySensorCapability.isAvailable,
             monitoringEnabled = preferences.monitoringEnabled,
             startAfterPhoneRestart = preferences.startAfterPhoneRestart,
             accessState = accessState,
@@ -43,6 +49,11 @@ class SettingsViewModel(
 
     fun onRequireFlatSurfaceBeforeFlipChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setRequireFlatSurfaceBeforeFlip(enabled) }
+    }
+
+    fun onPocketProtectionChanged(enabled: Boolean) {
+        if (!proximitySensorCapability.isAvailable) return
+        viewModelScope.launch { preferencesRepository.setPocketProtectionEnabled(enabled) }
     }
 
     fun onStartAfterPhoneRestartChanged(enabled: Boolean) {

@@ -23,5 +23,7 @@ interface AppPreferencesRepository {
 
     suspend fun setRequireFlatSurfaceBeforeFlip(enabled: Boolean)
 
+    suspend fun setPocketProtectionEnabled(enabled: Boolean)
+
     suspend fun setOnboardingCompleted(completed: Boolean)
 }

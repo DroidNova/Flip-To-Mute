@@ -34,7 +34,11 @@ class ViewModelFactories(container: AppContainer) {
 
     val settings: ViewModelProvider.Factory = viewModelFactory {
         initializer {
-            SettingsViewModel(container.appPreferencesRepository, container.setupAccessRepository)
+            SettingsViewModel(
+                container.appPreferencesRepository,
+                container.setupAccessRepository,
+                container.proximitySensorCapability,
+            )
         }
     }
 

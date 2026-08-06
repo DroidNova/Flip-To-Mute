@@ -143,6 +143,8 @@ class FlipMonitoringService : Service() {
                         if (isResume) failResume(reason, startId) else failStart(reason, startId)
                     }
                 },
+                proximityMonitor = container.proximityMonitorFactory.create(),
+                debugLog = ::debugLog,
             )
             debugLog("Starting cellular call monitor")
             when (val result = coordinator?.startAndAwaitReady()) {

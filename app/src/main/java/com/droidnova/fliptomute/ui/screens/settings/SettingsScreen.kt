@@ -88,6 +88,7 @@ fun SettingsRoute(
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
         onRequireFlatSurfaceBeforeFlipChanged = viewModel::onRequireFlatSurfaceBeforeFlipChanged,
+        onPocketProtectionChanged = viewModel::onPocketProtectionChanged,
         onStartAfterPhoneRestartChanged = viewModel::onStartAfterPhoneRestartChanged,
         onAddQuickSettingsTile = onAddTile,
         snackbarHostState = snackbar,
@@ -107,6 +108,7 @@ fun SettingsScreen(
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
     onRequireFlatSurfaceBeforeFlipChanged: (Boolean) -> Unit,
+    onPocketProtectionChanged: (Boolean) -> Unit,
     onStartAfterPhoneRestartChanged: (Boolean) -> Unit,
     onAddQuickSettingsTile: () -> Unit,
     snackbarHostState: SnackbarHostState,
@@ -150,6 +152,29 @@ fun SettingsScreen(
                     }
                     Checkbox(
                         checked = state.requireFlatSurfaceBeforeFlip,
+                        onCheckedChange = null,
+                    )
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = state.isProximitySensorAvailable) {
+                            onPocketProtectionChanged(!state.pocketProtectionEnabled)
+                        }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.pocket_protection))
+                        Text(stringResource(if (state.isProximitySensorAvailable) {
+                            R.string.pocket_protection_description
+                        } else R.string.pocket_protection_unavailable))
+                    }
+                    Switch(
+                        checked = state.pocketProtectionEnabled && state.isProximitySensorAvailable,
+                        enabled = state.isProximitySensorAvailable,
                         onCheckedChange = null,
                     )
                 }
@@ -285,7 +310,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, remember { SnackbarHostState() }, false, {})
+        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, remember { SnackbarHostState() }, false, {})
     }
 }
 

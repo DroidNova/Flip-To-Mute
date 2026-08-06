@@ -14,6 +14,10 @@ import com.droidnova.fliptomute.sensor.DeviceOrientationMonitor
 import com.droidnova.fliptomute.sensor.FaceDownDetectionState
 import com.droidnova.fliptomute.sensor.FlatSurfaceFlipGate
 import com.droidnova.fliptomute.sensor.FlatSurfaceFlipResult
+import com.droidnova.fliptomute.sensor.PocketProtectionDecision
+import com.droidnova.fliptomute.sensor.PocketProtectionGate
+import com.droidnova.fliptomute.sensor.ProximityMonitor
+import com.droidnova.fliptomute.sensor.ProximityMonitorState
 import com.droidnova.fliptomute.telephony.CellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitorState
 import com.droidnova.fliptomute.telephony.CellularCallState
@@ -23,6 +27,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
@@ -35,6 +40,8 @@ class FlipMonitoringCoordinator(
     private val vibrationController: IncomingCallVibrationController,
     private val scope: CoroutineScope,
     private val onFailure: (MonitoringFailure) -> Unit,
+    private val proximityMonitor: ProximityMonitor? = null,
+    private val debugLog: (String) -> Unit = {},
 ) {
     constructor(
         preferencesRepository: AppPreferencesRepository,
@@ -56,6 +63,7 @@ class FlipMonitoringCoordinator(
     private val mutex = Mutex()
     private var latestPreferences = AppPreferences()
     private val flatSurfaceFlipGate = FlatSurfaceFlipGate()
+    private val pocketProtectionGate = PocketProtectionGate()
     private var ringingSession: RingingSession? = null
     private var started = false
     private var stopping = false
@@ -63,6 +71,8 @@ class FlipMonitoringCoordinator(
     private var preferencesJob: Job? = null
     private var callJob: Job? = null
     private var orientationJob: Job? = null
+    private var proximityJob: Job? = null
+    private var pocketTimeoutJob: Job? = null
     private var startupResult = CompletableDeferred<MonitoringCoordinatorStartResult>()
 
     suspend fun startAndAwaitReady(): MonitoringCoordinatorStartResult {
@@ -76,6 +86,7 @@ class FlipMonitoringCoordinator(
             preferencesRepository.preferences.collectLatest { latestPreferences = it }
         }
         orientationJob = scope.launch { orientationMonitor.state.collectLatest(::handleOrientationState) }
+        proximityJob = scope.launch { proximityMonitor?.state?.collectLatest(::handleProximityState) }
         callJob = scope.launch { callMonitor.state.collectLatest(::handleCallState) }
         callMonitor.start()
         mapStartupState(callMonitor.state.value)?.let { result ->
@@ -93,6 +104,7 @@ class FlipMonitoringCoordinator(
         stopping = true
         vibrationController.stop()
         orientationMonitor.stop()
+        stopPocketMonitoring()
         flatSurfaceFlipGate.reset()
         callMonitor.stop()
         ringingSession = null
@@ -100,6 +112,7 @@ class FlipMonitoringCoordinator(
         preferencesJob?.cancel()
         callJob?.cancel()
         orientationJob?.cancel()
+        proximityJob?.cancel()
         readyReported = false
     }
 
@@ -122,17 +135,32 @@ class FlipMonitoringCoordinator(
                             fail(MonitoringFailure.SENSOR_UNAVAILABLE)
                         } else {
                             flatSurfaceFlipGate.reset()
+                            pocketProtectionGate.reset()
+                            val pocketEnabled = latestPreferences.pocketProtectionEnabled &&
+                                proximityMonitor?.isSensorAvailable == true
+                            debugLog("Pocket protection enabled=$pocketEnabled; sensor available=${proximityMonitor?.isSensorAvailable == true}")
                             ringingSession = RingingSession(
                                 latestPreferences.callActionSelection,
                                 latestPreferences.requireFlatSurfaceBeforeFlip,
+                                if (pocketEnabled) PocketProtectionDecision.WAITING else PocketProtectionDecision.CLEAR,
                             )
                             orientationMonitor.start()
+                            if (pocketEnabled) {
+                                proximityMonitor?.start()
+                                debugLog("Proximity monitor started")
+                                pocketTimeoutJob = scope.launch {
+                                    delay(POCKET_DECISION_TIMEOUT_MILLIS)
+                                    handlePocketTimeout()
+                                }
+                            }
                         }
                     }
                 } else if (ringingSession != null) {
                     vibrationController.stop()
                     orientationMonitor.stop()
+                    stopPocketMonitoring()
                     flatSurfaceFlipGate.reset()
+                    pocketProtectionGate.reset()
                     ringerModeController.restorePreviousMode()
                     ringingSession = null
                 }
@@ -150,7 +178,16 @@ class FlipMonitoringCoordinator(
             is FaceDownDetectionState.Detecting -> {
                 val session = ringingSession ?: return@withLock
                 if (session.actionHandled) return@withLock
-                val allowed = if (session.requireFlatSurfaceBeforeFlip) {
+                var currentSession = session
+                if (session.pocketDecision == PocketProtectionDecision.WAITING) {
+                    val decision = pocketProtectionGate.onOrientationSample(
+                        state.orientation, state.normalizedZ, state.gravityMagnitude, state.timestampNanos,
+                    )
+                    updatePocketDecision(decision)
+                    currentSession = ringingSession ?: return@withLock
+                }
+                if (currentSession.pocketDecision != PocketProtectionDecision.CLEAR) return@withLock
+                val allowed = if (currentSession.requireFlatSurfaceBeforeFlip) {
                     flatSurfaceFlipGate.onSample(
                         state.orientation,
                         state.normalizedZ,
@@ -161,13 +198,13 @@ class FlipMonitoringCoordinator(
                     state.orientation == DeviceOrientation.FACE_DOWN
                 }
                 if (!allowed) return@withLock
-                if (!session.selection.vibratePhone) vibrationController.stop()
-                val modeAction = if (session.selection.muteRingtone) FlipAction.SILENT else FlipAction.VIBRATE
+                if (!currentSession.selection.vibratePhone) vibrationController.stop()
+                val modeAction = if (currentSession.selection.muteRingtone) FlipAction.SILENT else FlipAction.VIBRATE
                 val result = ringerModeController.applyTemporaryAction(modeAction)
                 when (result) {
                     is RingerModeResult.Success -> {
-                        val handled = if (session.selection.vibratePhone) {
-                            (session.selection.muteRingtone || result.currentMode == DeviceRingerMode.VIBRATE) &&
+                        val handled = if (currentSession.selection.vibratePhone) {
+                            (currentSession.selection.muteRingtone || result.currentMode == DeviceRingerMode.VIBRATE) &&
                                 vibrationController.getAvailability() == VibrationAvailability.AVAILABLE &&
                                 vibrationController.start() is IncomingCallVibrationResult.Started
                         } else true
@@ -175,16 +212,16 @@ class FlipMonitoringCoordinator(
                             vibrationController.stop()
                             ringerModeController.applyTemporaryAction(FlipAction.SILENT)
                         }
-                        ringingSession = session.copy(actionHandled = true)
+                        ringingSession = currentSession.copy(actionHandled = true)
                         orientationMonitor.stop()
                         flatSurfaceFlipGate.reset()
                     }
                     is RingerModeResult.Failure -> {
-                        if (session.selection.vibratePhone) {
+                        if (currentSession.selection.vibratePhone) {
                             vibrationController.stop()
                             when (ringerModeController.applyTemporaryAction(FlipAction.SILENT)) {
                                 is RingerModeResult.Success -> {
-                                    ringingSession = session.copy(actionHandled = true)
+                                    ringingSession = currentSession.copy(actionHandled = true)
                                     orientationMonitor.stop()
                                     flatSurfaceFlipGate.reset()
                                 }
@@ -201,12 +238,54 @@ class FlipMonitoringCoordinator(
         }
     }
 
+    private suspend fun handleProximityState(state: ProximityMonitorState) = mutex.withLock {
+        val session = ringingSession ?: return@withLock
+        if (session.pocketDecision != PocketProtectionDecision.WAITING) return@withLock
+        val decision = when (state) {
+            is ProximityMonitorState.Listening ->
+                pocketProtectionGate.onProximityChanged(state.proximityState, System.nanoTime()).also {
+                    debugLog("Initial proximity state ${state.proximityState.name.lowercase()}")
+                }
+            ProximityMonitorState.SensorUnavailable, ProximityMonitorState.Error ->
+                pocketProtectionGate.onInitialTimeout().also { debugLog("Optional proximity sensor unavailable") }
+            ProximityMonitorState.Stopped, ProximityMonitorState.WaitingForReading -> return@withLock
+        }
+        updatePocketDecision(decision)
+    }
+
+    private suspend fun handlePocketTimeout() = mutex.withLock {
+        if (ringingSession?.pocketDecision == PocketProtectionDecision.WAITING) {
+            debugLog("Initial proximity timeout")
+            updatePocketDecision(pocketProtectionGate.onInitialTimeout())
+        }
+    }
+
+    private fun updatePocketDecision(decision: PocketProtectionDecision) {
+        if (decision == PocketProtectionDecision.WAITING) return
+        val session = ringingSession ?: return
+        ringingSession = session.copy(pocketDecision = decision)
+        debugLog("Pocket decision ${decision.name.lowercase()}")
+        pocketTimeoutJob?.cancel()
+        pocketTimeoutJob = null
+        proximityMonitor?.stop()
+        debugLog("Proximity monitor stopped")
+        if (decision == PocketProtectionDecision.BLOCKED) orientationMonitor.stop()
+    }
+
+    private fun stopPocketMonitoring() {
+        pocketTimeoutJob?.cancel()
+        pocketTimeoutJob = null
+        proximityMonitor?.stop()
+    }
+
     private suspend fun fail(reason: MonitoringFailure) {
         if (stopping) return
         stopping = true
         vibrationController.stop()
         orientationMonitor.stop()
+        stopPocketMonitoring()
         flatSurfaceFlipGate.reset()
+        pocketProtectionGate.reset()
         callMonitor.stop()
         ringerModeController.restorePreviousMode()
         ringingSession = null
@@ -235,8 +314,12 @@ class FlipMonitoringCoordinator(
     private data class RingingSession(
         val selection: CallActionSelection,
         val requireFlatSurfaceBeforeFlip: Boolean,
+        val pocketDecision: PocketProtectionDecision,
         val actionHandled: Boolean = false,
     )
 
-    private companion object { const val MONITORING_START_TIMEOUT_MILLIS = 10_000L }
+    private companion object {
+        const val MONITORING_START_TIMEOUT_MILLIS = 10_000L
+        const val POCKET_DECISION_TIMEOUT_MILLIS = 600L
+    }
 }
