@@ -90,6 +90,43 @@ class FlipMonitoringCoordinatorTest {
         assertEquals(MonitoringFailure.SENSOR_UNAVAILABLE, fixture.failure)
     }
 
+    @Test fun flatSettingRequiresArmedSequenceButAllowsInitiallyFlatFaceDown() = runTest {
+        val preferences = FakeAppPreferencesRepository(
+            AppPreferences(requireFlatSurfaceBeforeFlip = true),
+        )
+        val fixture = fixture(backgroundScope, preferences = preferences)
+        fixture.coordinator.startAndAwaitReady(); runCurrent()
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_UP, timestampNanos = 1_000_000_000L); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_UP, timestampNanos = 1_500_000_000L); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.MOVING, timestampNanos = 1_600_000_000L); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 1_700_000_000L); runCurrent()
+        assertEquals(0, fixture.ringer.applyCount)
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 2_100_000_000L); runCurrent()
+        assertEquals(1, fixture.ringer.applyCount)
+
+        fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 3_000_000_000L); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 3_400_000_000L); runCurrent()
+        assertEquals(2, fixture.ringer.applyCount)
+    }
+
+    @Test fun flatSettingIsCapturedForTheCurrentCall() = runTest {
+        val preferences = FakeAppPreferencesRepository(AppPreferences(requireFlatSurfaceBeforeFlip = true))
+        val fixture = fixture(backgroundScope, preferences = preferences)
+        fixture.coordinator.startAndAwaitReady(); runCurrent()
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        preferences.setRequireFlatSurfaceBeforeFlip(false); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.MOVING); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN); runCurrent()
+        assertEquals(0, fixture.ringer.applyCount)
+        fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN); runCurrent()
+        assertEquals(1, fixture.ringer.applyCount)
+    }
+
     @Test fun permissionAndTelephonyFailuresStopMonitoring() = runTest {
         val permission = fixture(backgroundScope, callStartState = CellularCallMonitorState.PermissionRequired)
         val permissionResult = permission.coordinator.startAndAwaitReady(); runCurrent()

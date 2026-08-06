@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
+import com.droidnova.fliptomute.notification.PausedNotificationController
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppRecoveryManagerTest {
@@ -34,4 +35,25 @@ class AppRecoveryManagerTest {
         assertEquals(AppRecoveryResult.Complete, manager.recoverOnAppLaunch())
         assertEquals(true, preferences.preferences.value.monitoringEnabled)
     }
+
+    @Test fun persistedPausedStateIsReconstructedWithoutActiveMonitoring() = runTest {
+        val preferences = FakeAppPreferencesRepository(
+            AppPreferences(monitoringEnabled = true, monitoringPaused = true),
+        )
+        val runtime = InMemoryMonitoringStateRepository()
+        val notifications = FakePausedNotifications()
+        val manager = DefaultAppRecoveryManager(
+            preferences, runtime, FakeRingerModeController(), pausedNotificationController = notifications,
+        )
+        assertEquals(AppRecoveryResult.Complete, manager.recoverOnAppLaunch())
+        assertEquals(MonitoringRuntimeState.Paused, runtime.state.value)
+        assertEquals(1, notifications.showCount)
+        assertEquals(true, preferences.preferences.value.monitoringPaused)
+    }
+}
+
+private class FakePausedNotifications : PausedNotificationController {
+    var showCount = 0
+    override fun showPausedNotification() { showCount++ }
+    override fun cancelPausedNotification() = Unit
 }

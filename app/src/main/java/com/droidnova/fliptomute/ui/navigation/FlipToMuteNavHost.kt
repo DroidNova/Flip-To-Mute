@@ -15,13 +15,29 @@ import com.droidnova.fliptomute.ui.screens.settings.SettingsRoute
 import com.droidnova.fliptomute.ui.screens.call_state_test.CallStateTestScreen
 import com.droidnova.fliptomute.ui.screens.sound_control_test.SoundControlTestScreen
 import com.droidnova.fliptomute.ui.screens.about.AboutScreen
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.runtime.LaunchedEffect
+import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
 
 @Composable
 fun FlipToMuteNavHost(
     viewModelFactories: ViewModelFactories,
     modifier: Modifier = Modifier,
+    externalMonitoringRequest: StateFlow<MainActivityLaunchEvent>,
+    onExternalMonitoringRequestConsumed: () -> Unit,
 ) {
     val navController = rememberNavController()
+    val monitoringRequest by externalMonitoringRequest.collectAsStateWithLifecycle()
+    LaunchedEffect(monitoringRequest.sequence) {
+        if (monitoringRequest.sequence > 0L) {
+            navController.navigate(Destination.Home.route) {
+                popUpTo(Destination.Home.route) { inclusive = false }
+                launchSingleTop = true
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -34,6 +50,8 @@ fun FlipToMuteNavHost(
                 onAboutClick = { navController.navigateTo(Destination.About) },
                 onPermissionsClick = { navController.navigateTo(Destination.Permissions) },
                 viewModelFactory = viewModelFactories.home,
+                externalMonitoringRequest = monitoringRequest,
+                onExternalMonitoringRequestConsumed = onExternalMonitoringRequestConsumed,
             )
         }
         composable(Destination.About.route) {

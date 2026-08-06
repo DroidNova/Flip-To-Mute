@@ -18,6 +18,14 @@ class MonitoringServiceCommandClassifierTest {
             MonitoringServiceCommand.STOP,
             MonitoringServiceCommandClassifier.classify(true, MonitoringServiceCommandClassifier.STOP_ACTION),
         )
+        assertEquals(
+            MonitoringServiceCommand.PAUSE,
+            MonitoringServiceCommandClassifier.classify(true, MonitoringServiceCommandClassifier.PAUSE_ACTION),
+        )
+        assertEquals(
+            MonitoringServiceCommand.RESUME,
+            MonitoringServiceCommandClassifier.classify(true, MonitoringServiceCommandClassifier.RESUME_ACTION),
+        )
     }
 
     @Test fun stickyRestartRequiresStoredIntentAndCompleteSetup() {

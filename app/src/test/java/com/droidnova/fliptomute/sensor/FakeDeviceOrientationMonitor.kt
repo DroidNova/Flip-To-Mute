@@ -16,11 +16,14 @@ class FakeDeviceOrientationMonitor(
     override val state = mutableState.asStateFlow()
     var startCount = 0
     var stopCount = 0
+    private var timestampNanos = 1_000_000_000L
 
     override fun start() {
         if (!isSensorAvailable || state.value is FaceDownDetectionState.Detecting) return
         startCount++
-        emit(DeviceOrientation.UNKNOWN)
+        mutableState.value = FaceDownDetectionState.Detecting(
+            DeviceOrientation.UNKNOWN, OrientationSensorSource.GRAVITY, 0f, 0f, 0f,
+        )
     }
 
     override fun stop() {
@@ -32,9 +35,19 @@ class FakeDeviceOrientationMonitor(
         }
     }
 
-    fun emit(orientation: DeviceOrientation) {
+    fun emit(
+        orientation: DeviceOrientation,
+        normalizedZ: Float = when (orientation) {
+            DeviceOrientation.FACE_UP -> 1f
+            DeviceOrientation.FACE_DOWN -> -1f
+            else -> 0f
+        },
+        gravityMagnitude: Float = 9.81f,
+        timestampNanos: Long = this.timestampNanos.also { this.timestampNanos += 100_000_000L },
+    ) {
         mutableState.value = FaceDownDetectionState.Detecting(
             orientation, OrientationSensorSource.GRAVITY, 0f, 0f, 9.81f,
+            normalizedZ, gravityMagnitude, timestampNanos,
         )
     }
 

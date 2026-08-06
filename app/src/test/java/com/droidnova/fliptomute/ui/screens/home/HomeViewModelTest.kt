@@ -71,6 +71,36 @@ class HomeViewModelTest {
         assertFalse(fixture.viewModel.uiState.value.isMonitoringChecked)
     }
 
+    @Test fun pauseResumeAndStopWhilePausedUseSingleControllerCommands() = runTest {
+        val preferences = FakeAppPreferencesRepository(
+            com.droidnova.fliptomute.data.preferences.AppPreferences(monitoringEnabled = true),
+        )
+        val fixture = fixture(granted = true, preferences = preferences)
+        collect(fixture.viewModel)
+        fixture.runtime.updateState(MonitoringRuntimeState.Active)
+        fixture.viewModel.onPauseMonitoring()
+        assertEquals(1, fixture.controller.pauseCount)
+        fixture.runtime.updateState(MonitoringRuntimeState.Paused)
+        preferences.setMonitoringPaused(true)
+        assertTrue(fixture.viewModel.uiState.value.isMonitoringChecked)
+        fixture.viewModel.onResumeMonitoring()
+        assertEquals(1, fixture.controller.resumeCount)
+        fixture.viewModel.onMonitoringChanged(false)
+        assertEquals(1, fixture.controller.stopCount)
+    }
+
+    @Test fun resumeAfterSetupIsPendingOnceAndDismissDoesNotResume() = runTest {
+        val fixture = fixture()
+        collect(fixture.viewModel)
+        fixture.runtime.updateState(MonitoringRuntimeState.Paused)
+        fixture.viewModel.onResumeMonitoring()
+        assertTrue(fixture.viewModel.uiState.value.showPermissionsSheet)
+        assertEquals(0, fixture.controller.resumeCount)
+        fixture.viewModel.dismissPermissionsSheet()
+        fixture.viewModel.refreshAccessState()
+        assertEquals(0, fixture.controller.resumeCount)
+    }
+
     private fun fixture(
         granted: Boolean = false,
         preferences: FakeAppPreferencesRepository = FakeAppPreferencesRepository(),

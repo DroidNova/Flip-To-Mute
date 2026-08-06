@@ -24,6 +24,13 @@ import com.droidnova.fliptomute.service.MonitoringServiceController
 import com.droidnova.fliptomute.service.MonitoringStateRepository
 import com.droidnova.fliptomute.service.AppRecoveryManager
 import com.droidnova.fliptomute.service.DefaultAppRecoveryManager
+import com.droidnova.fliptomute.quicksettings.AndroidQuickSettingsTileUpdateRequester
+import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
+import com.droidnova.fliptomute.notification.MonitoringNotificationManager
+import com.droidnova.fliptomute.notification.PausedNotificationController
+import com.droidnova.fliptomute.boot.BootMonitoringCoordinator
+import com.droidnova.fliptomute.boot.DefaultBootMonitoringCoordinator
+import com.droidnova.fliptomute.util.MonitoringLog
 
 interface AppContainer {
     val appPreferencesRepository: AppPreferencesRepository
@@ -37,6 +44,9 @@ interface AppContainer {
     val monitoringServiceController: MonitoringServiceController
     val ringerRecoveryRepository: RingerRecoveryRepository
     val appRecoveryManager: AppRecoveryManager
+    val quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester
+    val pausedNotificationController: PausedNotificationController
+    val bootMonitoringCoordinator: BootMonitoringCoordinator
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -62,11 +72,29 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val monitoringStateRepository: MonitoringStateRepository = InMemoryMonitoringStateRepository()
     override val monitoringServiceController: MonitoringServiceController =
         AndroidMonitoringServiceController(applicationContext)
+    override val quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester =
+        AndroidQuickSettingsTileUpdateRequester(applicationContext)
+    override val pausedNotificationController: PausedNotificationController =
+        MonitoringNotificationManager(applicationContext)
+    override val bootMonitoringCoordinator: BootMonitoringCoordinator by lazy {
+        DefaultBootMonitoringCoordinator(
+            appPreferencesRepository,
+            setupAccessRepository,
+            monitoringStateRepository,
+            monitoringServiceController,
+            pausedNotificationController,
+            quickSettingsTileUpdateRequester,
+            ringerModeControllerFactory.create(),
+            log = { message -> MonitoringLog.d(applicationContext, message) },
+        )
+    }
     override val appRecoveryManager: AppRecoveryManager by lazy {
         DefaultAppRecoveryManager(
             appPreferencesRepository,
             monitoringStateRepository,
             ringerModeControllerFactory.create(),
+            quickSettingsTileUpdateRequester,
+            pausedNotificationController,
         )
     }
 }

@@ -15,7 +15,13 @@ interface AppPreferencesRepository {
 
     suspend fun setMonitoringEnabled(enabled: Boolean)
 
+    suspend fun setMonitoringPaused(paused: Boolean)
+
+    suspend fun setStartAfterPhoneRestart(enabled: Boolean)
+
     suspend fun setDetectionFeedbackEnabled(enabled: Boolean)
+
+    suspend fun setRequireFlatSurfaceBeforeFlip(enabled: Boolean)
 
     suspend fun setOnboardingCompleted(completed: Boolean)
 }

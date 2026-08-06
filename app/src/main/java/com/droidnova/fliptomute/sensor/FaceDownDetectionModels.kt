@@ -26,6 +26,9 @@ sealed interface FaceDownDetectionState {
         val gravityX: Float,
         val gravityY: Float,
         val gravityZ: Float,
+        val normalizedZ: Float = Float.NaN,
+        val gravityMagnitude: Float = Float.NaN,
+        val timestampNanos: Long = 0L,
     ) : FaceDownDetectionState
 
     data object SensorUnavailable : FaceDownDetectionState
