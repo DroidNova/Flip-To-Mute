@@ -107,7 +107,7 @@ class DefaultBootMonitoringCoordinator(
             stayOff()
             return BootMonitoringResult.Failed(BootMonitoringFailure.SETUP_INCOMPLETE)
         }
-        return when (serviceController.startMonitoring()) {
+        return when (val commandResult = serviceController.startMonitoring()) {
             MonitoringCommandResult.Accepted -> {
                 log("Monitoring start requested from boot: accepted")
                 BootMonitoringResult.MonitoringStartRequested
@@ -115,7 +115,7 @@ class DefaultBootMonitoringCoordinator(
             is MonitoringCommandResult.Rejected -> {
                 log("Monitoring start requested from boot: rejected")
                 stayOff()
-                val failure = if (serviceControllerFailureIsStartRestriction(it.reason)) {
+                val failure = if (serviceControllerFailureIsStartRestriction(commandResult.reason)) {
                     BootMonitoringFailure.SERVICE_START_NOT_ALLOWED
                 } else {
                     BootMonitoringFailure.SERVICE_START_FAILED
