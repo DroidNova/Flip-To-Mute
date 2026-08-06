@@ -1,6 +1,8 @@
 package com.droidnova.fliptomute.boot
 
 import com.droidnova.fliptomute.audio.FakeRingerModeController
+import com.droidnova.fliptomute.audio.RingerModeFailure
+import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
 import com.droidnova.fliptomute.data.preferences.AppPreferences
 import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
@@ -61,6 +63,22 @@ class BootMonitoringCoordinatorTest {
         assertEquals(1, fixture.notifications.shown)
     }
 
+    @Test fun pausedIntentRemainsPausedWhenSoundRecoveryMustBeRetriedLater() = runTest {
+        val recovery = FakeRingerModeController(
+            recoveryResult = RingerModeRecoveryResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED),
+        )
+        val fixture = fixture(
+            AppPreferences(monitoringEnabled = true, monitoringPaused = true, startAfterPhoneRestart = true),
+            recoveryController = recovery,
+        )
+
+        assertEquals(BootMonitoringResult.PausedStateRestored, fixture.coordinator.handleBootCompleted())
+        assertEquals(MonitoringRuntimeState.Paused, fixture.runtime.state.value)
+        assertTrue(fixture.preferences.preferences.value.monitoringPaused)
+        assertEquals(1, recovery.recoverCount)
+        assertEquals(1, fixture.notifications.shown)
+    }
+
     @Test fun rejectedServiceStartClearsDurableActiveIntent() = runTest {
         val fixture = fixture(
             AppPreferences(monitoringEnabled = true, startAfterPhoneRestart = true),
@@ -75,7 +93,26 @@ class BootMonitoringCoordinatorTest {
         assertEquals(MonitoringRuntimeState.Stopped, fixture.runtime.state.value)
     }
 
-    private fun fixture(preferences: AppPreferences, setupComplete: Boolean = false): Fixture {
+    @Test fun nonRestrictionServiceFailureIsReportedAndClearsDurableActiveIntent() = runTest {
+        val fixture = fixture(
+            AppPreferences(monitoringEnabled = true, startAfterPhoneRestart = true),
+            setupComplete = true,
+        )
+        fixture.controller.startResult = MonitoringCommandResult.Rejected(MonitoringFailure.UNKNOWN)
+
+        assertEquals(
+            BootMonitoringResult.Failed(BootMonitoringFailure.SERVICE_START_FAILED),
+            fixture.coordinator.handleBootCompleted(),
+        )
+        assertFalse(fixture.preferences.preferences.value.monitoringEnabled)
+        assertEquals(MonitoringRuntimeState.Stopped, fixture.runtime.state.value)
+    }
+
+    private fun fixture(
+        preferences: AppPreferences,
+        setupComplete: Boolean = false,
+        recoveryController: FakeRingerModeController = FakeRingerModeController(),
+    ): Fixture {
         val repository = FakeAppPreferencesRepository(preferences)
         val setup = if (setupComplete) SetupAccessState(
             SetupAccessStatus.GRANTED, SetupAccessStatus.GRANTED, SetupAccessStatus.GRANTED,
@@ -86,7 +123,7 @@ class BootMonitoringCoordinatorTest {
         val tiles = FakeTileUpdates()
         val coordinator = DefaultBootMonitoringCoordinator(
             repository, FakeSetupAccessRepository(setup), runtime, controller, notifications, tiles,
-            FakeRingerModeController(),
+            recoveryController,
         )
         return Fixture(coordinator, repository, runtime, controller, notifications, tiles)
     }

@@ -12,6 +12,7 @@ class FakeRingerModeController(
         DeviceRingerMode.NORMAL,
         RingerModeSuccessType.RESTORED,
     ),
+    var recoveryResult: RingerModeRecoveryResult = RingerModeRecoveryResult.NoPendingChange,
 ) : RingerModeController {
     var applyCount = 0
     var restoreCount = 0
@@ -31,7 +32,7 @@ class FakeRingerModeController(
     }
     override suspend fun recoverPendingChange(): RingerModeRecoveryResult {
         recoverCount++
-        return RingerModeRecoveryResult.NoPendingChange
+        return recoveryResult
     }
     override suspend fun clearTemporaryChange() = Unit
 

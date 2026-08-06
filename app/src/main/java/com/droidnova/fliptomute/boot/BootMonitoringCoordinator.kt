@@ -1,11 +1,13 @@
 package com.droidnova.fliptomute.boot
 
 import com.droidnova.fliptomute.audio.RingerModeController
+import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import com.droidnova.fliptomute.notification.PausedNotificationController
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
 import com.droidnova.fliptomute.service.MonitoringCommandResult
+import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.MonitoringServiceController
 import com.droidnova.fliptomute.service.MonitoringStateRepository
@@ -24,7 +26,13 @@ sealed interface BootMonitoringResult {
     data class Failed(val reason: BootMonitoringFailure) : BootMonitoringResult
 }
 
-enum class BootMonitoringFailure { PREFERENCES_UNAVAILABLE, SETUP_INCOMPLETE, SERVICE_START_NOT_ALLOWED, UNKNOWN }
+enum class BootMonitoringFailure {
+    PREFERENCES_UNAVAILABLE,
+    SETUP_INCOMPLETE,
+    SERVICE_START_NOT_ALLOWED,
+    SERVICE_START_FAILED,
+    UNKNOWN,
+}
 
 class DefaultBootMonitoringCoordinator(
     private val preferencesRepository: AppPreferencesRepository,
@@ -79,7 +87,13 @@ class DefaultBootMonitoringCoordinator(
     }
 
     private suspend fun restorePaused(): BootMonitoringResult {
-        recoveryController.recoverPendingChange()
+        when (val recovery = recoveryController.recoverPendingChange()) {
+            is RingerModeRecoveryResult.Failure ->
+                log("Paused sound recovery deferred: ${recovery.reason.name}")
+            RingerModeRecoveryResult.NoPendingChange,
+            is RingerModeRecoveryResult.Restored,
+            is RingerModeRecoveryResult.CurrentModePreserved -> Unit
+        }
         monitoringStateRepository.updateState(MonitoringRuntimeState.Paused)
         pausedNotificationController.showPausedNotification()
         log("Paused state restored")
@@ -101,8 +115,16 @@ class DefaultBootMonitoringCoordinator(
             is MonitoringCommandResult.Rejected -> {
                 log("Monitoring start requested from boot: rejected")
                 stayOff()
-                BootMonitoringResult.Failed(BootMonitoringFailure.SERVICE_START_NOT_ALLOWED)
+                val failure = if (serviceControllerFailureIsStartRestriction(it.reason)) {
+                    BootMonitoringFailure.SERVICE_START_NOT_ALLOWED
+                } else {
+                    BootMonitoringFailure.SERVICE_START_FAILED
+                }
+                BootMonitoringResult.Failed(failure)
             }
         }
     }
+
+    private fun serviceControllerFailureIsStartRestriction(reason: MonitoringFailure) =
+        reason == MonitoringFailure.SERVICE_START_NOT_ALLOWED
 }
