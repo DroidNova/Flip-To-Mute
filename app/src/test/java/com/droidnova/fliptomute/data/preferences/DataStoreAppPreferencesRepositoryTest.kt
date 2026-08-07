@@ -20,6 +20,15 @@ class DataStoreAppPreferencesRepositoryTest {
         assertFalse(preferences.monitoringEnabled)
         assertFalse(preferences.monitoringPaused)
         assertFalse(preferences.startAfterPhoneRestart)
+        assertFalse(preferences.flipToLockEnabled)
+    }
+
+    @Test fun flipToLockPreferencePersists() = runTest {
+        val repository = repository("flip-to-lock.preferences_pb")
+        repository.setFlipToLockEnabled(true)
+        assertTrue(repository.preferences.first().flipToLockEnabled)
+        repository.setFlipToLockEnabled(false)
+        assertFalse(repository.preferences.first().flipToLockEnabled)
     }
 
     @Test fun restartPreferencePersistsWithoutChangingMonitoringIntent() = runTest {

@@ -35,10 +35,13 @@ import com.droidnova.fliptomute.notification.PausedNotificationController
 import com.droidnova.fliptomute.boot.BootMonitoringCoordinator
 import com.droidnova.fliptomute.boot.DefaultBootMonitoringCoordinator
 import com.droidnova.fliptomute.util.MonitoringLog
+import com.droidnova.fliptomute.deviceadmin.AndroidDeviceAdminCapabilityRepository
+import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
 
 interface AppContainer {
     val appPreferencesRepository: AppPreferencesRepository
     val setupAccessRepository: SetupAccessRepository
+    val deviceAdminCapabilityRepository: DeviceAdminCapabilityRepository
     val deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
     val proximityMonitorFactory: ProximityMonitorFactory
     val proximitySensorCapability: ProximitySensorCapability
@@ -62,6 +65,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val ringerRecoveryRepository: RingerRecoveryRepository = DataStoreRingerRecoveryRepository(dataStore)
     override val setupAccessRepository: SetupAccessRepository =
         AndroidSetupAccessRepository(context.applicationContext)
+    override val deviceAdminCapabilityRepository: DeviceAdminCapabilityRepository =
+        AndroidDeviceAdminCapabilityRepository(applicationContext)
     override val deviceOrientationMonitorFactory = DeviceOrientationMonitorFactory {
         AndroidDeviceOrientationMonitor(context.applicationContext)
     }

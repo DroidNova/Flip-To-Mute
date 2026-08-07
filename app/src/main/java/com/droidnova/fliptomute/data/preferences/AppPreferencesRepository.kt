@@ -25,5 +25,7 @@ interface AppPreferencesRepository {
 
     suspend fun setPocketProtectionEnabled(enabled: Boolean)
 
+    suspend fun setFlipToLockEnabled(enabled: Boolean)
+
     suspend fun setOnboardingCompleted(completed: Boolean)
 }
