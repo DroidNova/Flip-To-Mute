@@ -11,6 +11,7 @@ data class AppPreferences(
     val detectionFeedbackEnabled: Boolean = true,
     val requireFlatSurfaceBeforeFlip: Boolean = false,
     val pocketProtectionEnabled: Boolean = true,
+    val flipToLockEnabled: Boolean = false,
     val onboardingCompleted: Boolean = false,
 )
 

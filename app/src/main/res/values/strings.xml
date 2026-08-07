@@ -1,4 +1,21 @@
 <resources>
+    <string name="extra_gestures_section">Extra gestures</string>
+    <string name="flip_to_lock_title">Flip to lock screen</string>
+    <string name="flip_to_lock_supporting_text">Place your phone face down on a flat surface to lock it.</string>
+    <string name="flip_to_lock_secondary_text">Works while Flip to Mute is on.</string>
+    <string name="screen_locking_unavailable">Screen locking is not available on this device.</string>
+    <string name="screen_lock_access_allowed">Screen-lock access allowed.</string>
+    <string name="remove_screen_lock_access">Remove screen-lock access</string>
+    <string name="allow_screen_locking_title">Allow screen locking</string>
+    <string name="allow_screen_locking_message">Android requires screen-lock access for this gesture. Flip to Mute will request only the ability to lock your screen.</string>
+    <string name="cancel_action">Cancel</string>
+    <string name="remove_screen_lock_access_title">Remove screen-lock access?</string>
+    <string name="remove_screen_lock_access_message">Flip to lock will remain unavailable until you allow this access again.</string>
+    <string name="remove_action">Remove</string>
+    <string name="flip_to_lock_ready">Flip to lock is ready.</string>
+    <string name="screen_lock_access_removed">Screen-lock access removed.</string>
+    <string name="flip_to_lock_admin_explanation">Flip to Mute needs screen-lock access only to lock your phone after you deliberately flip it face down.</string>
+    <string name="flip_to_lock_admin_disable_warning">Turning off this access disables Flip to lock screen. Other Flip to Mute features will continue to work.</string>
     <string name="pocket_protection">Pocket protection</string>
     <string name="pocket_protection_description">Avoid accidental actions while the phone is in a pocket or bag.</string>
     <string name="pocket_protection_unavailable">Pocket protection is not available on this device.</string>

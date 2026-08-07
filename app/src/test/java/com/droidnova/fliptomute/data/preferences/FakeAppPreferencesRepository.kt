@@ -51,6 +51,10 @@ class FakeAppPreferencesRepository(
         mutablePreferences.update { it.copy(pocketProtectionEnabled = enabled) }
     }
 
+    override suspend fun setFlipToLockEnabled(enabled: Boolean) {
+        mutablePreferences.update { it.copy(flipToLockEnabled = enabled) }
+    }
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         mutablePreferences.update { it.copy(onboardingCompleted = completed) }
     }

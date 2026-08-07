@@ -80,6 +80,10 @@ class DataStoreAppPreferencesRepository(
         updateBoolean(Keys.POCKET_PROTECTION_ENABLED, enabled)
     }
 
+    override suspend fun setFlipToLockEnabled(enabled: Boolean) {
+        updateBoolean(Keys.FLIP_TO_LOCK_ENABLED, enabled)
+    }
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         dataStore.edit { preferences -> preferences[Keys.ONBOARDING_COMPLETED] = completed }
     }
@@ -110,6 +114,7 @@ class DataStoreAppPreferencesRepository(
             detectionFeedbackEnabled = preferences[Keys.DETECTION_FEEDBACK_ENABLED] ?: true,
             requireFlatSurfaceBeforeFlip = preferences[Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP] ?: false,
             pocketProtectionEnabled = preferences[Keys.POCKET_PROTECTION_ENABLED] ?: true,
+            flipToLockEnabled = preferences[Keys.FLIP_TO_LOCK_ENABLED] ?: false,
             onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
         )
     }
@@ -131,5 +136,6 @@ class DataStoreAppPreferencesRepository(
         val POCKET_PROTECTION_ENABLED = booleanPreferencesKey("pocket_protection_enabled")
         val MONITORING_PAUSED = booleanPreferencesKey("monitoring_paused")
         val START_AFTER_PHONE_RESTART = booleanPreferencesKey("start_after_phone_restart")
+        val FLIP_TO_LOCK_ENABLED = booleanPreferencesKey("flip_to_lock_enabled")
     }
 }

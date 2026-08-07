@@ -28,6 +28,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import android.app.Activity
 import kotlinx.coroutines.launch
@@ -50,6 +53,7 @@ import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.data.setup.SetupAccessStatus
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
+import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 
 @Composable
 fun SettingsRoute(
@@ -61,13 +65,36 @@ fun SettingsRoute(
     viewModelFactory: ViewModelProvider.Factory,
 ) {
     val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
-    RefreshOnResume(viewModel::refreshAccessState)
+    RefreshOnResume {
+        viewModel.refreshAccessState()
+        viewModel.refreshDeviceAdminState()
+    }
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val activity = LocalContext.current as Activity
     val addRequester = remember(activity) { QuickSettingsTileAddRequester(activity) }
     val snackbar = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showManualInstructions by remember { mutableStateOf(false) }
+    var showAdminExplanation by remember { mutableStateOf(false) }
+    var showRemoveAdminConfirmation by remember { mutableStateOf(false) }
+    val adminLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.onDeviceAdminActivationResult()
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                SettingsUiEvent.ShowDeviceAdminExplanation -> showAdminExplanation = true
+                is SettingsUiEvent.ShowMessage -> snackbar.showSnackbar(
+                    activity.getString(
+                        when (event.message) {
+                            SettingsMessage.FLIP_TO_LOCK_READY -> R.string.flip_to_lock_ready
+                            SettingsMessage.SCREEN_LOCK_ACCESS_REMOVED -> R.string.screen_lock_access_removed
+                        },
+                    ),
+                )
+            }
+        }
+    }
     val onAddTile = {
         addRequester.request { result ->
             if (result == QuickSettingsTileAddResult.ManualInstructionsRequired) {
@@ -90,10 +117,24 @@ fun SettingsRoute(
         onRequireFlatSurfaceBeforeFlipChanged = viewModel::onRequireFlatSurfaceBeforeFlipChanged,
         onPocketProtectionChanged = viewModel::onPocketProtectionChanged,
         onStartAfterPhoneRestartChanged = viewModel::onStartAfterPhoneRestartChanged,
+        onFlipToLockChanged = viewModel::onFlipToLockChanged,
+        onRemoveDeviceAdmin = { showRemoveAdminConfirmation = true },
         onAddQuickSettingsTile = onAddTile,
         snackbarHostState = snackbar,
         showManualTileInstructions = showManualInstructions,
         onDismissManualTileInstructions = { showManualInstructions = false },
+        showAdminExplanation = showAdminExplanation,
+        onDismissAdminExplanation = { showAdminExplanation = false },
+        onContinueAdminExplanation = {
+            showAdminExplanation = false
+            adminLauncher.launch(viewModel.createDeviceAdminActivationIntent())
+        },
+        showRemoveAdminConfirmation = showRemoveAdminConfirmation,
+        onDismissRemoveAdmin = { showRemoveAdminConfirmation = false },
+        onConfirmRemoveAdmin = {
+            showRemoveAdminConfirmation = false
+            viewModel.onRemoveDeviceAdminConfirmed()
+        },
     )
 }
 
@@ -110,10 +151,18 @@ fun SettingsScreen(
     onRequireFlatSurfaceBeforeFlipChanged: (Boolean) -> Unit,
     onPocketProtectionChanged: (Boolean) -> Unit,
     onStartAfterPhoneRestartChanged: (Boolean) -> Unit,
+    onFlipToLockChanged: (Boolean) -> Unit,
+    onRemoveDeviceAdmin: () -> Unit,
     onAddQuickSettingsTile: () -> Unit,
     snackbarHostState: SnackbarHostState,
     showManualTileInstructions: Boolean,
     onDismissManualTileInstructions: () -> Unit,
+    showAdminExplanation: Boolean,
+    onDismissAdminExplanation: () -> Unit,
+    onContinueAdminExplanation: () -> Unit,
+    showRemoveAdminConfirmation: Boolean,
+    onDismissRemoveAdmin: () -> Unit,
+    onConfirmRemoveAdmin: () -> Unit,
 ) {
     if (showManualTileInstructions) {
         AlertDialog(
@@ -122,6 +171,32 @@ fun SettingsScreen(
             text = { Text(stringResource(R.string.add_quick_settings_tile_instructions)) },
             confirmButton = {
                 TextButton(onClick = onDismissManualTileInstructions) { Text(stringResource(R.string.got_it)) }
+            },
+        )
+    }
+    if (showAdminExplanation) {
+        AlertDialog(
+            onDismissRequest = onDismissAdminExplanation,
+            title = { Text(stringResource(R.string.allow_screen_locking_title)) },
+            text = { Text(stringResource(R.string.allow_screen_locking_message)) },
+            confirmButton = {
+                TextButton(onClick = onContinueAdminExplanation) { Text(stringResource(R.string.continue_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissAdminExplanation) { Text(stringResource(R.string.cancel_action)) }
+            },
+        )
+    }
+    if (showRemoveAdminConfirmation) {
+        AlertDialog(
+            onDismissRequest = onDismissRemoveAdmin,
+            title = { Text(stringResource(R.string.remove_screen_lock_access_title)) },
+            text = { Text(stringResource(R.string.remove_screen_lock_access_message)) },
+            confirmButton = {
+                TextButton(onClick = onConfirmRemoveAdmin) { Text(stringResource(R.string.remove_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissRemoveAdmin) { Text(stringResource(R.string.cancel_action)) }
             },
         )
     }
@@ -209,6 +284,38 @@ fun SettingsScreen(
                     Switch(
                         checked = state.detectionFeedbackEnabled,
                         onCheckedChange = onDetectionFeedbackChanged,
+                    )
+                }
+            }
+            item { SectionHeader(stringResource(R.string.extra_gestures_section)) }
+            item {
+                val supported = state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = supported) { onFlipToLockChanged(!state.flipToLockEnabled) }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.flip_to_lock_title))
+                        Text(stringResource(R.string.flip_to_lock_supporting_text))
+                        Text(stringResource(R.string.flip_to_lock_secondary_text))
+                        when {
+                            !supported -> Text(stringResource(R.string.screen_locking_unavailable))
+                            state.flipToLockEnabled && state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE ->
+                                Text(stringResource(R.string.screen_lock_access_allowed))
+                        }
+                        if (!state.flipToLockEnabled && state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE) {
+                            TextButton(onClick = onRemoveDeviceAdmin) {
+                                Text(stringResource(R.string.remove_screen_lock_access))
+                            }
+                        }
+                    }
+                    Switch(
+                        checked = state.flipToLockEnabled,
+                        enabled = supported,
+                        onCheckedChange = null,
                     )
                 }
             }
@@ -310,7 +417,31 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     FlipToMuteTheme(dynamicColor = false) {
-        SettingsScreen(SettingsUiState(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, remember { SnackbarHostState() }, false, {})
+        SettingsScreen(
+            state = SettingsUiState(),
+            onBack = {},
+            onOpenSetup = {},
+            onCallStateTest = {},
+            onSensorTest = {},
+            onSoundControlTest = {},
+            onFlipActionSelected = {},
+            onDetectionFeedbackChanged = {},
+            onRequireFlatSurfaceBeforeFlipChanged = {},
+            onPocketProtectionChanged = {},
+            onStartAfterPhoneRestartChanged = {},
+            onFlipToLockChanged = {},
+            onRemoveDeviceAdmin = {},
+            onAddQuickSettingsTile = {},
+            snackbarHostState = remember { SnackbarHostState() },
+            showManualTileInstructions = false,
+            onDismissManualTileInstructions = {},
+            showAdminExplanation = false,
+            onDismissAdminExplanation = {},
+            onContinueAdminExplanation = {},
+            showRemoveAdminConfirmation = false,
+            onDismissRemoveAdmin = {},
+            onConfirmRemoveAdmin = {},
+        )
     }
 }
 

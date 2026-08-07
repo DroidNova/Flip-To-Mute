@@ -145,6 +145,10 @@ class FlipMonitoringService : Service() {
                 },
                 proximityMonitor = container.proximityMonitorFactory.create(),
                 debugLog = ::debugLog,
+                deviceAdminRepository = container.deviceAdminCapabilityRepository,
+                screenLockController = container.screenLockController,
+                screenStateRepository = container.screenStateRepository,
+                monitoringStateRepository = container.monitoringStateRepository,
             )
             debugLog("Starting cellular call monitor")
             when (val result = coordinator?.startAndAwaitReady()) {

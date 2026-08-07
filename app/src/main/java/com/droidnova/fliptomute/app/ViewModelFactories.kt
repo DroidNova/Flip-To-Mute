@@ -38,6 +38,7 @@ class ViewModelFactories(container: AppContainer) {
                 container.appPreferencesRepository,
                 container.setupAccessRepository,
                 container.proximitySensorCapability,
+                container.deviceAdminCapabilityRepository,
             )
         }
     }
