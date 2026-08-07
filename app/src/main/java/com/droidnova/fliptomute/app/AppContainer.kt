@@ -37,11 +37,17 @@ import com.droidnova.fliptomute.boot.DefaultBootMonitoringCoordinator
 import com.droidnova.fliptomute.util.MonitoringLog
 import com.droidnova.fliptomute.deviceadmin.AndroidDeviceAdminCapabilityRepository
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
+import com.droidnova.fliptomute.screenlock.AndroidScreenLockController
+import com.droidnova.fliptomute.screenlock.AndroidScreenStateRepository
+import com.droidnova.fliptomute.screenlock.ScreenLockController
+import com.droidnova.fliptomute.screenlock.ScreenStateRepository
 
 interface AppContainer {
     val appPreferencesRepository: AppPreferencesRepository
     val setupAccessRepository: SetupAccessRepository
     val deviceAdminCapabilityRepository: DeviceAdminCapabilityRepository
+    val screenLockController: ScreenLockController
+    val screenStateRepository: ScreenStateRepository
     val deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
     val proximityMonitorFactory: ProximityMonitorFactory
     val proximitySensorCapability: ProximitySensorCapability
@@ -67,6 +73,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
         AndroidSetupAccessRepository(context.applicationContext)
     override val deviceAdminCapabilityRepository: DeviceAdminCapabilityRepository =
         AndroidDeviceAdminCapabilityRepository(applicationContext)
+    override val screenLockController: ScreenLockController = AndroidScreenLockController(applicationContext)
+    override val screenStateRepository: ScreenStateRepository = AndroidScreenStateRepository(applicationContext)
     override val deviceOrientationMonitorFactory = DeviceOrientationMonitorFactory {
         AndroidDeviceOrientationMonitor(context.applicationContext)
     }
