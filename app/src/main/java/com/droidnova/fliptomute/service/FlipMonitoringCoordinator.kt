@@ -103,8 +103,8 @@ class FlipMonitoringCoordinator(
             preferencesRepository.preferences.collectLatest { preferences ->
                 mutex.withLock {
                     if (preferences.flipToLockEnabled != latestPreferences.flipToLockEnabled) {
-                        flipToLockGestureGate.reset()
-                        if (preferences.flipToLockEnabled) deviceAdminRepository?.refresh()
+                        resetFlipToLockGesture()
+                        if (preferences.flipToLockEnabled) deviceAdminRepository?.refresh() else debugLog("FlipToLock Disabled")
                     }
                     latestPreferences = preferences
                     updateOrientationMonitoring()
@@ -112,9 +112,13 @@ class FlipMonitoringCoordinator(
             }
         }
         deviceAdminJob = scope.launch {
-            deviceAdminRepository?.availability?.collectLatest {
+            deviceAdminRepository?.availability?.collectLatest { availability ->
                 mutex.withLock {
-                    flipToLockGestureGate.reset()
+                    resetFlipToLockGesture()
+                    if (availability != DeviceAdminAvailability.ACTIVE && latestPreferences.flipToLockEnabled) {
+                        preferencesRepository.setFlipToLockEnabled(false)
+                        debugLog("FlipToLock Disabled")
+                    }
                     updateOrientationMonitoring()
                 }
             }
@@ -122,7 +126,7 @@ class FlipMonitoringCoordinator(
         screenStateJob = scope.launch {
             screenStateRepository?.isInteractiveAndUnlocked?.collectLatest {
                 mutex.withLock {
-                    flipToLockGestureGate.reset()
+                    resetFlipToLockGesture()
                     updateOrientationMonitoring()
                 }
             }
@@ -130,7 +134,7 @@ class FlipMonitoringCoordinator(
         runtimeStateJob = scope.launch {
             monitoringStateRepository.state.collectLatest { runtime ->
                 mutex.withLock {
-                    if (runtime != latestRuntimeState) flipToLockGestureGate.reset()
+                    if (runtime != latestRuntimeState) resetFlipToLockGesture()
                     latestRuntimeState = runtime
                     updateOrientationMonitoring()
                 }
@@ -157,7 +161,7 @@ class FlipMonitoringCoordinator(
         orientationMonitor.stop()
         stopPocketMonitoring()
         flatSurfaceFlipGate.reset()
-        flipToLockGestureGate.reset()
+        resetFlipToLockGesture()
         callMonitor.stop()
         ringingSession = null
         started = false
@@ -354,6 +358,11 @@ class FlipMonitoringCoordinator(
             state.gravityMagnitude,
             state.timestampNanos,
         )
+        when (result) {
+            FlipToLockGestureResult.Armed -> debugLog("FlipToLock Armed")
+            FlipToLockGestureResult.LockRequested -> debugLog("FlipToLock Lock Requested")
+            FlipToLockGestureResult.Waiting -> Unit
+        }
         if (result != FlipToLockGestureResult.LockRequested) return
         if (!isFlipToLockEligible(refreshScreenState = true)) {
             flipToLockGestureGate.reset()
@@ -363,6 +372,7 @@ class FlipMonitoringCoordinator(
         val lockResult = screenLockController?.lockScreen() ?: ScreenLockResult.Unsupported
         flipToLockGestureGate.reset()
         if (lockResult == ScreenLockResult.Locked) {
+            debugLog("FlipToLock Locked")
             orientationMonitor.stop()
             screenStateRepository?.refresh()
         } else {
@@ -387,6 +397,11 @@ class FlipMonitoringCoordinator(
             screenEligible && currentCallState == CellularCallState.IDLE && ringingSession == null
     }
 
+    private fun resetFlipToLockGesture() {
+        flipToLockGestureGate.reset()
+        debugLog("FlipToLock Reset")
+    }
+
     private fun updateOrientationMonitoring() {
         val incomingCallNeedsOrientation = ringingSession?.let { session ->
             !session.actionHandled && session.pocketDecision != PocketProtectionDecision.BLOCKED
@@ -395,7 +410,7 @@ class FlipMonitoringCoordinator(
             orientationMonitor.start()
         } else {
             orientationMonitor.stop()
-            flipToLockGestureGate.reset()
+            resetFlipToLockGesture()
         }
     }
 

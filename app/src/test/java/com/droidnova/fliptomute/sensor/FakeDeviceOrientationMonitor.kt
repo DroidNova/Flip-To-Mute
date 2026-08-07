@@ -16,11 +16,17 @@ class FakeDeviceOrientationMonitor(
     override val state = mutableState.asStateFlow()
     var startCount = 0
     var stopCount = 0
+    var activeRegistrations = 0
+        private set
+    var maxActiveRegistrations = 0
+        private set
     private var timestampNanos = 1_000_000_000L
 
     override fun start() {
         if (!isSensorAvailable || state.value is FaceDownDetectionState.Detecting) return
         startCount++
+        activeRegistrations++
+        maxActiveRegistrations = maxOf(maxActiveRegistrations, activeRegistrations)
         mutableState.value = FaceDownDetectionState.Detecting(
             DeviceOrientation.UNKNOWN, OrientationSensorSource.GRAVITY, 0f, 0f, 0f,
         )
@@ -28,6 +34,7 @@ class FakeDeviceOrientationMonitor(
 
     override fun stop() {
         stopCount++
+        activeRegistrations = 0
         mutableState.value = if (isSensorAvailable) {
             FaceDownDetectionState.Idle(true, OrientationSensorSource.GRAVITY)
         } else {

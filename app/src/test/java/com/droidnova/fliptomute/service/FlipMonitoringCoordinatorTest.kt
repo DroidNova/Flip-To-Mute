@@ -213,6 +213,70 @@ class FlipMonitoringCoordinatorTest {
         assertEquals(0, fixture.screenLock.lockCount)
     }
 
+    @Test fun screenOffScreenOnAndUnlockResetRequireFreshFaceUp() = runTest {
+        val fixture = lockFixture(backgroundScope)
+        fixture.coordinator.startAndAwaitReady(); fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_UP, timestampNanos = 1_000_000_000L); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_UP, timestampNanos = 1_700_000_000L); runCurrent()
+        fixture.screen.setInteractiveAndUnlocked(false); runCurrent()
+        assertEquals(0, fixture.sensor.activeRegistrations)
+        fixture.screen.setInteractiveAndUnlocked(true); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 2_400_000_000L); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 3_100_000_000L); runCurrent()
+        assertEquals(0, fixture.screenLock.lockCount)
+        fixture.emitValidLockGesture(); runCurrent()
+        assertEquals(1, fixture.screenLock.lockCount)
+
+        fixture.screen.setInteractiveAndUnlocked(false); runCurrent()
+        fixture.screen.setInteractiveAndUnlocked(true); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 4_000_000_000L); runCurrent()
+        assertEquals(1, fixture.screenLock.lockCount)
+    }
+
+    @Test fun deviceAdminRemovalDisablesLockPreferenceAndStopsLockMonitoringOnly() = runTest {
+        val fixture = lockFixture(backgroundScope)
+        fixture.coordinator.startAndAwaitReady(); fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
+        assertEquals(1, fixture.sensor.activeRegistrations)
+        fixture.admin.setAvailability(DeviceAdminAvailability.INACTIVE); runCurrent()
+        assertEquals(false, fixture.preferences.current.flipToLockEnabled)
+        assertEquals(0, fixture.sensor.activeRegistrations)
+        fixture.call.emit(listening(CellularCallState.RINGING)); runCurrent()
+        assertEquals(1, fixture.sensor.activeRegistrations)
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN); runCurrent()
+        assertEquals(1, fixture.ringer.applyCount)
+        assertEquals(0, fixture.screenLock.lockCount)
+    }
+
+    @Test fun monitoringRestartProcessRestartConfigurationChangeAndRapidToggleKeepSingleFreshListener() = runTest {
+        val fixture = lockFixture(backgroundScope)
+        fixture.coordinator.startAndAwaitReady(); fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
+        repeat(20) { enabled -> fixture.preferences.setFlipToLockEnabled(enabled % 2 == 0); runCurrent() }
+        assertTrue(fixture.sensor.maxActiveRegistrations <= 1)
+        fixture.runtime.updateState(MonitoringRuntimeState.Paused); runCurrent()
+        assertEquals(0, fixture.sensor.activeRegistrations)
+        fixture.runtime.updateState(MonitoringRuntimeState.Active); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 5_000_000_000L); runCurrent()
+        fixture.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 5_700_000_000L); runCurrent()
+        assertEquals(0, fixture.screenLock.lockCount)
+        fixture.emitValidLockGesture(); runCurrent()
+        assertEquals(1, fixture.screenLock.lockCount)
+
+        fixture.coordinator.beginStopping(); runCurrent()
+        assertEquals(0, fixture.sensor.activeRegistrations)
+        val restarted = lockFixture(backgroundScope, preferences = fixture.preferences)
+        restarted.coordinator.startAndAwaitReady(); restarted.call.emit(listening(CellularCallState.IDLE)); runCurrent()
+        restarted.sensor.emit(DeviceOrientation.FACE_DOWN, timestampNanos = 7_000_000_000L); runCurrent()
+        assertEquals(0, restarted.screenLock.lockCount)
+        assertTrue(restarted.sensor.maxActiveRegistrations <= 1)
+    }
+
+    @Test fun sensorCleanupLeavesNoListenerAfterStop() = runTest {
+        val fixture = lockFixture(backgroundScope)
+        fixture.coordinator.startAndAwaitReady(); fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
+        fixture.coordinator.stop(); runCurrent()
+        assertEquals(0, fixture.sensor.activeRegistrations)
+    }
+
     private fun fixture(
         scope: kotlinx.coroutines.CoroutineScope,
         action: FlipAction = FlipAction.SILENT,
@@ -238,8 +302,8 @@ class FlipMonitoringCoordinatorTest {
         enabled: Boolean = true,
         runtime: MonitoringRuntimeState = MonitoringRuntimeState.Active,
         admin: DeviceAdminAvailability = DeviceAdminAvailability.ACTIVE,
+        preferences: FakeAppPreferencesRepository = FakeAppPreferencesRepository(AppPreferences(flipToLockEnabled = enabled)),
     ): LockFixture {
-        val preferences = FakeAppPreferencesRepository(AppPreferences(flipToLockEnabled = enabled))
         val call = FakeCellularCallMonitor(stateAfterStart = listening(CellularCallState.UNKNOWN))
         val sensor = FakeDeviceOrientationMonitor()
         val ringer = FakeRingerModeController(
@@ -247,6 +311,8 @@ class FlipMonitoringCoordinatorTest {
         )
         val screenLock = FakeScreenLockController()
         val runtimeRepository = InMemoryMonitoringStateRepository().apply { updateState(runtime) }
+        val adminRepository = FakeDeviceAdminCapabilityRepository(admin)
+        val screenRepository = FakeScreenStateRepository()
         val coordinator = FlipMonitoringCoordinator(
             preferences,
             call,
@@ -255,12 +321,12 @@ class FlipMonitoringCoordinatorTest {
             NoVibrationController,
             scope,
             onFailure = {},
-            deviceAdminRepository = FakeDeviceAdminCapabilityRepository(admin),
+            deviceAdminRepository = adminRepository,
             screenLockController = screenLock,
-            screenStateRepository = FakeScreenStateRepository(),
+            screenStateRepository = screenRepository,
             monitoringStateRepository = runtimeRepository,
         )
-        return LockFixture(coordinator, call, sensor, ringer, screenLock)
+        return LockFixture(coordinator, call, sensor, ringer, screenLock, preferences, adminRepository, screenRepository, runtimeRepository)
     }
 
     private fun listening(state: CellularCallState) = CellularCallMonitorState.Listening(state, 1)
@@ -279,6 +345,10 @@ class FlipMonitoringCoordinatorTest {
         val sensor: FakeDeviceOrientationMonitor,
         val ringer: FakeRingerModeController,
         val screenLock: FakeScreenLockController,
+        val preferences: FakeAppPreferencesRepository,
+        val admin: FakeDeviceAdminCapabilityRepository,
+        val screen: FakeScreenStateRepository,
+        val runtime: InMemoryMonitoringStateRepository,
     ) {
         suspend fun emitValidLockGesture() {
             sensor.emit(DeviceOrientation.FACE_UP, timestampNanos = 1_000_000_000L)
@@ -314,5 +384,6 @@ private class FakeScreenLockController : ScreenLockController {
 private class FakeScreenStateRepository(initial: Boolean = true) : ScreenStateRepository {
     private val mutableState = MutableStateFlow(initial)
     override val isInteractiveAndUnlocked = mutableState.asStateFlow()
+    fun setInteractiveAndUnlocked(value: Boolean) { mutableState.value = value }
     override fun refresh() = mutableState.value
 }
