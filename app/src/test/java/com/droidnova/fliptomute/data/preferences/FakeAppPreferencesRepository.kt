@@ -10,6 +10,7 @@ class FakeAppPreferencesRepository(
 ) : AppPreferencesRepository {
     private val mutablePreferences = MutableStateFlow(initialPreferences)
     override val preferences = mutablePreferences.asStateFlow()
+    val current: AppPreferences get() = mutablePreferences.value
 
     override suspend fun setFlipAction(action: FlipAction) {
         mutablePreferences.update {
