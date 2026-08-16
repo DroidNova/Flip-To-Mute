@@ -275,6 +275,8 @@ fun SettingsScreen(
                         text = stringResource(R.string.selected_flip_action),
                         modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
                     )
                     FlipActionOption(
                         title = stringResource(R.string.silent_title),
@@ -325,6 +327,8 @@ fun SettingsScreen(
                             Text(
                                 stringResource(R.string.flip_to_lock_title),
                                 style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium,
                             )
                             Text(
                                 stringResource(R.string.flip_to_lock_supporting_text),
@@ -489,7 +493,12 @@ private fun SettingText(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        )
         Text(
             description,
             style = MaterialTheme.typography.bodyMedium,
@@ -518,6 +527,8 @@ private fun StatusSettingRow(title: String, status: String) {
             text = title,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
         )
         SecondaryText(status)
     }
@@ -564,6 +575,7 @@ private fun DiagnosticActionRow(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
@@ -591,7 +603,7 @@ private fun SettingsSection(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold,
         )
         description?.let { SecondaryText(it) }

@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -16,7 +17,12 @@ fun SettingsItem(title: String, supportingText: String, modifier: Modifier = Mod
         modifier = modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        )
         Text(
             supportingText,
             style = MaterialTheme.typography.bodyMedium,
