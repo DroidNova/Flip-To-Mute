@@ -1,27 +1,38 @@
 package com.droidnova.fliptomute.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,17 +49,22 @@ import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddRequester
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.FlipActionOption
-import com.droidnova.fliptomute.ui.components.SectionHeader
 import com.droidnova.fliptomute.ui.components.SettingsItem
+import com.droidnova.fliptomute.ui.components.SettingsGroup
+import com.droidnova.fliptomute.ui.components.SettingsGroupDivider
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.data.setup.SetupAccessStatus
@@ -207,209 +223,396 @@ fun SettingsScreen(
     ) { padding ->
         LazyColumn(
             modifier = Modifier.padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { SectionHeader(stringResource(R.string.behaviour_section)) }
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            onRequireFlatSurfaceBeforeFlipChanged(!state.requireFlatSurfaceBeforeFlip)
-                        }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.only_when_lying_flat))
-                        Text(stringResource(R.string.only_when_lying_flat_description))
+                SettingsSection(stringResource(R.string.behaviour_section)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onRequireFlatSurfaceBeforeFlipChanged(!state.requireFlatSurfaceBeforeFlip)
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SettingText(
+                            title = stringResource(R.string.only_when_lying_flat),
+                            description = stringResource(R.string.only_when_lying_flat_description),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Checkbox(checked = state.requireFlatSurfaceBeforeFlip, onCheckedChange = null)
                     }
-                    Checkbox(
-                        checked = state.requireFlatSurfaceBeforeFlip,
-                        onCheckedChange = null,
+                    SettingsGroupDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = state.isProximitySensorAvailable) {
+                                onPocketProtectionChanged(!state.pocketProtectionEnabled)
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SettingText(
+                            title = stringResource(R.string.pocket_protection),
+                            description = stringResource(
+                                if (state.isProximitySensorAvailable) {
+                                    R.string.pocket_protection_description
+                                } else {
+                                    R.string.pocket_protection_unavailable
+                                },
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = state.pocketProtectionEnabled && state.isProximitySensorAvailable,
+                            enabled = state.isProximitySensorAvailable,
+                            onCheckedChange = null,
+                        )
+                    }
+                    SettingsGroupDivider()
+                    Text(
+                        text = stringResource(R.string.selected_flip_action),
+                        modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
                     )
+                    FlipActionOption(
+                        title = stringResource(R.string.silent_title),
+                        description = stringResource(R.string.silent_description),
+                        icon = Icons.Default.VolumeOff,
+                        selected = state.selectedFlipAction == FlipAction.SILENT,
+                        onClick = { onFlipActionSelected(FlipAction.SILENT) },
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    FlipActionOption(
+                        title = stringResource(R.string.vibrate_title),
+                        description = stringResource(R.string.vibrate_description),
+                        icon = Icons.Default.Vibration,
+                        selected = state.selectedFlipAction == FlipAction.VIBRATE,
+                        onClick = { onFlipActionSelected(FlipAction.VIBRATE) },
+                    )
+                    SettingsGroupDivider(Modifier.padding(top = 8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SettingText(
+                            title = stringResource(R.string.detection_feedback),
+                            description = stringResource(R.string.detection_feedback_description),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = state.detectionFeedbackEnabled,
+                            onCheckedChange = onDetectionFeedbackChanged,
+                        )
+                    }
                 }
             }
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = state.isProximitySensorAvailable) {
-                            onPocketProtectionChanged(!state.pocketProtectionEnabled)
-                        }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.pocket_protection))
-                        Text(stringResource(if (state.isProximitySensorAvailable) {
-                            R.string.pocket_protection_description
-                        } else R.string.pocket_protection_unavailable))
-                    }
-                    Switch(
-                        checked = state.pocketProtectionEnabled && state.isProximitySensorAvailable,
-                        enabled = state.isProximitySensorAvailable,
-                        onCheckedChange = null,
-                    )
-                }
-            }
-            item {
-                FlipActionOption(
-                    title = stringResource(R.string.silent_title),
-                    description = stringResource(R.string.silent_description),
-                    icon = Icons.Default.VolumeOff,
-                    selected = state.selectedFlipAction == FlipAction.SILENT,
-                    onClick = { onFlipActionSelected(FlipAction.SILENT) },
-                )
-            }
-            item {
-                FlipActionOption(
-                    title = stringResource(R.string.vibrate_title),
-                    description = stringResource(R.string.vibrate_description),
-                    icon = Icons.Default.Vibration,
-                    selected = state.selectedFlipAction == FlipAction.VIBRATE,
-                    onClick = { onFlipActionSelected(FlipAction.VIBRATE) },
-                )
-            }
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.detection_feedback))
-                        Text(stringResource(R.string.detection_feedback_description))
-                    }
-                    Switch(
-                        checked = state.detectionFeedbackEnabled,
-                        onCheckedChange = onDetectionFeedbackChanged,
-                    )
-                }
-            }
-            item { SectionHeader(stringResource(R.string.extra_gestures_section)) }
-            item {
-                val supported = state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = supported) { onFlipToLockChanged(!state.flipToLockEnabled) }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.flip_to_lock_title))
-                        Text(stringResource(R.string.flip_to_lock_supporting_text))
-                        Text(stringResource(R.string.flip_to_lock_secondary_text))
-                        when {
-                            !supported -> Text(stringResource(R.string.screen_locking_unavailable))
-                            state.flipToLockEnabled && state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE ->
-                                Text(stringResource(R.string.screen_lock_access_allowed))
-                        }
-                        if (!state.flipToLockEnabled && state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE) {
-                            TextButton(onClick = onRemoveDeviceAdmin) {
-                                Text(stringResource(R.string.remove_screen_lock_access))
+                SettingsSection(stringResource(R.string.extra_gestures_section)) {
+                    val supported = state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = supported) { onFlipToLockChanged(!state.flipToLockEnabled) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.flip_to_lock_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                stringResource(R.string.flip_to_lock_supporting_text),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                stringResource(R.string.flip_to_lock_secondary_text),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            when {
+                                !supported -> SecondaryText(stringResource(R.string.screen_locking_unavailable))
+                                state.flipToLockEnabled &&
+                                    state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE ->
+                                    SecondaryText(stringResource(R.string.screen_lock_access_allowed))
+                            }
+                            if (!state.flipToLockEnabled &&
+                                state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE
+                            ) {
+                                TextButton(onClick = onRemoveDeviceAdmin) {
+                                    Text(stringResource(R.string.remove_screen_lock_access))
+                                }
                             }
                         }
+                        Switch(
+                            checked = state.flipToLockEnabled,
+                            enabled = supported,
+                            onCheckedChange = null,
+                        )
                     }
-                    Switch(
-                        checked = state.flipToLockEnabled,
-                        enabled = supported,
-                        onCheckedChange = null,
+                }
+            }
+            item {
+                SettingsSection(stringResource(R.string.convenience_section)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onStartAfterPhoneRestartChanged(!state.startAfterPhoneRestart) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SettingText(
+                            title = stringResource(R.string.start_after_phone_restart),
+                            description = stringResource(R.string.start_after_phone_restart_description),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(checked = state.startAfterPhoneRestart, onCheckedChange = null)
+                    }
+                    SettingsGroupDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onAddQuickSettingsTile)
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SettingText(
+                            title = stringResource(R.string.quick_settings_tile_title),
+                            description = stringResource(R.string.quick_settings_tile_description),
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onAddQuickSettingsTile) {
+                            Text(stringResource(R.string.add_tile))
+                        }
+                    }
+                }
+            }
+            item {
+                SettingsSection(stringResource(R.string.monitoring_section)) {
+                    SettingsItem(
+                        stringResource(R.string.monitoring_status),
+                        stringResource(
+                            if (state.monitoringEnabled) R.string.setting_enabled
+                            else R.string.setting_disabled,
+                        ),
                     )
                 }
             }
-            item { SectionHeader(stringResource(R.string.convenience_section)) }
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onStartAfterPhoneRestartChanged(!state.startAfterPhoneRestart) }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.start_after_phone_restart))
-                        Text(stringResource(R.string.start_after_phone_restart_description))
+                SettingsSection(stringResource(R.string.setup_section)) {
+                    StatusSettingRow(
+                        stringResource(R.string.phone_access_title),
+                        accessStatusText(state.accessState.phoneStateStatus),
+                    )
+                    SettingsGroupDivider()
+                    StatusSettingRow(
+                        stringResource(R.string.sound_access_title),
+                        accessStatusText(state.accessState.soundControlStatus),
+                    )
+                    SettingsGroupDivider()
+                    StatusSettingRow(
+                        stringResource(R.string.notifications_title),
+                        accessStatusText(state.accessState.notificationStatus),
+                    )
+                    FilledTonalButton(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.open_app_setup))
                     }
-                    Switch(checked = state.startAfterPhoneRestart, onCheckedChange = null)
+                    SettingsGroupDivider(Modifier.padding(top = 8.dp))
+                    SettingsItem(
+                        stringResource(R.string.notifications_title),
+                        stringResource(R.string.monitoring_notification_description),
+                    )
                 }
             }
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = onAddQuickSettingsTile).padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                SettingsSection(
+                    title = stringResource(R.string.diagnostics_section),
+                    description = stringResource(R.string.diagnostics_description),
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.quick_settings_tile_title))
-                        Text(stringResource(R.string.quick_settings_tile_description))
-                    }
-                    TextButton(onClick = onAddQuickSettingsTile) { Text(stringResource(R.string.add_tile)) }
-                }
-            }
-            item { SectionHeader(stringResource(R.string.monitoring_section)) }
-            item {
-                SettingsItem(
-                    stringResource(R.string.monitoring_status),
-                    stringResource(
-                        if (state.monitoringEnabled) R.string.setting_enabled else R.string.setting_disabled,
-                    ),
-                )
-            }
-            item { SectionHeader(stringResource(R.string.setup_section)) }
-            item {
-                SettingsItem(
-                    stringResource(R.string.phone_access_title),
-                    accessStatusText(state.accessState.phoneStateStatus),
-                )
-            }
-            item {
-                SettingsItem(
-                    stringResource(R.string.sound_access_title),
-                    accessStatusText(state.accessState.soundControlStatus),
-                )
-            }
-            item {
-                SettingsItem(
-                    stringResource(R.string.notifications_title),
-                    accessStatusText(state.accessState.notificationStatus),
-                )
-            }
-            item {
-                Button(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.open_app_setup))
+                    DiagnosticActionRow(
+                        icon = Icons.Default.ScreenRotation,
+                        title = stringResource(R.string.test_flip_title),
+                        description = stringResource(R.string.test_flip_description),
+                        onClick = onSensorTest,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    DiagnosticActionRow(
+                        icon = Icons.Default.Call,
+                        title = stringResource(R.string.test_call_detection),
+                        description = stringResource(R.string.test_call_detection_description),
+                        onClick = onCallStateTest,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    DiagnosticActionRow(
+                        icon = Icons.Default.VolumeUp,
+                        title = stringResource(R.string.test_sound_control),
+                        description = stringResource(R.string.test_sound_control_description),
+                        onClick = onSoundControlTest,
+                    )
                 }
             }
             item {
-                SettingsItem(
-                    stringResource(R.string.notifications_title),
-                    stringResource(R.string.monitoring_notification_description),
-                )
-            }
-            item { SectionHeader(stringResource(R.string.diagnostics_section)) }
-            item {
-                Button(onClick = onSensorTest, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.test_flip_title))
+                SettingsSection(stringResource(R.string.about_section)) {
+                    SettingsItem(
+                        stringResource(R.string.privacy_policy),
+                        stringResource(R.string.privacy_policy_unavailable),
+                    )
+                    SettingsGroupDivider()
+                    SettingsItem(
+                        stringResource(R.string.app_version),
+                        stringResource(R.string.app_version_value),
+                    )
+                    SettingsGroupDivider()
+                    SettingsItem(
+                        stringResource(R.string.about_app),
+                        stringResource(R.string.about_app_description),
+                    )
                 }
-                Text(stringResource(R.string.test_flip_description))
             }
-            item {
-                Button(onClick = onCallStateTest, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.test_call_detection))
-                }
-                Text(stringResource(R.string.test_call_detection_description))
-            }
-            item {
-                Button(onClick = onSoundControlTest, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.test_sound_control))
-                }
-                Text(stringResource(R.string.test_sound_control_description))
-            }
-            item { SectionHeader(stringResource(R.string.about_section)) }
-            item { SettingsItem(stringResource(R.string.privacy_policy), stringResource(R.string.privacy_policy_unavailable)) }
-            item { SettingsItem(stringResource(R.string.app_version), stringResource(R.string.app_version_value)) }
-            item { SettingsItem(stringResource(R.string.about_app), stringResource(R.string.about_app_description)) }
         }
+    }
+}
+
+@Composable
+private fun SettingText(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SecondaryText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun StatusSettingRow(title: String, status: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        )
+        SecondaryText(status)
+    }
+}
+
+@Composable
+private fun DiagnosticActionRow(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsSection(
+    title: String,
+    description: String? = null,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = Modifier.padding(top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 18.sp,
+        )
+        description?.let { SecondaryText(it) }
+        SettingsGroup(content = content)
     }
 }
 
