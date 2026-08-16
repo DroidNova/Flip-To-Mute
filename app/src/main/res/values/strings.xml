@@ -58,6 +58,31 @@
     <string name="permissions_title">Permissions</string>
     <string name="settings_title">Settings</string>
     <string name="about_title">About</string>
+    <string name="app_icon_description">Flip to Mute app icon</string>
+    <string name="rate_us">Rate us</string>
+    <string name="rate_us_description">Support Flip to Mute with a review</string>
+    <string name="share_app">Share app</string>
+    <string name="share_app_description">Tell others about Flip to Mute</string>
+    <string name="share_app_message">Try Flip to Mute: %1$s</string>
+    <string name="report_bugs">Report bugs</string>
+    <string name="report_bugs_description">Send issue and device details by email</string>
+    <string name="support_email" translatable="false">support@droidnova.com</string>
+    <string name="bug_report_subject">Bug report – Flip to Mute v%1$s</string>
+    <string name="bug_report_body">Device: %1$s %2$s\nAndroid: %3$s (API %4$d)\n\nDescribe the issue:\n</string>
+    <string name="unknown_version">Unknown</string>
+    <string name="no_compatible_app">No compatible app found</string>
+    <string name="follow_instagram">Follow on Instagram</string>
+    <string name="follow_instagram_description">Follow the DroidNova Instagram page</string>
+    <string name="instagram_url" translatable="false">https://www.instagram.com/droidnova/</string>
+    <string name="join_whatsapp">Join WhatsApp Community</string>
+    <string name="join_whatsapp_description">Explore WhatsApp Communities</string>
+    <string name="whatsapp_url" translatable="false">https://www.whatsapp.com/communities/</string>
+    <string name="check_other_apps">Check out other apps</string>
+    <string name="background_video_recorder">Background Video Recorder</string>
+    <string name="background_video_recorder_description">Record videos while apps stay in the background.</string>
+    <string name="flash_alerts">Flash Alerts</string>
+    <string name="flash_alerts_description">Blink the flashlight for calls and notifications.</string>
+    <string name="more_apps_play_store">More apps on Play Store</string>
     <string name="more_options">More options</string>
     <string name="vibrate_phone">Vibrate phone</string>
     <string name="permissions_sheet_title">Allow access</string>
