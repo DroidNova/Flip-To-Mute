@@ -89,11 +89,19 @@ private fun AppHeader() {
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Image(
-            painter = painterResource(R.mipmap.ic_launcher),
-            contentDescription = stringResource(R.string.app_icon_description),
+        // Launcher resources can resolve to an adaptive-icon XML, which painterResource
+        // cannot render. Use the app's VectorDrawable mark on a branded background.
+        Surface(
             modifier = Modifier.size(88.dp),
-        )
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.primary,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_notification_flip),
+                contentDescription = stringResource(R.string.app_icon_description),
+                modifier = Modifier.padding(20.dp),
+            )
+        }
         Spacer(Modifier.height(12.dp))
         Text(
             text = stringResource(R.string.app_name),
