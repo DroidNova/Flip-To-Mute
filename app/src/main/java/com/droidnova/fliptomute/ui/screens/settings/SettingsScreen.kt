@@ -15,14 +15,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -225,10 +227,11 @@ fun SettingsScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.only_when_lying_flat))
-                            Text(stringResource(R.string.only_when_lying_flat_description))
-                        }
+                        SettingText(
+                            title = stringResource(R.string.only_when_lying_flat),
+                            description = stringResource(R.string.only_when_lying_flat_description),
+                            modifier = Modifier.weight(1f),
+                        )
                         Checkbox(checked = state.requireFlatSurfaceBeforeFlip, onCheckedChange = null)
                     }
                     SettingsGroupDivider()
@@ -241,18 +244,17 @@ fun SettingsScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.pocket_protection))
-                            Text(
-                                stringResource(
-                                    if (state.isProximitySensorAvailable) {
-                                        R.string.pocket_protection_description
-                                    } else {
-                                        R.string.pocket_protection_unavailable
-                                    },
-                                ),
-                            )
-                        }
+                        SettingText(
+                            title = stringResource(R.string.pocket_protection),
+                            description = stringResource(
+                                if (state.isProximitySensorAvailable) {
+                                    R.string.pocket_protection_description
+                                } else {
+                                    R.string.pocket_protection_unavailable
+                                },
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(
                             checked = state.pocketProtectionEnabled && state.isProximitySensorAvailable,
                             enabled = state.isProximitySensorAvailable,
@@ -260,6 +262,11 @@ fun SettingsScreen(
                         )
                     }
                     SettingsGroupDivider()
+                    Text(
+                        text = stringResource(R.string.selected_flip_action),
+                        modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                     FlipActionOption(
                         title = stringResource(R.string.silent_title),
                         description = stringResource(R.string.silent_description),
@@ -280,10 +287,11 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.detection_feedback))
-                            Text(stringResource(R.string.detection_feedback_description))
-                        }
+                        SettingText(
+                            title = stringResource(R.string.detection_feedback),
+                            description = stringResource(R.string.detection_feedback_description),
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(
                             checked = state.detectionFeedbackEnabled,
                             onCheckedChange = onDetectionFeedbackChanged,
@@ -301,15 +309,29 @@ fun SettingsScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.flip_to_lock_title))
-                            Text(stringResource(R.string.flip_to_lock_supporting_text))
-                            Text(stringResource(R.string.flip_to_lock_secondary_text))
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.flip_to_lock_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                stringResource(R.string.flip_to_lock_supporting_text),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                stringResource(R.string.flip_to_lock_secondary_text),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             when {
-                                !supported -> Text(stringResource(R.string.screen_locking_unavailable))
+                                !supported -> SecondaryText(stringResource(R.string.screen_locking_unavailable))
                                 state.flipToLockEnabled &&
                                     state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE ->
-                                    Text(stringResource(R.string.screen_lock_access_allowed))
+                                    SecondaryText(stringResource(R.string.screen_lock_access_allowed))
                             }
                             if (!state.flipToLockEnabled &&
                                 state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE
@@ -336,10 +358,11 @@ fun SettingsScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.start_after_phone_restart))
-                            Text(stringResource(R.string.start_after_phone_restart_description))
-                        }
+                        SettingText(
+                            title = stringResource(R.string.start_after_phone_restart),
+                            description = stringResource(R.string.start_after_phone_restart_description),
+                            modifier = Modifier.weight(1f),
+                        )
                         Switch(checked = state.startAfterPhoneRestart, onCheckedChange = null)
                     }
                     SettingsGroupDivider()
@@ -350,10 +373,11 @@ fun SettingsScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.quick_settings_tile_title))
-                            Text(stringResource(R.string.quick_settings_tile_description))
-                        }
+                        SettingText(
+                            title = stringResource(R.string.quick_settings_tile_title),
+                            description = stringResource(R.string.quick_settings_tile_description),
+                            modifier = Modifier.weight(1f),
+                        )
                         TextButton(onClick = onAddQuickSettingsTile) {
                             Text(stringResource(R.string.add_tile))
                         }
@@ -373,21 +397,21 @@ fun SettingsScreen(
             }
             item {
                 SettingsSection(stringResource(R.string.setup_section)) {
-                    SettingsItem(
+                    StatusSettingRow(
                         stringResource(R.string.phone_access_title),
                         accessStatusText(state.accessState.phoneStateStatus),
                     )
                     SettingsGroupDivider()
-                    SettingsItem(
+                    StatusSettingRow(
                         stringResource(R.string.sound_access_title),
                         accessStatusText(state.accessState.soundControlStatus),
                     )
                     SettingsGroupDivider()
-                    SettingsItem(
+                    StatusSettingRow(
                         stringResource(R.string.notifications_title),
                         accessStatusText(state.accessState.notificationStatus),
                     )
-                    Button(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
+                    FilledTonalButton(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.open_app_setup))
                     }
                     SettingsGroupDivider(Modifier.padding(top = 8.dp))
@@ -399,26 +423,23 @@ fun SettingsScreen(
             }
             item {
                 SettingsSection(stringResource(R.string.diagnostics_section)) {
-                    Column {
-                        Button(onClick = onSensorTest, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(R.string.test_flip_title))
-                        }
-                        Text(stringResource(R.string.test_flip_description))
-                    }
-                    SettingsGroupDivider(Modifier.padding(vertical = 8.dp))
-                    Column {
-                        Button(onClick = onCallStateTest, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(R.string.test_call_detection))
-                        }
-                        Text(stringResource(R.string.test_call_detection_description))
-                    }
-                    SettingsGroupDivider(Modifier.padding(vertical = 8.dp))
-                    Column {
-                        Button(onClick = onSoundControlTest, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(R.string.test_sound_control))
-                        }
-                        Text(stringResource(R.string.test_sound_control_description))
-                    }
+                    DiagnosticActionRow(
+                        title = stringResource(R.string.test_flip_title),
+                        description = stringResource(R.string.test_flip_description),
+                        onClick = onSensorTest,
+                    )
+                    SettingsGroupDivider()
+                    DiagnosticActionRow(
+                        title = stringResource(R.string.test_call_detection),
+                        description = stringResource(R.string.test_call_detection_description),
+                        onClick = onCallStateTest,
+                    )
+                    SettingsGroupDivider()
+                    DiagnosticActionRow(
+                        title = stringResource(R.string.test_sound_control),
+                        description = stringResource(R.string.test_sound_control_description),
+                        onClick = onSoundControlTest,
+                    )
                 }
             }
             item {
@@ -443,6 +464,76 @@ fun SettingsScreen(
     }
 }
 
+@Composable
+private fun SettingText(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SecondaryText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun StatusSettingRow(title: String, status: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        SecondaryText(status)
+    }
+}
+
+@Composable
+private fun DiagnosticActionRow(
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SettingText(
+            title = title,
+            description = description,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
 
 @Composable
 private fun SettingsSection(
