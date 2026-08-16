@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
+import com.droidnova.fliptomute.R
 import java.util.Locale
 
 object IntentUtil {
@@ -14,14 +15,17 @@ object IntentUtil {
     }
 
     fun shareApp(context: Context) {
+        val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
+        val storeUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, appName)
             putExtra(
                 Intent.EXTRA_TEXT,
-                "Check out ${context.packageName}: https://play.google.com/store/apps/details?id=${context.packageName}"
+                context.getString(R.string.share_app_message, storeUrl)
             )
         }
-        context.startActivity(Intent.createChooser(shareIntent, "Share app"))
+        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_app)))
     }
 
     fun openInstagram(context: Context) {

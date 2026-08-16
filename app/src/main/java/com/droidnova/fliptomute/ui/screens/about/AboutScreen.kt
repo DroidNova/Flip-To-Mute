@@ -7,11 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -21,22 +19,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Shop
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -62,12 +53,12 @@ fun AboutScreen(onBack: () -> Unit) {
     val otherApps = remember { getFeaturedOtherApps() }
 
     Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "About",
+                        text = stringResource(R.string.about_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -76,7 +67,7 @@ fun AboutScreen(onBack: () -> Unit) {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.back_content_description)
                         )
                     }
                 }
@@ -85,6 +76,7 @@ fun AboutScreen(onBack: () -> Unit) {
     ) { paddingValues ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
@@ -93,32 +85,32 @@ fun AboutScreen(onBack: () -> Unit) {
             SpacerHeight(16.dp)
 
             AboutItem(
-                headingText = "Rate us",
-                labelText = "Support us with a review",
+                headingText = stringResource(R.string.rate_us),
+                labelText = stringResource(R.string.rate_us_description),
                 icon = Icons.Filled.Star,
                 onClick = { IntentUtil.openRateUs(context) }
             )
             SpacerHeight(8.dp)
 
             AboutItem(
-                headingText = "Share app",
-                labelText = "Share this wallpaper app",
+                headingText = stringResource(R.string.share_app),
+                labelText = stringResource(R.string.share_app_description),
                 icon = Icons.Filled.Share,
                 onClick = { IntentUtil.shareApp(context) }
             )
             SpacerHeight(8.dp)
 
             AboutItem(
-                headingText = "Report bugs",
-                labelText = "Send issue details via email",
+                headingText = stringResource(R.string.report_bugs),
+                labelText = stringResource(R.string.report_bugs_description),
                 icon = Icons.Filled.BugReport,
                 onClick = { IntentUtil.sendSupportMail(context, isBug = true) }
             )
             SpacerHeight(8.dp)
 
             AboutItem(
-                headingText = "Follow on Instagram",
-                labelText = "Join our Instagram page",
+                headingText = stringResource(R.string.follow_instagram),
+                labelText = stringResource(R.string.follow_instagram_description),
                 drawableIconRes = R.drawable.ic_instagram,
                 onClick = { IntentUtil.openInstagram(context) },
                 overrideTint = false
@@ -126,8 +118,8 @@ fun AboutScreen(onBack: () -> Unit) {
             SpacerHeight(8.dp)
 
             AboutItem(
-                headingText = "Join WhatsApp Group",
-                labelText = "Join our official WhatsApp community",
+                headingText = stringResource(R.string.join_whatsapp),
+                labelText = stringResource(R.string.join_whatsapp_description),
                 drawableIconRes = R.drawable.ic_whatsapp,
                 onClick = { IntentUtil.openWhatsApp(context) },
                 overrideTint = false
@@ -135,7 +127,7 @@ fun AboutScreen(onBack: () -> Unit) {
             SpacerHeight(8.dp)
 
             AboutItem(
-                headingText = "App version",
+                headingText = stringResource(R.string.app_version),
                 labelText = IntentUtil.fetchAppVersion(context),
                 icon = Icons.Filled.Info,
                 enabled = false,
@@ -144,7 +136,7 @@ fun AboutScreen(onBack: () -> Unit) {
             SpacerHeight(8.dp)
 
             Text(
-                text = "Check out other apps",
+                text = stringResource(R.string.check_other_apps),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
             SpacerHeight(8.dp)
@@ -161,7 +153,7 @@ fun AboutScreen(onBack: () -> Unit) {
 
             AppCard(
                 onClick = { IntentUtil.openDeveloperPlayConsole(context) },
-                title = "More apps on Play Store",
+                title = stringResource(R.string.more_apps_play_store),
                 description = "",
                 iconRes = R.drawable.ic_play_store
             )
@@ -177,17 +169,17 @@ private fun AppHeader() {
     ) {
         Image(
             painter = painterResource(R.drawable.ic_flip_to_mute),
-            contentDescription = "App icon",
+            contentDescription = stringResource(R.string.app_icon_description),
             modifier = Modifier.size(72.dp)
         )
         SpacerHeight(12.dp)
         Text(
-            text = "4K HD Wallpaper",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
         )
         SpacerHeight(4.dp)
         Text(
-            text = "Discover and apply static and live wallpapers.",
+            text = stringResource(R.string.about_app_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
