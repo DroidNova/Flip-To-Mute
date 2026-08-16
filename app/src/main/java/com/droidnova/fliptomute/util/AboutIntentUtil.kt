@@ -16,6 +16,18 @@ object AboutIntentUtil {
         }
     }
 
+    fun openUrl(context: Context, url: String) {
+        launch(context, Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+
+    fun searchPlayStore(context: Context, query: String) {
+        openUrl(context, "https://play.google.com/store/search?q=${Uri.encode(query)}&c=apps")
+    }
+
+    fun openDeveloperApps(context: Context) {
+        openUrl(context, "https://play.google.com/store/search?q=pub:DroidNova&c=apps")
+    }
+
     fun shareApp(context: Context) {
         val storeUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
         val intent = Intent(Intent.ACTION_SEND).apply {
