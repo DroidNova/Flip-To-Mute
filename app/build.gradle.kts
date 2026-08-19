@@ -31,8 +31,9 @@ android {
         resValue(
             "string",
             "home_banner_ad_unit_id",
-            providers.gradleProperty("ADMOB_HOME_BANNER_AD_UNIT_ID")
-                .getOrElse("ca-app-pub-3940256099942544/9214589741"),
+            // Google's anchored adaptive banner test unit prevents accidental live traffic
+            // while the home-screen placement is being tested.
+            "ca-app-pub-3940256099942544/9214589741",
         )
     }
 
