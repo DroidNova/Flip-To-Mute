@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "176338899041",
+    "project_id": "flip-to-mute",
+    "storage_bucket": "flip-to-mute.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:176338899041:android:dd35fb384a835f7c5a5a20",
+        "android_client_info": {
+          "package_name": "com.droidnova.fliptomute"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjAH7pHygYmUikiJsOR2dbSO3UjCkuj54"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
