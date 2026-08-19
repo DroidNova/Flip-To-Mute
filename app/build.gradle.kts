@@ -19,6 +19,21 @@ android {
         targetSdk = 36
         versionCode = 5
         versionName = "1.4"
+
+        // Safe defaults keep development builds from generating invalid traffic. Supply the
+        // production values in ~/.gradle/gradle.properties or on the Gradle command line.
+        resValue(
+            "string",
+            "admob_app_id",
+            providers.gradleProperty("ADMOB_APP_ID")
+                .getOrElse("ca-app-pub-3940256099942544~3347511713"),
+        )
+        resValue(
+            "string",
+            "home_banner_ad_unit_id",
+            providers.gradleProperty("ADMOB_HOME_BANNER_AD_UNIT_ID")
+                .getOrElse("ca-app-pub-3940256099942544/9214589741"),
+        )
     }
 
     buildTypes {
@@ -43,6 +58,7 @@ android {
     buildFeatures {
         buildConfig = false
         compose = true
+        resValues = true
     }
 }
 
@@ -73,5 +89,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.android.gms:play-services-ads:23.3.0")
+
 
 }
