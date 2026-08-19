@@ -47,6 +47,7 @@ import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.ui.components.AppTopBar
+import com.droidnova.fliptomute.ui.components.HomeBannerAd
 import com.droidnova.fliptomute.ui.components.SectionHeader
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
@@ -138,6 +139,7 @@ fun HomeScreen(
                 }
             }
         },
+        bottomBar = { HomeBannerAd() },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
