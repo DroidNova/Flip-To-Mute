@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -47,7 +48,9 @@ class MainActivity : ComponentActivity() {
                 ) { padding ->
                     FlipToMuteNavHost(
                         viewModelFactories = factories,
-                        modifier = Modifier.padding(padding),
+                        modifier = Modifier
+                            .padding(padding)
+                            .consumeWindowInsets(padding),
                         externalMonitoringRequest = externalMonitoringRequest,
                         onExternalMonitoringRequestConsumed = ::clearLaunchRequest,
                     )
