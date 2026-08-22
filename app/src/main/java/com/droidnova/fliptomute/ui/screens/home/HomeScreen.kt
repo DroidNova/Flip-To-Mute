@@ -44,8 +44,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.droidnova.fliptomute.R
-import com.droidnova.fliptomute.ads.AdRemoteConfigManager
-import com.droidnova.fliptomute.ads.CollapsibleBannerAd
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.ui.components.AppTopBar
@@ -65,7 +63,6 @@ fun HomeRoute(
     onExternalMonitoringRequestConsumed: () -> Unit = {},
 ) {
     val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
-    val bannerEnabled = AdRemoteConfigManager.bannerEnabled.collectAsStateWithLifecycle().value
     RefreshOnResume(viewModel::refreshAccessState)
     LaunchedEffect(externalMonitoringRequest.sequence) {
         when (externalMonitoringRequest.request) {
@@ -89,7 +86,6 @@ fun HomeRoute(
         onAboutClick = onAboutClick,
         onMessageShown = viewModel::onMessageShown,
         onDismissPermissions = viewModel::dismissPermissionsSheet,
-        showBannerAd = bannerEnabled,
     )
 }
 
@@ -106,7 +102,6 @@ fun HomeScreen(
     onAboutClick: () -> Unit,
     onMessageShown: () -> Unit,
     onDismissPermissions: () -> Unit,
-    showBannerAd: Boolean = true,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     state.message?.let { failure ->
@@ -128,11 +123,6 @@ fun HomeScreen(
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            if (showBannerAd) {
-                CollapsibleBannerAd()
-            }
-        },
         topBar = {
             AppTopBar(stringResource(R.string.app_name)) {
                 IconButton(onClick = { menuExpanded = true }) {
@@ -270,7 +260,6 @@ private fun HomePreview() {
         HomeScreen(
             HomeUiState(isSetupComplete = true, isMonitoringSwitchEnabled = true),
             {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
-            showBannerAd = false,
         )
     }
 }
