@@ -1,4 +1,6 @@
 <resources>
+    <!-- Replace the sample App ID with this app's AdMob App ID before a production release. -->
+    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
     <string name="extra_gestures_section">Extra Gestures</string>
     <string name="flip_to_lock_title">Flip to Lock Screen</string>
     <string name="flip_to_lock_supporting_text">Flip face down on a flat surface to lock.</string>
