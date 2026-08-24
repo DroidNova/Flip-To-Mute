@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.droidnova.fliptomute.ads.AdRemoteConfigManager
 import com.droidnova.fliptomute.ads.CollapsibleBannerAd
 import com.droidnova.fliptomute.app.FlipToMuteApplication
 import com.droidnova.fliptomute.app.ViewModelFactories
@@ -34,15 +32,11 @@ class MainActivity : ComponentActivity() {
         val factories = ViewModelFactories((application as FlipToMuteApplication).container)
         setContent {
             FlipToMuteTheme {
-                val bannerEnabled =
-                    AdRemoteConfigManager.bannerEnabled.collectAsStateWithLifecycle().value
                 Scaffold(
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     bottomBar = {
-                        if (bannerEnabled) {
-                            Box(modifier = Modifier.navigationBarsPadding()) {
-                                CollapsibleBannerAd()
-                            }
+                        Box(modifier = Modifier.navigationBarsPadding()) {
+                            CollapsibleBannerAd()
                         }
                     },
                 ) { padding ->
