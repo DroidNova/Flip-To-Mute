@@ -18,8 +18,8 @@ android {
         applicationId = "com.droidnova.fliptomute"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.6"
+        versionCode = 8
+        versionName = "1.7"
     }
 
     buildTypes {
@@ -77,7 +77,9 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.google.mobile.ads)
+    // The Lite SDK provides the same client API while loading the ads runtime
+    // from Google Play services instead of packaging native runtime binaries.
+    implementation(libs.google.mobile.ads.lite)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

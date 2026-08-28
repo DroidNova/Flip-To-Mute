@@ -30,7 +30,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStore" }
-google-mobile-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "googleMobileAds" }
+google-mobile-ads-lite = { group = "com.google.android.gms", name = "play-services-ads-lite", version.ref = "googleMobileAds" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 
