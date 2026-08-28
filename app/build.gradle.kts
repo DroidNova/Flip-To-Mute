@@ -3,7 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services")}
+    id("com.google.gms.google-services")
+}
 
 android {
     namespace = "com.droidnova.fliptomute"
@@ -17,8 +18,8 @@ android {
         applicationId = "com.droidnova.fliptomute"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.5"
+        versionCode = 7
+        versionName = "1.6"
     }
 
     buildTypes {
@@ -44,6 +45,13 @@ android {
         buildConfig = false
         compose = true
     }
+    packaging {
+        jniLibs {
+            // Keep native libraries uncompressed so AGP can page-align them for
+            // devices that use 16 KB memory pages.
+            useLegacyPackaging = false
+        }
+    }
 }
 
 kotlin {
@@ -61,6 +69,8 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    // Keep transitive SDKs from selecting the obsolete Fragment 1.1.x runtime.
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
