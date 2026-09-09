@@ -40,6 +40,7 @@ class FlipToMuteTileService : TileService() {
         refreshTile()
         listeningJob?.cancel()
         listeningJob = scope.launch {
+            container.appRecoveryManager.recoverOnAppLaunch()
             container.monitoringStateRepository.state.collectLatest {
                 commandPending = false
                 refreshTile()
@@ -110,6 +111,7 @@ class FlipToMuteTileService : TileService() {
         tile.icon = Icon.createWithResource(this, R.drawable.ic_qs_flip_to_mute)
         tile.state = when (status) {
             QuickSettingsTileStatus.ON -> Tile.STATE_ACTIVE
+            QuickSettingsTileStatus.RECOVERING,
             QuickSettingsTileStatus.STARTING, QuickSettingsTileStatus.PAUSING,
             QuickSettingsTileStatus.RESUMING, QuickSettingsTileStatus.STOPPING,
             -> Tile.STATE_UNAVAILABLE
@@ -142,6 +144,7 @@ class FlipToMuteTileService : TileService() {
 
     private fun QuickSettingsTileStatus.subtitleResource() = when (this) {
         QuickSettingsTileStatus.ON -> R.string.quick_settings_tile_on
+        QuickSettingsTileStatus.RECOVERING -> R.string.quick_settings_tile_checking
         QuickSettingsTileStatus.OFF -> R.string.quick_settings_tile_off
         QuickSettingsTileStatus.STARTING -> R.string.quick_settings_tile_starting
         QuickSettingsTileStatus.PAUSING -> R.string.quick_settings_tile_pausing

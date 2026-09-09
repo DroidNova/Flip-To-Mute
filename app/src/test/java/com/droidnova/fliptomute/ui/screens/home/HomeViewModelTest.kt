@@ -49,6 +49,18 @@ class HomeViewModelTest {
         assertEquals(1, fixture.controller.stopCount)
     }
 
+    @Test fun recoveringActiveIntentIsCheckedDisabledAndNotOff() = runTest {
+        val preferences = FakeAppPreferencesRepository(
+            com.droidnova.fliptomute.data.preferences.AppPreferences(monitoringEnabled = true),
+        )
+        val fixture = fixture(granted = true, preferences = preferences, recovering = true)
+        collect(fixture.viewModel)
+
+        assertEquals(MonitoringRuntimeState.Recovering, fixture.viewModel.uiState.value.monitoringState)
+        assertTrue(fixture.viewModel.uiState.value.isMonitoringChecked)
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
+    }
+
     @Test fun rejectionShowsSimpleErrorAndActionPersists() = runTest {
         val fixture = fixture(granted = true)
         fixture.controller.startResult = MonitoringCommandResult.Rejected(MonitoringFailure.SERVICE_START_NOT_ALLOWED)
@@ -104,6 +116,7 @@ class HomeViewModelTest {
     private fun fixture(
         granted: Boolean = false,
         preferences: FakeAppPreferencesRepository = FakeAppPreferencesRepository(),
+        recovering: Boolean = false,
     ): Fixture {
         val setup = if (granted) SetupAccessState(
             SetupAccessStatus.GRANTED,
@@ -111,6 +124,7 @@ class HomeViewModelTest {
             SetupAccessStatus.GRANTED,
         ) else SetupAccessState()
         val runtime = InMemoryMonitoringStateRepository()
+        if (!recovering) runtime.updateState(MonitoringRuntimeState.Stopped)
         val controller = FakeMonitoringServiceController()
         return Fixture(
             HomeViewModel(preferences, FakeSetupAccessRepository(setup), runtime, controller, FakeAppRecoveryManager()),

@@ -244,7 +244,9 @@ class FlipMonitoringService : Service() {
         container.appPreferencesRepository.setMonitoringPaused(true)
         if (foregroundStarted) stopForeground(STOP_FOREGROUND_REMOVE)
         foregroundStarted = false
-        publishMonitoringState(MonitoringRuntimeState.Error(reason))
+        publishMonitoringState(
+            MonitoringRuntimeState.Error(reason, MonitoringErrorRecoveryIntent.RESUME),
+        )
         notificationHelper.showPausedNotification()
         stopSelfResult(startId)
     }
