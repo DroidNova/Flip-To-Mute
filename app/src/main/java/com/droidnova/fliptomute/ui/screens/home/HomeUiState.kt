@@ -10,7 +10,7 @@ data class HomeUiState(
     val isSetupComplete: Boolean = false,
     val selectedFlipAction: FlipAction = FlipAction.SILENT,
     val callActionSelection: CallActionSelection = CallActionSelection(),
-    val monitoringState: MonitoringRuntimeState = MonitoringRuntimeState.Stopped,
+    val monitoringState: MonitoringRuntimeState = MonitoringRuntimeState.Recovering,
     val isMonitoringChecked: Boolean = false,
     val isMonitoringSwitchEnabled: Boolean = false,
     val message: MonitoringFailure? = null,

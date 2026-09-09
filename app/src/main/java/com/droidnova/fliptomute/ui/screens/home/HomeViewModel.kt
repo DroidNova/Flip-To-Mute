@@ -9,6 +9,7 @@ import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.MonitoringServiceController
 import com.droidnova.fliptomute.service.MonitoringStateRepository
 import com.droidnova.fliptomute.service.AppRecoveryManager
+import com.droidnova.fliptomute.service.MonitoringErrorRecoveryIntent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,13 +36,16 @@ class HomeViewModel(
         permissionsSheet,
     ) { preferences, access, runtime, currentMessage, showPermissions ->
         val transitional = runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Pausing ||
-            runtime is MonitoringRuntimeState.Resuming || runtime is MonitoringRuntimeState.Stopping
+            runtime is MonitoringRuntimeState.Resuming || runtime is MonitoringRuntimeState.Stopping ||
+            runtime is MonitoringRuntimeState.Recovering
+        val pausedError = runtime is MonitoringRuntimeState.Error &&
+            runtime.recoveryIntent == MonitoringErrorRecoveryIntent.RESUME
         HomeUiState(
             isSetupComplete = access.isSetupComplete,
             selectedFlipAction = preferences.selectedFlipAction,
             callActionSelection = preferences.callActionSelection,
             monitoringState = runtime,
-            isMonitoringChecked = preferences.monitoringEnabled || runtime is MonitoringRuntimeState.Active ||
+            isMonitoringChecked = preferences.monitoringEnabled || pausedError || runtime is MonitoringRuntimeState.Active ||
                 runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Resuming,
             isMonitoringSwitchEnabled = !transitional,
             message = currentMessage,

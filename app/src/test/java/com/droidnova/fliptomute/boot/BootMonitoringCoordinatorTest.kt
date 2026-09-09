@@ -39,7 +39,7 @@ class BootMonitoringCoordinatorTest {
         assertEquals(BootMonitoringResult.MonitoringStartRequested, fixture.coordinator.handleBootCompleted())
         assertEquals(BootMonitoringResult.MonitoringStartRequested, fixture.coordinator.handleBootCompleted())
         assertEquals(1, fixture.controller.startCount)
-        assertEquals(MonitoringRuntimeState.Stopped, fixture.runtime.state.value)
+        assertEquals(MonitoringRuntimeState.Recovering, fixture.runtime.state.value)
     }
 
     @Test fun incompleteSetupClearsIntentWithoutStarting() = runTest {

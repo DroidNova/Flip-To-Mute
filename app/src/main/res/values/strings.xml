@@ -25,6 +25,7 @@
     <string name="quick_settings_tile_label">Flip to Mute</string>
     <string name="quick_settings_tile_on">On</string>
     <string name="quick_settings_tile_off">Off</string>
+    <string name="quick_settings_tile_checking">Checking…</string>
     <string name="quick_settings_tile_starting">Turning on</string>
     <string name="quick_settings_tile_stopping">Turning off</string>
     <string name="quick_settings_tile_setup_required">Setup needed</string>
@@ -42,6 +43,8 @@
     <string name="monitoring_paused_title">Flip to Mute is paused</string>
     <string name="monitoring_paused_notification_text">Incoming calls will not be changed while paused.</string>
     <string name="monitoring_paused_home_text">Incoming calls will not be changed.</string>
+    <string name="monitoring_recovering_title">Checking monitoring</string>
+    <string name="monitoring_recovering_text">Restoring your monitoring state…</string>
     <string name="monitoring_pausing_title">Pausing…</string>
     <string name="monitoring_pausing_text">Stopping call monitoring safely.</string>
     <string name="monitoring_resuming_title">Resuming…</string>

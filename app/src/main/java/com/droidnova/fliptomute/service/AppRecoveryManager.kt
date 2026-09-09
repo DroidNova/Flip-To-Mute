@@ -4,7 +4,6 @@ import com.droidnova.fliptomute.audio.RingerModeController
 import com.droidnova.fliptomute.audio.RingerModeFailure
 import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -13,7 +12,6 @@ import com.droidnova.fliptomute.notification.PausedNotificationController
 
 sealed interface AppRecoveryResult {
     data object Complete : AppRecoveryResult
-    data object StaleMonitoringCleared : AppRecoveryResult
     data class SoundRecoveryFailed(val reason: RingerModeFailure) : AppRecoveryResult
 }
 
@@ -25,6 +23,7 @@ class DefaultAppRecoveryManager(
     private val preferencesRepository: AppPreferencesRepository,
     private val monitoringStateRepository: MonitoringStateRepository,
     private val ringerModeController: RingerModeController,
+    private val serviceController: MonitoringServiceController,
     private val tileUpdateRequester: QuickSettingsTileUpdateRequester = QuickSettingsTileUpdateRequester {},
     private val pausedNotificationController: PausedNotificationController = object : PausedNotificationController {
         override fun showPausedNotification() = Unit
@@ -41,7 +40,12 @@ class DefaultAppRecoveryManager(
         if (recovery is RingerModeRecoveryResult.Failure) {
             completed = true
             if (preferences.monitoringEnabled && preferences.monitoringPaused) {
-                monitoringStateRepository.updateState(MonitoringRuntimeState.Paused)
+                monitoringStateRepository.updateState(
+                    MonitoringRuntimeState.Error(
+                        MonitoringFailure.SOUND_CONTROL_FAILED,
+                        MonitoringErrorRecoveryIntent.RESUME,
+                    ),
+                )
                 pausedNotificationController.showPausedNotification()
             } else {
                 monitoringStateRepository.updateState(
@@ -67,17 +71,19 @@ class DefaultAppRecoveryManager(
             return@withLock AppRecoveryResult.Complete
         }
         if (monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
-            delay(STICKY_RESTART_GRACE_MILLIS)
-            if (monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
-                preferencesRepository.setMonitoringEnabled(false)
-                tileUpdateRequester.requestUpdate()
-                completed = true
-                return@withLock AppRecoveryResult.StaleMonitoringCleared
+            monitoringStateRepository.updateState(MonitoringRuntimeState.Recovering)
+        }
+        if (monitoringStateRepository.state.value is MonitoringRuntimeState.Recovering) {
+            when (val result = serviceController.startMonitoring()) {
+                MonitoringCommandResult.Accepted -> Unit
+                is MonitoringCommandResult.Rejected -> {
+                    preferencesRepository.setMonitoringEnabled(false)
+                    monitoringStateRepository.updateState(MonitoringRuntimeState.Error(result.reason))
+                }
             }
+            tileUpdateRequester.requestUpdate()
         }
         completed = true
         AppRecoveryResult.Complete
     }
-
-    private companion object { const val STICKY_RESTART_GRACE_MILLIS = 1_000L }
 }
