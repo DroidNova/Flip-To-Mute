@@ -175,10 +175,13 @@ class FlipMonitoringCoordinator(
         readyReported = false
     }
 
-    suspend fun stop() {
+    suspend fun stop(): RingerModeResult {
         beginStopping()
-        ringerModeController.restorePreviousMode()
+        return ringerModeController.restorePreviousMode()
     }
+
+    fun restorePreviousModeImmediately(): RingerModeResult =
+        ringerModeController.restorePreviousModeImmediately()
 
     private suspend fun handleCallState(state: CellularCallMonitorState) = mutex.withLock {
         if (stopping || !started) return@withLock

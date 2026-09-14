@@ -36,4 +36,18 @@ class MonitoringServiceCommandClassifierTest {
         )
         assertEquals(StickyRestartDecision.Continue, StickyRestartPolicy.decide(true, true))
     }
+
+    @Test fun sequencerTracksNewestStartIdAndRejectsStaleGenerations() {
+        val sequencer = MonitoringCommandSequencer()
+        sequencer.record(4)
+        val pauseGeneration = sequencer.supersede()
+        sequencer.record(5)
+
+        assertEquals(5, sequencer.latestStartId)
+        assertEquals(true, sequencer.isCurrent(pauseGeneration))
+
+        val stopGeneration = sequencer.supersede()
+        assertEquals(false, sequencer.isCurrent(pauseGeneration))
+        assertEquals(true, sequencer.isCurrent(stopGeneration))
+    }
 }

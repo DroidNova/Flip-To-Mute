@@ -110,6 +110,7 @@ fun HomeScreen(
             MonitoringFailure.SETUP_REQUIRED -> R.string.monitoring_setup_error
             MonitoringFailure.TELEPHONY_UNAVAILABLE -> R.string.monitoring_telephony_error
             MonitoringFailure.NOTIFICATION_UNAVAILABLE -> R.string.monitoring_notification_error
+            MonitoringFailure.CLEANUP_FAILED -> R.string.monitoring_cleanup_error
             else -> R.string.monitoring_start_error
         })
         LaunchedEffect(failure) {

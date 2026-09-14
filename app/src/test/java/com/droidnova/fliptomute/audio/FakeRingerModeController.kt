@@ -30,6 +30,8 @@ class FakeRingerModeController(
         (restoreResult as? RingerModeResult.Success)?.let { currentMode = it.currentMode }
         return restoreResult
     }
+
+    override fun restorePreviousModeImmediately(): RingerModeResult = restoreResult
     override suspend fun recoverPendingChange(): RingerModeRecoveryResult {
         recoverCount++
         return recoveryResult

@@ -8,6 +8,7 @@ enum class MonitoringFailure {
     CALL_MONITOR_FAILED,
     SOUND_CONTROL_FAILED,
     NOTIFICATION_UNAVAILABLE,
+    CLEANUP_FAILED,
     UNKNOWN,
 }
 

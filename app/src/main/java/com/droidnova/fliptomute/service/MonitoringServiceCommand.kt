@@ -31,3 +31,17 @@ internal object StickyRestartPolicy {
         else -> StickyRestartDecision.Continue
     }
 }
+
+internal class MonitoringCommandSequencer {
+    private var generation = 0
+    var latestStartId: Int = 0
+        private set
+
+    fun record(startId: Int) {
+        latestStartId = maxOf(latestStartId, startId)
+    }
+
+    fun supersede(): Int = ++generation
+
+    fun isCurrent(token: Int): Boolean = token == generation
+}

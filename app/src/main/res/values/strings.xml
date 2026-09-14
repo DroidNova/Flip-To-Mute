@@ -272,4 +272,5 @@
     <string name="monitoring_setup_error">Complete app setup and try again.</string>
     <string name="monitoring_telephony_error">Cellular call detection is unavailable on this device.</string>
     <string name="monitoring_notification_error">Allow notifications before turning on Flip to Mute.</string>
+    <string name="monitoring_cleanup_error">Monitoring stopped, but cleanup could not finish. Check your sound and try again.</string>
 </resources>

@@ -12,6 +12,7 @@ internal class DefaultRingerModeController(
     private val recoveryRepository: RingerRecoveryRepository,
 ) : RingerModeController {
     private val mutex = Mutex()
+    @Volatile private var inMemoryRecovery: RingerRecoverySession? = null
 
     override fun getCurrentMode(): DeviceRingerMode = try {
         if (!platform.isAvailable) DeviceRingerMode.UNKNOWN
@@ -40,6 +41,7 @@ internal class DefaultRingerModeController(
         if (!persist(updatedRecovery)) {
             return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
         }
+        inMemoryRecovery = updatedRecovery
         if (current == target) return@withLock RingerModeResult.Success(current, RingerModeSuccessType.APPLIED)
 
         val androidTarget = DeviceRingerModeMapper.toAndroidMode(target)
@@ -62,6 +64,7 @@ internal class DefaultRingerModeController(
             if (!clearRecovery()) {
                 return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
             }
+            inMemoryRecovery = null
             return@withLock RingerModeResult.Success(current, RingerModeSuccessType.MANUAL_CHANGE_PRESERVED)
         }
         readinessFailure()?.let { return@withLock RingerModeResult.Failure(it) }
@@ -71,7 +74,27 @@ internal class DefaultRingerModeController(
         if (!clearRecovery()) {
             return@withLock RingerModeResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
         }
+        inMemoryRecovery = null
         RingerModeResult.Success(session.previousMode, RingerModeSuccessType.RESTORED)
+    }
+
+    override fun restorePreviousModeImmediately(): RingerModeResult {
+        val session = inMemoryRecovery
+            ?: return RingerModeResult.Failure(RingerModeFailure.NO_ACTIVE_CHANGE)
+        val current = getCurrentMode()
+        if (current == DeviceRingerMode.UNKNOWN) {
+            return RingerModeResult.Failure(RingerModeFailure.AUDIO_SERVICE_UNAVAILABLE)
+        }
+        if (current != session.appliedMode) {
+            inMemoryRecovery = null
+            return RingerModeResult.Success(current, RingerModeSuccessType.MANUAL_CHANGE_PRESERVED)
+        }
+        readinessFailure()?.let { return RingerModeResult.Failure(it) }
+        val target = DeviceRingerModeMapper.toAndroidMode(session.previousMode)
+            ?: return RingerModeResult.Failure(RingerModeFailure.UNKNOWN)
+        writeAndVerify(target, session.previousMode)?.let { return RingerModeResult.Failure(it) }
+        inMemoryRecovery = null
+        return RingerModeResult.Success(session.previousMode, RingerModeSuccessType.RESTORED)
     }
 
     override suspend fun recoverPendingChange(): RingerModeRecoveryResult = mutex.withLock {
@@ -86,6 +109,7 @@ internal class DefaultRingerModeController(
         }
         if (current != session.appliedMode) {
             return@withLock if (clearRecovery()) {
+                inMemoryRecovery = null
                 RingerModeRecoveryResult.CurrentModePreserved(current)
             } else {
                 RingerModeRecoveryResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
@@ -98,10 +122,14 @@ internal class DefaultRingerModeController(
         if (!clearRecovery()) {
             return@withLock RingerModeRecoveryResult.Failure(RingerModeFailure.RECOVERY_STATE_PERSISTENCE_FAILED)
         }
+        inMemoryRecovery = null
         RingerModeRecoveryResult.Restored(session.previousMode)
     }
 
-    override suspend fun clearTemporaryChange() = mutex.withLock { recoveryRepository.clearRecoverySession() }
+    override suspend fun clearTemporaryChange() = mutex.withLock {
+        recoveryRepository.clearRecoverySession()
+        inMemoryRecovery = null
+    }
 
     private suspend fun persist(session: RingerRecoverySession): Boolean = try {
         recoveryRepository.saveRecoverySession(session)

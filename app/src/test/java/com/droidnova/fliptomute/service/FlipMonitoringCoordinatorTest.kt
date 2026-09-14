@@ -277,6 +277,21 @@ class FlipMonitoringCoordinatorTest {
         assertEquals(0, fixture.sensor.activeRegistrations)
     }
 
+    @Test fun stopReturnsRestorationFailureAndRepeatedCleanupRemainsSafe() = runTest {
+        val fixture = fixture(backgroundScope)
+        fixture.ringer.restoreResult = RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
+        fixture.coordinator.startAndAwaitReady()
+        runCurrent()
+
+        val first = fixture.coordinator.stop()
+        val second = fixture.coordinator.stop()
+
+        assertEquals(RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED), first)
+        assertEquals(RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED), second)
+        assertEquals(0, fixture.sensor.activeRegistrations)
+        assertEquals(2, fixture.ringer.restoreCount)
+    }
+
     private fun fixture(
         scope: kotlinx.coroutines.CoroutineScope,
         action: FlipAction = FlipAction.SILENT,
