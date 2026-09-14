@@ -1,5 +1,6 @@
 package com.droidnova.fliptomute.ui.screens.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
@@ -23,18 +24,22 @@ class HomeViewModel(
     private val monitoringStateRepository: MonitoringStateRepository,
     private val serviceController: MonitoringServiceController,
     private val appRecoveryManager: AppRecoveryManager,
+    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     private val message = MutableStateFlow<com.droidnova.fliptomute.service.MonitoringFailure?>(null)
-    private val permissionsSheet = MutableStateFlow(false)
-    private var pendingAction = PendingMonitoringAction.NONE
+    private val pendingAction = savedStateHandle.getStateFlow(
+        PENDING_MONITORING_ACTION_KEY,
+        PendingMonitoringAction.NONE.name,
+    )
+    private var accessCheckInProgress = false
 
     val uiState: StateFlow<HomeUiState> = combine(
         preferencesRepository.preferences,
         setupAccessRepository.accessState,
         monitoringStateRepository.state,
         message,
-        permissionsSheet,
-    ) { preferences, access, runtime, currentMessage, showPermissions ->
+        pendingAction,
+    ) { preferences, access, runtime, currentMessage, pendingActionName ->
         val transitional = runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Pausing ||
             runtime is MonitoringRuntimeState.Resuming || runtime is MonitoringRuntimeState.Stopping ||
             runtime is MonitoringRuntimeState.Recovering || runtime is MonitoringRuntimeState.Unresolved
@@ -49,7 +54,7 @@ class HomeViewModel(
                 runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Resuming,
             isMonitoringSwitchEnabled = !transitional,
             message = currentMessage,
-            showPermissionsSheet = showPermissions,
+            showPermissionsSheet = pendingActionName != PendingMonitoringAction.NONE.name,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState())
 
@@ -62,21 +67,14 @@ class HomeViewModel(
                 if (runtime is MonitoringRuntimeState.Error) message.value = runtime.reason
             }
         }
+        if (currentPendingAction() != PendingMonitoringAction.NONE) refreshAccessState()
     }
 
     fun onMonitoringChanged(enabled: Boolean) {
         if (enabled) {
-            if (!setupAccessRepository.accessState.value.isSetupComplete) {
-                pendingAction = PendingMonitoringAction.START
-                permissionsSheet.value = true
-                return
-            }
-            pendingAction = PendingMonitoringAction.NONE
-            when (val result = serviceController.startMonitoring()) {
-                MonitoringCommandResult.Accepted -> Unit
-                is MonitoringCommandResult.Rejected -> message.value = result.reason
-            }
+            validateAndDispatch(PendingMonitoringAction.START)
         } else {
+            setPendingAction(PendingMonitoringAction.NONE)
             serviceController.stopMonitoring()
         }
     }
@@ -91,16 +89,7 @@ class HomeViewModel(
     }
 
     fun onResumeMonitoring() {
-        if (!setupAccessRepository.accessState.value.isSetupComplete) {
-            pendingAction = PendingMonitoringAction.RESUME
-            permissionsSheet.value = true
-            return
-        }
-        pendingAction = PendingMonitoringAction.NONE
-        when (val result = serviceController.resumeMonitoring()) {
-            MonitoringCommandResult.Accepted -> Unit
-            is MonitoringCommandResult.Rejected -> message.value = result.reason
-        }
+        validateAndDispatch(PendingMonitoringAction.RESUME)
     }
 
     fun onFlipActionSelected(action: FlipAction) {
@@ -121,22 +110,53 @@ class HomeViewModel(
 
     fun onMessageShown() { message.value = null }
     fun dismissPermissionsSheet() {
-        pendingAction = PendingMonitoringAction.NONE
-        permissionsSheet.value = false
+        setPendingAction(PendingMonitoringAction.NONE)
     }
+
     fun refreshAccessState() {
         val access = setupAccessRepository.refreshAndGet()
-        val action = pendingAction
+        val action = currentPendingAction()
         if (action != PendingMonitoringAction.NONE && access.isSetupComplete) {
-            permissionsSheet.value = false
-            pendingAction = PendingMonitoringAction.NONE
-            when (action) {
-                PendingMonitoringAction.START -> onMonitoringChanged(true)
-                PendingMonitoringAction.RESUME -> onResumeMonitoring()
-                PendingMonitoringAction.NONE -> Unit
-            }
+            dispatchPendingAction(action)
         }
     }
 
+    private fun validateAndDispatch(action: PendingMonitoringAction) {
+        if (accessCheckInProgress) return
+        accessCheckInProgress = true
+        try {
+            val access = setupAccessRepository.refreshAndGet()
+            if (access.isSetupComplete) {
+                dispatchPendingAction(action)
+            } else {
+                setPendingAction(action)
+            }
+        } finally {
+            accessCheckInProgress = false
+        }
+    }
+
+    private fun dispatchPendingAction(action: PendingMonitoringAction) {
+        setPendingAction(PendingMonitoringAction.NONE)
+        val result = when (action) {
+            PendingMonitoringAction.START -> serviceController.startMonitoring()
+            PendingMonitoringAction.RESUME -> serviceController.resumeMonitoring()
+            PendingMonitoringAction.NONE -> return
+        }
+        if (result is MonitoringCommandResult.Rejected) message.value = result.reason
+    }
+
+    private fun currentPendingAction(): PendingMonitoringAction =
+        runCatching { PendingMonitoringAction.valueOf(pendingAction.value) }
+            .getOrDefault(PendingMonitoringAction.NONE)
+
+    private fun setPendingAction(action: PendingMonitoringAction) {
+        savedStateHandle[PENDING_MONITORING_ACTION_KEY] = action.name
+    }
+
     private enum class PendingMonitoringAction { NONE, START, RESUME }
+
+    private companion object {
+        const val PENDING_MONITORING_ACTION_KEY = "pending_monitoring_action"
+    }
 }

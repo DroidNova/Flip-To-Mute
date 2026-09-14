@@ -1,6 +1,7 @@
 package com.droidnova.fliptomute.app
 
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.droidnova.fliptomute.ui.screens.home.HomeViewModel
@@ -19,6 +20,7 @@ class ViewModelFactories(container: AppContainer) {
                 container.monitoringStateRepository,
                 container.monitoringServiceController,
                 container.appRecoveryManager,
+                createSavedStateHandle(),
             )
         }
     }
@@ -28,6 +30,7 @@ class ViewModelFactories(container: AppContainer) {
             PermissionsViewModel(
                 container.setupAccessRepository,
                 container.appPreferencesRepository,
+                createSavedStateHandle(),
             )
         }
     }

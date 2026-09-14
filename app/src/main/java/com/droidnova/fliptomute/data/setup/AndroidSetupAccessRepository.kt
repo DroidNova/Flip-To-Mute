@@ -38,11 +38,10 @@ class AndroidSetupAccessRepository(context: Context) : SetupAccessRepository {
 
     private fun soundControlStatus(): SetupAccessStatus {
         val notificationManager = applicationContext.getSystemService(NotificationManager::class.java)
-        return if (notificationManager.isNotificationPolicyAccessGranted) {
-            SetupAccessStatus.GRANTED
-        } else {
-            SetupAccessStatus.NOT_GRANTED
-        }
+        return notificationServiceAccessStatus(
+            serviceAvailable = notificationManager != null,
+            accessGranted = notificationManager?.isNotificationPolicyAccessGranted == true,
+        )
     }
 
     private fun notificationStatus(): SetupAccessStatus {
@@ -66,4 +65,13 @@ class AndroidSetupAccessRepository(context: Context) : SetupAccessRepository {
         } else {
             SetupAccessStatus.NOT_GRANTED
         }
+}
+
+internal fun notificationServiceAccessStatus(
+    serviceAvailable: Boolean,
+    accessGranted: Boolean,
+): SetupAccessStatus = when {
+    !serviceAvailable -> SetupAccessStatus.NOT_SUPPORTED
+    accessGranted -> SetupAccessStatus.GRANTED
+    else -> SetupAccessStatus.NOT_GRANTED
 }
