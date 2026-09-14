@@ -145,5 +145,5 @@ class HomeViewModelTest {
 }
 
 private class FakeAppRecoveryManager : AppRecoveryManager {
-    override suspend fun recoverOnAppLaunch() = AppRecoveryResult.Complete
+    override suspend fun reconcileMonitoringState(requestActiveReconstruction: Boolean) = AppRecoveryResult.Complete
 }

@@ -16,7 +16,7 @@ sealed interface AppRecoveryResult {
 }
 
 interface AppRecoveryManager {
-    suspend fun recoverOnAppLaunch(): AppRecoveryResult
+    suspend fun reconcileMonitoringState(requestActiveReconstruction: Boolean): AppRecoveryResult
 }
 
 class DefaultAppRecoveryManager(
@@ -31,14 +31,18 @@ class DefaultAppRecoveryManager(
     },
 ) : AppRecoveryManager {
     private val mutex = Mutex()
-    private var completed = false
+    private var activeReconstructionRequested = false
 
-    override suspend fun recoverOnAppLaunch(): AppRecoveryResult = mutex.withLock {
-        if (completed) return@withLock AppRecoveryResult.Complete
+    override suspend fun reconcileMonitoringState(
+        requestActiveReconstruction: Boolean,
+    ): AppRecoveryResult = mutex.withLock {
         val preferences = preferencesRepository.preferences.first()
-        val recovery = ringerModeController.recoverPendingChange()
+        val recovery = if (requestActiveReconstruction) {
+            ringerModeController.recoverPendingChange()
+        } else {
+            RingerModeRecoveryResult.NoPendingChange
+        }
         if (recovery is RingerModeRecoveryResult.Failure) {
-            completed = true
             if (preferences.monitoringEnabled && preferences.monitoringPaused) {
                 monitoringStateRepository.updateState(
                     MonitoringRuntimeState.Error(
@@ -56,26 +60,36 @@ class DefaultAppRecoveryManager(
             return@withLock AppRecoveryResult.SoundRecoveryFailed(recovery.reason)
         }
         if (!preferences.monitoringEnabled) {
-            preferencesRepository.setMonitoringPaused(false)
+            activeReconstructionRequested = false
             monitoringStateRepository.updateState(MonitoringRuntimeState.Stopped)
             pausedNotificationController.cancelPausedNotification()
             tileUpdateRequester.requestUpdate()
-            completed = true
             return@withLock AppRecoveryResult.Complete
         }
         if (preferences.monitoringPaused) {
+            activeReconstructionRequested = false
             monitoringStateRepository.updateState(MonitoringRuntimeState.Paused)
             pausedNotificationController.showPausedNotification()
             tileUpdateRequester.requestUpdate()
-            completed = true
             return@withLock AppRecoveryResult.Complete
         }
-        if (monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped) {
+        if (monitoringStateRepository.state.value is MonitoringRuntimeState.Unresolved ||
+            monitoringStateRepository.state.value is MonitoringRuntimeState.Stopped
+        ) {
+            activeReconstructionRequested = false
             monitoringStateRepository.updateState(MonitoringRuntimeState.Recovering)
         }
-        if (monitoringStateRepository.state.value is MonitoringRuntimeState.Recovering) {
+        val runtime = monitoringStateRepository.state.value
+        if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Resuming ||
+            runtime is MonitoringRuntimeState.Active
+        ) {
+            activeReconstructionRequested = true
+        }
+        if (requestActiveReconstruction && runtime is MonitoringRuntimeState.Recovering &&
+            !activeReconstructionRequested
+        ) {
             when (val result = serviceController.startMonitoring()) {
-                MonitoringCommandResult.Accepted -> Unit
+                MonitoringCommandResult.Accepted -> activeReconstructionRequested = true
                 is MonitoringCommandResult.Rejected -> {
                     preferencesRepository.setMonitoringEnabled(false)
                     monitoringStateRepository.updateState(MonitoringRuntimeState.Error(result.reason))
@@ -83,7 +97,6 @@ class DefaultAppRecoveryManager(
             }
             tileUpdateRequester.requestUpdate()
         }
-        completed = true
         AppRecoveryResult.Complete
     }
 }

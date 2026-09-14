@@ -37,7 +37,7 @@ class HomeViewModel(
     ) { preferences, access, runtime, currentMessage, showPermissions ->
         val transitional = runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Pausing ||
             runtime is MonitoringRuntimeState.Resuming || runtime is MonitoringRuntimeState.Stopping ||
-            runtime is MonitoringRuntimeState.Recovering
+            runtime is MonitoringRuntimeState.Recovering || runtime is MonitoringRuntimeState.Unresolved
         val pausedError = runtime is MonitoringRuntimeState.Error &&
             runtime.recoveryIntent == MonitoringErrorRecoveryIntent.RESUME
         HomeUiState(
@@ -54,7 +54,9 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState())
 
     init {
-        viewModelScope.launch { appRecoveryManager.recoverOnAppLaunch() }
+        viewModelScope.launch {
+            appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = true)
+        }
         viewModelScope.launch {
             monitoringStateRepository.state.collect { runtime ->
                 if (runtime is MonitoringRuntimeState.Error) message.value = runtime.reason

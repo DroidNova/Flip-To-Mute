@@ -12,6 +12,7 @@ class QuickSettingsResolversTest {
 
     @Test fun runtimeStatesMapToTileStatuses() {
         assertEquals(QuickSettingsTileStatus.ON, stateResolver.resolve(MonitoringRuntimeState.Active, false))
+        assertEquals(QuickSettingsTileStatus.RECOVERING, stateResolver.resolve(MonitoringRuntimeState.Unresolved, true))
         assertEquals(QuickSettingsTileStatus.RECOVERING, stateResolver.resolve(MonitoringRuntimeState.Recovering, true))
         assertEquals(QuickSettingsTileStatus.STARTING, stateResolver.resolve(MonitoringRuntimeState.Starting, true))
         assertEquals(QuickSettingsTileStatus.PAUSING, stateResolver.resolve(MonitoringRuntimeState.Pausing, true))
@@ -28,7 +29,8 @@ class QuickSettingsResolversTest {
 
     @Test fun clicksMapToExactlyOneSafeAction() {
         assertEquals(QuickSettingsTileClickAction.PauseMonitoring, clickResolver.resolve(MonitoringRuntimeState.Active, true))
-        assertEquals(QuickSettingsTileClickAction.Ignore, clickResolver.resolve(MonitoringRuntimeState.Recovering, true))
+        assertEquals(QuickSettingsTileClickAction.Ignore, clickResolver.resolve(MonitoringRuntimeState.Unresolved, true))
+        assertEquals(QuickSettingsTileClickAction.StartMonitoring, clickResolver.resolve(MonitoringRuntimeState.Recovering, true))
         assertEquals(QuickSettingsTileClickAction.ResumeMonitoring, clickResolver.resolve(MonitoringRuntimeState.Paused, true))
         assertEquals(
             QuickSettingsTileClickAction.OpenSetupAndResume,

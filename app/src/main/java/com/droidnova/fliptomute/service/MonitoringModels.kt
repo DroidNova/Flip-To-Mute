@@ -12,6 +12,7 @@ enum class MonitoringFailure {
 }
 
 sealed interface MonitoringRuntimeState {
+    data object Unresolved : MonitoringRuntimeState
     data object Recovering : MonitoringRuntimeState
     data object Stopped : MonitoringRuntimeState
     data object Starting : MonitoringRuntimeState

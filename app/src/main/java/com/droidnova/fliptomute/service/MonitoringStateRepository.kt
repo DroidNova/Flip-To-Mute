@@ -10,7 +10,7 @@ interface MonitoringStateRepository {
 }
 
 class InMemoryMonitoringStateRepository : MonitoringStateRepository {
-    private val mutableState = MutableStateFlow<MonitoringRuntimeState>(MonitoringRuntimeState.Recovering)
+    private val mutableState = MutableStateFlow<MonitoringRuntimeState>(MonitoringRuntimeState.Unresolved)
     override val state: StateFlow<MonitoringRuntimeState> = mutableState.asStateFlow()
     override fun updateState(state: MonitoringRuntimeState) { mutableState.value = state }
 }

@@ -17,6 +17,7 @@ sealed interface QuickSettingsTileClickAction {
 class QuickSettingsTileStateResolver {
     fun resolve(state: MonitoringRuntimeState, setupComplete: Boolean): QuickSettingsTileStatus = when (state) {
         MonitoringRuntimeState.Active -> QuickSettingsTileStatus.ON
+        MonitoringRuntimeState.Unresolved -> QuickSettingsTileStatus.RECOVERING
         MonitoringRuntimeState.Recovering -> QuickSettingsTileStatus.RECOVERING
         MonitoringRuntimeState.Starting -> QuickSettingsTileStatus.STARTING
         MonitoringRuntimeState.Pausing -> QuickSettingsTileStatus.PAUSING
@@ -33,7 +34,8 @@ class QuickSettingsTileStateResolver {
 class QuickSettingsTileClickResolver {
     fun resolve(state: MonitoringRuntimeState, setupComplete: Boolean): QuickSettingsTileClickAction = when (state) {
         MonitoringRuntimeState.Active -> QuickSettingsTileClickAction.PauseMonitoring
-        MonitoringRuntimeState.Recovering -> QuickSettingsTileClickAction.Ignore
+        MonitoringRuntimeState.Unresolved -> QuickSettingsTileClickAction.Ignore
+        MonitoringRuntimeState.Recovering -> QuickSettingsTileClickAction.StartMonitoring
         MonitoringRuntimeState.Paused -> if (setupComplete) {
             QuickSettingsTileClickAction.ResumeMonitoring
         } else {

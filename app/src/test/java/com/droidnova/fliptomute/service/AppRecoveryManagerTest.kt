@@ -17,14 +17,19 @@ class AppRecoveryManagerTest {
         val runtime = InMemoryMonitoringStateRepository()
         val controller = FakeMonitoringServiceController()
         val manager = DefaultAppRecoveryManager(preferences, runtime, ringer, controller)
-        assertEquals(AppRecoveryResult.Complete, manager.recoverOnAppLaunch())
+        assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(false))
         assertEquals(MonitoringRuntimeState.Recovering, runtime.state.value)
         assertEquals(true, preferences.preferences.value.monitoringEnabled)
+        assertEquals(0, controller.startCount)
+        assertEquals(0, ringer.recoverCount)
+        manager.reconcileMonitoringState(false)
+        assertEquals(0, controller.startCount)
+
+        manager.reconcileMonitoringState(true)
         assertEquals(1, controller.startCount)
         assertEquals(1, ringer.recoverCount)
-        manager.recoverOnAppLaunch()
+        manager.reconcileMonitoringState(true)
         assertEquals(1, controller.startCount)
-        assertEquals(1, ringer.recoverCount)
     }
 
     @Test fun activeRuntimeKeepsStoredIntent() = runTest {
@@ -32,7 +37,7 @@ class AppRecoveryManagerTest {
         val runtime = InMemoryMonitoringStateRepository().apply { updateState(MonitoringRuntimeState.Active) }
         val controller = FakeMonitoringServiceController()
         val manager = DefaultAppRecoveryManager(preferences, runtime, FakeRingerModeController(), controller)
-        assertEquals(AppRecoveryResult.Complete, manager.recoverOnAppLaunch())
+        assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(true))
         assertEquals(true, preferences.preferences.value.monitoringEnabled)
         assertEquals(0, controller.startCount)
     }
@@ -47,7 +52,7 @@ class AppRecoveryManagerTest {
             preferences, runtime, FakeRingerModeController(), FakeMonitoringServiceController(),
             pausedNotificationController = notifications,
         )
-        assertEquals(AppRecoveryResult.Complete, manager.recoverOnAppLaunch())
+        assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(false))
         assertEquals(MonitoringRuntimeState.Paused, runtime.state.value)
         assertEquals(1, notifications.showCount)
         assertEquals(true, preferences.preferences.value.monitoringPaused)
@@ -60,10 +65,28 @@ class AppRecoveryManagerTest {
             FakeAppPreferencesRepository(), runtime, FakeRingerModeController(), controller,
         )
 
-        assertEquals(AppRecoveryResult.Complete, manager.recoverOnAppLaunch())
+        assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(false))
 
         assertEquals(MonitoringRuntimeState.Stopped, runtime.state.value)
         assertEquals(0, controller.startCount)
+    }
+
+    @Test fun stoppedRuntimeAllowsLaterActiveReconstructionRequest() = runTest {
+        val preferences = FakeAppPreferencesRepository(AppPreferences(monitoringEnabled = true))
+        val runtime = InMemoryMonitoringStateRepository()
+        val controller = FakeMonitoringServiceController()
+        val manager = DefaultAppRecoveryManager(
+            preferences, runtime, FakeRingerModeController(), controller,
+        )
+
+        manager.reconcileMonitoringState(true)
+        assertEquals(1, controller.startCount)
+        runtime.updateState(MonitoringRuntimeState.Stopped)
+        manager.reconcileMonitoringState(true)
+
+        assertEquals(MonitoringRuntimeState.Recovering, runtime.state.value)
+        assertEquals(2, controller.startCount)
+        assertEquals(true, preferences.preferences.value.monitoringEnabled)
     }
 }
 
