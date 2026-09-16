@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 
@@ -16,9 +15,6 @@ class AndroidSetupAccessObserver(
 ) {
     private val applicationContext = context.applicationContext
     private var registered = false
-    private val permissionListener = PackageManager.OnPermissionsChangedListener { uid ->
-        if (uid == applicationContext.applicationInfo.uid) signalSafely()
-    }
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) = signalSafely()
     }
@@ -26,7 +22,6 @@ class AndroidSetupAccessObserver(
     fun register() {
         if (registered) return
         try {
-            applicationContext.packageManager.addOnPermissionsChangeListener(permissionListener)
             val filter = IntentFilter(NotificationManager.ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 filter.addAction(NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED)
@@ -44,11 +39,6 @@ class AndroidSetupAccessObserver(
     }
 
     fun unregister() {
-        try {
-            applicationContext.packageManager.removeOnPermissionsChangeListener(permissionListener)
-        } catch (_: RuntimeException) {
-            // Registration may have failed or the package manager may be unavailable.
-        }
         try {
             applicationContext.unregisterReceiver(receiver)
         } catch (_: RuntimeException) {
