@@ -3,7 +3,7 @@ package com.droidnova.fliptomute.audio
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 
 class FakeRingerModeController(
-    var currentMode: DeviceRingerMode = DeviceRingerMode.NORMAL,
+    currentMode: DeviceRingerMode = DeviceRingerMode.NORMAL,
     var applyResult: RingerModeResult = RingerModeResult.Success(
         DeviceRingerMode.SILENT,
         RingerModeSuccessType.APPLIED,
@@ -14,20 +14,21 @@ class FakeRingerModeController(
     ),
     var recoveryResult: RingerModeRecoveryResult = RingerModeRecoveryResult.NoPendingChange,
 ) : RingerModeController {
+    private var mode = currentMode
     var applyCount = 0
     var restoreCount = 0
     var recoverCount = 0
     val appliedActions = mutableListOf<FlipAction>()
-    override fun getCurrentMode() = currentMode
+    override fun getCurrentMode() = mode
     override suspend fun applyTemporaryAction(action: FlipAction): RingerModeResult {
         applyCount++
         appliedActions += action
-        (applyResult as? RingerModeResult.Success)?.let { currentMode = it.currentMode }
+        (applyResult as? RingerModeResult.Success)?.let { mode = it.currentMode }
         return applyResult
     }
     override suspend fun restorePreviousMode(): RingerModeResult {
         restoreCount++
-        (restoreResult as? RingerModeResult.Success)?.let { currentMode = it.currentMode }
+        (restoreResult as? RingerModeResult.Success)?.let { mode = it.currentMode }
         return restoreResult
     }
 
