@@ -3,6 +3,9 @@ package com.droidnova.fliptomute.service
 import com.droidnova.fliptomute.audio.FakeRingerModeController
 import com.droidnova.fliptomute.data.preferences.AppPreferences
 import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
+import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
+import com.droidnova.fliptomute.data.setup.SetupAccessState
+import com.droidnova.fliptomute.data.setup.SetupAccessStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,7 +19,7 @@ class AppRecoveryManagerTest {
         val ringer = FakeRingerModeController()
         val runtime = InMemoryMonitoringStateRepository()
         val controller = FakeMonitoringServiceController()
-        val manager = DefaultAppRecoveryManager(preferences, runtime, ringer, controller)
+        val manager = DefaultAppRecoveryManager(preferences, runtime, ringer, controller, completeSetup())
         assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(false))
         assertEquals(MonitoringRuntimeState.Recovering, runtime.state.value)
         assertEquals(true, preferences.preferences.value.monitoringEnabled)
@@ -36,7 +39,9 @@ class AppRecoveryManagerTest {
         val preferences = FakeAppPreferencesRepository(AppPreferences(monitoringEnabled = true))
         val runtime = InMemoryMonitoringStateRepository().apply { updateState(MonitoringRuntimeState.Active) }
         val controller = FakeMonitoringServiceController()
-        val manager = DefaultAppRecoveryManager(preferences, runtime, FakeRingerModeController(), controller)
+        val manager = DefaultAppRecoveryManager(
+            preferences, runtime, FakeRingerModeController(), controller, completeSetup(),
+        )
         assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(true))
         assertEquals(true, preferences.preferences.value.monitoringEnabled)
         assertEquals(0, controller.startCount)
@@ -49,7 +54,7 @@ class AppRecoveryManagerTest {
         val runtime = InMemoryMonitoringStateRepository()
         val notifications = FakePausedNotifications()
         val manager = DefaultAppRecoveryManager(
-            preferences, runtime, FakeRingerModeController(), FakeMonitoringServiceController(),
+            preferences, runtime, FakeRingerModeController(), FakeMonitoringServiceController(), completeSetup(),
             pausedNotificationController = notifications,
         )
         assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(false))
@@ -62,7 +67,7 @@ class AppRecoveryManagerTest {
         val runtime = InMemoryMonitoringStateRepository()
         val controller = FakeMonitoringServiceController()
         val manager = DefaultAppRecoveryManager(
-            FakeAppPreferencesRepository(), runtime, FakeRingerModeController(), controller,
+            FakeAppPreferencesRepository(), runtime, FakeRingerModeController(), controller, completeSetup(),
         )
 
         assertEquals(AppRecoveryResult.Complete, manager.reconcileMonitoringState(false))
@@ -76,7 +81,7 @@ class AppRecoveryManagerTest {
         val runtime = InMemoryMonitoringStateRepository()
         val controller = FakeMonitoringServiceController()
         val manager = DefaultAppRecoveryManager(
-            preferences, runtime, FakeRingerModeController(), controller,
+            preferences, runtime, FakeRingerModeController(), controller, completeSetup(),
         )
 
         manager.reconcileMonitoringState(true)
@@ -88,6 +93,52 @@ class AppRecoveryManagerTest {
         assertEquals(2, controller.startCount)
         assertEquals(true, preferences.preferences.value.monitoringEnabled)
     }
+
+    @Test fun activeIntentWithMissingAccessIsRepairedOffWithoutStarting() = runTest {
+        val preferences = FakeAppPreferencesRepository(AppPreferences(monitoringEnabled = true))
+        val runtime = InMemoryMonitoringStateRepository()
+        val controller = FakeMonitoringServiceController()
+        val manager = DefaultAppRecoveryManager(
+            preferences,
+            runtime,
+            FakeRingerModeController(),
+            controller,
+            setupAccessRepository = FakeSetupAccessRepository(SetupAccessState()),
+        )
+
+        manager.reconcileMonitoringState(requestActiveReconstruction = true)
+
+        assertEquals(false, preferences.preferences.value.monitoringEnabled)
+        assertEquals(MonitoringRuntimeState.Error(MonitoringFailure.SETUP_REQUIRED), runtime.state.value)
+        assertEquals(0, controller.startCount)
+    }
+
+    @Test fun stateOnlyReconciliationDoesNotRepairIntentOrStartWhenAccessIsMissing() = runTest {
+        val preferences = FakeAppPreferencesRepository(AppPreferences(monitoringEnabled = true))
+        val runtime = InMemoryMonitoringStateRepository()
+        val controller = FakeMonitoringServiceController()
+        val manager = DefaultAppRecoveryManager(
+            preferences,
+            runtime,
+            FakeRingerModeController(),
+            controller,
+            setupAccessRepository = FakeSetupAccessRepository(SetupAccessState()),
+        )
+
+        manager.reconcileMonitoringState(requestActiveReconstruction = false)
+
+        assertEquals(true, preferences.preferences.value.monitoringEnabled)
+        assertEquals(MonitoringRuntimeState.Recovering, runtime.state.value)
+        assertEquals(0, controller.startCount)
+    }
+
+    private fun completeSetup() = FakeSetupAccessRepository(
+        SetupAccessState(
+            SetupAccessStatus.GRANTED,
+            SetupAccessStatus.GRANTED,
+            SetupAccessStatus.GRANTED,
+        ),
+    )
 }
 
 private class FakePausedNotifications : PausedNotificationController {

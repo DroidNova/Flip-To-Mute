@@ -4,6 +4,7 @@ import com.droidnova.fliptomute.audio.RingerModeController
 import com.droidnova.fliptomute.audio.RingerModeFailure
 import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -24,6 +25,7 @@ class DefaultAppRecoveryManager(
     private val monitoringStateRepository: MonitoringStateRepository,
     private val ringerModeController: RingerModeController,
     private val serviceController: MonitoringServiceController,
+    private val setupAccessRepository: SetupAccessRepository,
     private val tileUpdateRequester: QuickSettingsTileUpdateRequester = QuickSettingsTileUpdateRequester {},
     private val pausedNotificationController: PausedNotificationController = object : PausedNotificationController {
         override fun showPausedNotification() = Unit
@@ -70,6 +72,27 @@ class DefaultAppRecoveryManager(
             activeReconstructionRequested = false
             monitoringStateRepository.updateState(MonitoringRuntimeState.Paused)
             pausedNotificationController.showPausedNotification()
+            tileUpdateRequester.requestUpdate()
+            return@withLock AppRecoveryResult.Complete
+        }
+        val reconstructionAccessComplete = if (requestActiveReconstruction) {
+            try {
+                setupAccessRepository.refreshAndGet().isSetupComplete
+            } catch (_: RuntimeException) {
+                false
+            }
+        } else true
+        if (!reconstructionAccessComplete) {
+            activeReconstructionRequested = false
+            val failure = try {
+                preferencesRepository.setMonitoringEnabled(false)
+                preferencesRepository.setMonitoringPaused(false)
+                MonitoringFailure.SETUP_REQUIRED
+            } catch (_: Exception) {
+                MonitoringFailure.CLEANUP_FAILED
+            }
+            monitoringStateRepository.updateState(MonitoringRuntimeState.Error(failure))
+            pausedNotificationController.cancelPausedNotification()
             tileUpdateRequester.requestUpdate()
             return@withLock AppRecoveryResult.Complete
         }

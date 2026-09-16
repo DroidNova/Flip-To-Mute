@@ -168,6 +168,28 @@ class HomeViewModelTest {
         assertEquals(0, restored.controller.startCount)
     }
 
+    @Test fun foregroundRefreshSignalsSerializedRevalidationWhenActiveAccessIsMissing() = runTest {
+        val fixture = fixture(granted = true)
+        collect(fixture.viewModel)
+        fixture.runtime.updateState(MonitoringRuntimeState.Active)
+        fixture.setup.stateOnRefresh = SetupAccessState()
+
+        fixture.viewModel.refreshAccessState()
+
+        assertEquals(1, fixture.controller.revalidateCount)
+        assertEquals(0, fixture.controller.stopCount)
+    }
+
+    @Test fun missingAccessWhilePausedDoesNotStopOrRevalidate() = runTest {
+        val fixture = fixture()
+        fixture.runtime.updateState(MonitoringRuntimeState.Paused)
+
+        fixture.viewModel.refreshAccessState()
+
+        assertEquals(0, fixture.controller.revalidateCount)
+        assertEquals(0, fixture.controller.stopCount)
+    }
+
     private fun fixture(
         granted: Boolean = false,
         preferences: FakeAppPreferencesRepository = FakeAppPreferencesRepository(),

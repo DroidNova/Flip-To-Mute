@@ -11,6 +11,7 @@ import com.droidnova.fliptomute.app.FlipToMuteApplication
 import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
 import com.droidnova.fliptomute.audio.RingerModeFailure
 import com.droidnova.fliptomute.audio.RingerModeResult
+import com.droidnova.fliptomute.data.setup.AndroidSetupAccessObserver
 import com.droidnova.fliptomute.notification.MonitoringNotificationManager
 import com.droidnova.fliptomute.util.MonitoringLog
 import kotlinx.coroutines.CoroutineScope
@@ -30,11 +31,14 @@ class FlipMonitoringService : Service() {
     private var commandJob: Job? = null
     private var foregroundStarted = false
     private val commandSequencer = MonitoringCommandSequencer()
+    private var accessRevalidationJob: Job? = null
+    private val accessObserver by lazy { AndroidSetupAccessObserver(this, ::requestAccessRevalidation) }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        accessObserver.register()
         debugLog("Service created")
     }
 
@@ -60,6 +64,10 @@ class FlipMonitoringService : Service() {
             MonitoringServiceCommand.STOP -> {
                 stopMonitoring(startId)
                 START_NOT_STICKY
+            }
+            MonitoringServiceCommand.REVALIDATE_ACCESS -> {
+                requestAccessRevalidation()
+                START_STICKY
             }
             MonitoringServiceCommand.RESTART -> {
                 startMonitoring(isRestart = true, isResume = false, startId = startId)
@@ -146,7 +154,9 @@ class FlipMonitoringService : Service() {
                     onFailure = { reason ->
                         serviceScope.launch {
                             if (!commandSequencer.isCurrent(token)) return@launch
-                            if (isResume) failResume(reason) else failStart(reason)
+                            if (reason == MonitoringFailure.SETUP_REQUIRED) {
+                                requestAccessRevalidation()
+                            } else if (isResume) failResume(reason) else failStart(reason)
                         }
                     },
                     proximityMonitor = container.proximityMonitorFactory.create(),
@@ -161,6 +171,11 @@ class FlipMonitoringService : Service() {
                     MonitoringCoordinatorStartResult.Started -> {
                         debugLog("Coordinator startup result: Started")
                         if (!commandSequencer.isCurrent(token)) return@launch
+                        if (!container.setupAccessRepository.refreshAndGet().isSetupComplete) {
+                            commandSequencer.supersede()
+                            failStart(MonitoringFailure.SETUP_REQUIRED, startId)
+                            return@launch
+                        }
                         try {
                             container.appPreferencesRepository.setMonitoringPaused(false)
                             container.appPreferencesRepository.setMonitoringEnabled(true)
@@ -224,6 +239,34 @@ class FlipMonitoringService : Service() {
         publishMonitoringState(MonitoringRuntimeState.Stopping)
         notificationHelper.cancelPausedNotification()
         commandJob = serviceScope.launch { finishStopped(writePreference = true) }
+    }
+
+    private fun requestAccessRevalidation() {
+        if (accessRevalidationJob?.isActive == true) return
+        accessRevalidationJob = serviceScope.launch {
+            val runtime = container.monitoringStateRepository.state.value
+            if (!shouldShutdownForAccessLoss(runtime, setupComplete = false)) return@launch
+            val accessComplete = try {
+                container.setupAccessRepository.refreshAndGet().isSetupComplete
+            } catch (error: RuntimeException) {
+                MonitoringLog.failure(this@FlipMonitoringService, "Refreshing setup access failed", error)
+                false
+            }
+            if (!shouldShutdownForAccessLoss(container.monitoringStateRepository.state.value, accessComplete)) {
+                return@launch
+            }
+            commandSequencer.supersede()
+            commandJob?.cancel()
+            coordinator?.beginStopping()
+            publishMonitoringState(MonitoringRuntimeState.Stopping)
+            commandJob = serviceScope.launch {
+                finishStopped(
+                    writePreference = true,
+                    preserveError = true,
+                    failure = MonitoringFailure.SETUP_REQUIRED,
+                )
+            }
+        }
     }
 
     private fun pauseMonitoring(startId: Int) {
@@ -330,6 +373,8 @@ class FlipMonitoringService : Service() {
     }
 
     override fun onDestroy() {
+        accessObserver.unregister()
+        accessRevalidationJob?.cancel()
         commandSequencer.supersede()
         coordinator?.beginStopping()
         val immediateRestoration = coordinator?.restorePreviousModeImmediately()
@@ -355,6 +400,8 @@ class FlipMonitoringService : Service() {
             .setAction(MonitoringServiceCommandClassifier.PAUSE_ACTION)
         fun createResumeIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
             .setAction(MonitoringServiceCommandClassifier.RESUME_ACTION)
+        fun createRevalidateAccessIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
+            .setAction(MonitoringServiceCommandClassifier.REVALIDATE_ACCESS_ACTION)
     }
 
     private fun debugLog(message: String) {

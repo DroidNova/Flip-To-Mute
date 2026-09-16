@@ -118,6 +118,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             monitoringStateRepository,
             ringerModeControllerFactory.create(),
             monitoringServiceController,
+            setupAccessRepository,
             quickSettingsTileUpdateRequester,
             pausedNotificationController,
         )

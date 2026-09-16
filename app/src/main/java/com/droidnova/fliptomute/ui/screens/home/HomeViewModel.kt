@@ -11,6 +11,7 @@ import com.droidnova.fliptomute.service.MonitoringServiceController
 import com.droidnova.fliptomute.service.MonitoringStateRepository
 import com.droidnova.fliptomute.service.AppRecoveryManager
 import com.droidnova.fliptomute.service.MonitoringErrorRecoveryIntent
+import com.droidnova.fliptomute.service.shouldShutdownForAccessLoss
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -115,6 +116,9 @@ class HomeViewModel(
 
     fun refreshAccessState() {
         val access = setupAccessRepository.refreshAndGet()
+        if (shouldShutdownForAccessLoss(monitoringStateRepository.state.value, access.isSetupComplete)) {
+            serviceController.revalidateAccess()
+        }
         val action = currentPendingAction()
         if (action != PendingMonitoringAction.NONE && access.isSetupComplete) {
             dispatchPendingAction(action)

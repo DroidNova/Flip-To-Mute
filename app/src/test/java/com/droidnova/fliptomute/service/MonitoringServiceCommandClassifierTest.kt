@@ -26,6 +26,27 @@ class MonitoringServiceCommandClassifierTest {
             MonitoringServiceCommand.RESUME,
             MonitoringServiceCommandClassifier.classify(true, MonitoringServiceCommandClassifier.RESUME_ACTION),
         )
+        assertEquals(
+            MonitoringServiceCommand.REVALIDATE_ACCESS,
+            MonitoringServiceCommandClassifier.classify(
+                true,
+                MonitoringServiceCommandClassifier.REVALIDATE_ACCESS_ACTION,
+            ),
+        )
+    }
+
+    @Test fun missingAccessTerminatesOnlyOperationalStates() {
+        listOf(
+            MonitoringRuntimeState.Starting,
+            MonitoringRuntimeState.Resuming,
+            MonitoringRuntimeState.Active,
+        ).forEach { assertEquals(true, shouldShutdownForAccessLoss(it, setupComplete = false)) }
+        listOf(
+            MonitoringRuntimeState.Paused,
+            MonitoringRuntimeState.Stopped,
+            MonitoringRuntimeState.Recovering,
+        ).forEach { assertEquals(false, shouldShutdownForAccessLoss(it, setupComplete = false)) }
+        assertEquals(false, shouldShutdownForAccessLoss(MonitoringRuntimeState.Active, setupComplete = true))
     }
 
     @Test fun stickyRestartRequiresStoredIntentAndCompleteSetup() {
