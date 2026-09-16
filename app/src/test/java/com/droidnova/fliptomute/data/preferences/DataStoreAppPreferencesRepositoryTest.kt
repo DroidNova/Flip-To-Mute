@@ -6,11 +6,10 @@ import androidx.datastore.preferences.core.edit
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -78,19 +77,19 @@ class DataStoreAppPreferencesRepositoryTest {
         }
     }
 
-    private suspend fun TestScope.withRepository(
+    private suspend fun withRepository(
         name: String,
         block: suspend (DataStoreAppPreferencesRepository) -> Unit,
     ) = withDataStore(uniqueFile(name)) { dataStore ->
         block(DataStoreAppPreferencesRepository(dataStore))
     }
 
-    private suspend fun TestScope.withDataStore(
+    private suspend fun withDataStore(
         file: File,
         block: suspend (androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>) -> Unit,
     ) {
         val job = SupervisorJob()
-        val scope = CoroutineScope(job + StandardTestDispatcher(testScheduler))
+        val scope = CoroutineScope(job + Dispatchers.IO)
         val dataStore = PreferenceDataStoreFactory.create(scope = scope) {
             file
         }
