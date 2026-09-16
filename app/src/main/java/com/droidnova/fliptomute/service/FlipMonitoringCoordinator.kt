@@ -271,14 +271,10 @@ class FlipMonitoringCoordinator(
                 val result = ringerModeController.applyTemporaryAction(modeAction)
                 when (result) {
                     is RingerModeResult.Success -> {
-                        val handled = if (currentSession.selection.vibratePhone) {
-                            (currentSession.selection.muteRingtone || result.currentMode == DeviceRingerMode.VIBRATE) &&
-                                vibrationController.getAvailability() == VibrationAvailability.AVAILABLE &&
-                                vibrationController.start() is IncomingCallVibrationResult.Started
-                        } else true
-                        if (!handled) {
-                            vibrationController.stop()
-                            ringerModeController.applyTemporaryAction(FlipAction.SILENT)
+                        if (currentSession.selection.vibratePhone &&
+                            vibrationController.getAvailability() == VibrationAvailability.AVAILABLE
+                        ) {
+                            vibrationController.start()
                         }
                         ringingSession = currentSession.copy(actionHandled = true)
                         flatSurfaceFlipGate.reset()

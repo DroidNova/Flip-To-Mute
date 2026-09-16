@@ -252,6 +252,8 @@ class FlipMonitoringCoordinatorTest {
         fixture.coordinator.startAndAwaitReady(); fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
         repeat(20) { enabled -> fixture.preferences.setFlipToLockEnabled(enabled % 2 == 0); runCurrent() }
         assertTrue(fixture.sensor.maxActiveRegistrations <= 1)
+        fixture.preferences.setFlipToLockEnabled(true); runCurrent()
+        assertEquals(1, fixture.sensor.activeRegistrations)
         fixture.runtime.updateState(MonitoringRuntimeState.Paused); runCurrent()
         assertEquals(0, fixture.sensor.activeRegistrations)
         fixture.runtime.updateState(MonitoringRuntimeState.Active); runCurrent()

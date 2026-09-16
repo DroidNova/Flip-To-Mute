@@ -31,9 +31,11 @@ class HomeViewModelTest {
     @Test fun incompleteSetupDisablesActivation() = runTest {
         val fixture = fixture()
         collect(fixture.viewModel)
-        assertFalse(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringChecked)
+        assertTrue(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
         fixture.viewModel.onMonitoringChanged(true)
         assertEquals(0, fixture.controller.startCount)
+        assertTrue(fixture.viewModel.uiState.value.showPermissionsSheet)
     }
 
     @Test fun completeSetupStartsOnceAndRuntimeDrivesSwitch() = runTest {
@@ -203,7 +205,7 @@ class HomeViewModelTest {
             SetupAccessStatus.GRANTED,
         ) else SetupAccessState()
         val runtime = InMemoryMonitoringStateRepository()
-        if (!recovering) runtime.updateState(MonitoringRuntimeState.Stopped)
+        runtime.updateState(if (recovering) MonitoringRuntimeState.Recovering else MonitoringRuntimeState.Stopped)
         val controller = FakeMonitoringServiceController()
         val setupRepo = setupRepository ?: FakeSetupAccessRepository(setup)
         return Fixture(
