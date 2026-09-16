@@ -80,6 +80,35 @@ class DefaultRingerModeControllerTest {
         assertEquals(RingerModeRecoveryResult.NoPendingChange, controller.recoverPendingChange())
     }
 
+    @Test fun immediateRestorationUsesInMemorySnapshotAndLeavesDurableFallback() = runTest {
+        val recovery = FakeRingerRecoveryRepository()
+        val platform = FakeRingerModePlatform()
+        val controller = DefaultRingerModeController(platform, recovery)
+        controller.applyTemporaryAction(FlipAction.SILENT)
+
+        val result = controller.restorePreviousModeImmediately() as RingerModeResult.Success
+
+        assertEquals(RingerModeSuccessType.RESTORED, result.type)
+        assertEquals(DeviceRingerModeMapper.ANDROID_MODE_NORMAL, platform.mode)
+        assertEquals(RingerRecoverySession(DeviceRingerMode.NORMAL, DeviceRingerMode.SILENT), recovery.getRecoverySession())
+        assertEquals(RingerModeRecoveryResult.CurrentModePreserved(DeviceRingerMode.NORMAL), controller.recoverPendingChange())
+        assertEquals(null, recovery.getRecoverySession())
+    }
+
+    @Test fun immediateRestorationPreservesManualModeChangeAndIsIdempotent() = runTest {
+        val recovery = FakeRingerRecoveryRepository()
+        val platform = FakeRingerModePlatform()
+        val controller = DefaultRingerModeController(platform, recovery)
+        controller.applyTemporaryAction(FlipAction.SILENT)
+        platform.mode = DeviceRingerModeMapper.ANDROID_MODE_VIBRATE
+
+        val result = controller.restorePreviousModeImmediately() as RingerModeResult.Success
+
+        assertEquals(RingerModeSuccessType.MANUAL_CHANGE_PRESERVED, result.type)
+        assertEquals(DeviceRingerModeMapper.ANDROID_MODE_VIBRATE, platform.mode)
+        assertFailure(controller.restorePreviousModeImmediately(), RingerModeFailure.NO_ACTIVE_CHANGE)
+    }
+
     @Test fun persistedBeforeWriteAndManualCurrentModesArePreserved() = runTest {
         for (current in listOf(DeviceRingerMode.NORMAL, DeviceRingerMode.VIBRATE)) {
             val recovery = FakeRingerRecoveryRepository(

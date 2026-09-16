@@ -9,6 +9,7 @@ interface MonitoringServiceController {
     fun pauseMonitoring(): MonitoringCommandResult
     fun resumeMonitoring(): MonitoringCommandResult
     fun stopMonitoring(): MonitoringCommandResult
+    fun revalidateAccess(): MonitoringCommandResult
 }
 
 class AndroidMonitoringServiceController(context: Context) : MonitoringServiceController {
@@ -41,6 +42,10 @@ class AndroidMonitoringServiceController(context: Context) : MonitoringServiceCo
 
     override fun stopMonitoring(): MonitoringCommandResult = sendServiceCommand(
         FlipMonitoringService.createStopIntent(context),
+    )
+
+    override fun revalidateAccess(): MonitoringCommandResult = sendServiceCommand(
+        FlipMonitoringService.createRevalidateAccessIntent(context),
     )
 
     private fun sendForegroundCommand(intent: android.content.Intent): MonitoringCommandResult = try {

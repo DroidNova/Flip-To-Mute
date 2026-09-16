@@ -252,6 +252,8 @@ class FlipMonitoringCoordinatorTest {
         fixture.coordinator.startAndAwaitReady(); fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
         repeat(20) { enabled -> fixture.preferences.setFlipToLockEnabled(enabled % 2 == 0); runCurrent() }
         assertTrue(fixture.sensor.maxActiveRegistrations <= 1)
+        fixture.preferences.setFlipToLockEnabled(true); runCurrent()
+        assertEquals(1, fixture.sensor.activeRegistrations)
         fixture.runtime.updateState(MonitoringRuntimeState.Paused); runCurrent()
         assertEquals(0, fixture.sensor.activeRegistrations)
         fixture.runtime.updateState(MonitoringRuntimeState.Active); runCurrent()
@@ -275,6 +277,21 @@ class FlipMonitoringCoordinatorTest {
         fixture.coordinator.startAndAwaitReady(); fixture.call.emit(listening(CellularCallState.IDLE)); runCurrent()
         fixture.coordinator.stop(); runCurrent()
         assertEquals(0, fixture.sensor.activeRegistrations)
+    }
+
+    @Test fun stopReturnsRestorationFailureAndRepeatedCleanupRemainsSafe() = runTest {
+        val fixture = fixture(backgroundScope)
+        fixture.ringer.restoreResult = RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED)
+        fixture.coordinator.startAndAwaitReady()
+        runCurrent()
+
+        val first = fixture.coordinator.stop()
+        val second = fixture.coordinator.stop()
+
+        assertEquals(RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED), first)
+        assertEquals(RingerModeResult.Failure(RingerModeFailure.CHANGE_NOT_APPLIED), second)
+        assertEquals(0, fixture.sensor.activeRegistrations)
+        assertEquals(2, fixture.ringer.restoreCount)
     }
 
     private fun fixture(

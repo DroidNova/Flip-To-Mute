@@ -8,10 +8,13 @@ enum class MonitoringFailure {
     CALL_MONITOR_FAILED,
     SOUND_CONTROL_FAILED,
     NOTIFICATION_UNAVAILABLE,
+    CLEANUP_FAILED,
     UNKNOWN,
 }
 
 sealed interface MonitoringRuntimeState {
+    data object Unresolved : MonitoringRuntimeState
+    data object Recovering : MonitoringRuntimeState
     data object Stopped : MonitoringRuntimeState
     data object Starting : MonitoringRuntimeState
     data object Active : MonitoringRuntimeState
@@ -19,8 +22,13 @@ sealed interface MonitoringRuntimeState {
     data object Paused : MonitoringRuntimeState
     data object Resuming : MonitoringRuntimeState
     data object Stopping : MonitoringRuntimeState
-    data class Error(val reason: MonitoringFailure) : MonitoringRuntimeState
+    data class Error(
+        val reason: MonitoringFailure,
+        val recoveryIntent: MonitoringErrorRecoveryIntent = MonitoringErrorRecoveryIntent.START,
+    ) : MonitoringRuntimeState
 }
+
+enum class MonitoringErrorRecoveryIntent { START, RESUME }
 
 sealed interface MonitoringCommandResult {
     data object Accepted : MonitoringCommandResult

@@ -25,6 +25,7 @@
     <string name="quick_settings_tile_label">Flip to Mute</string>
     <string name="quick_settings_tile_on">On</string>
     <string name="quick_settings_tile_off">Off</string>
+    <string name="quick_settings_tile_checking">Checking…</string>
     <string name="quick_settings_tile_starting">Turning on</string>
     <string name="quick_settings_tile_stopping">Turning off</string>
     <string name="quick_settings_tile_setup_required">Setup needed</string>
@@ -42,6 +43,8 @@
     <string name="monitoring_paused_title">Flip to Mute is paused</string>
     <string name="monitoring_paused_notification_text">Incoming calls will not be changed while paused.</string>
     <string name="monitoring_paused_home_text">Incoming calls will not be changed.</string>
+    <string name="monitoring_recovering_title">Checking monitoring</string>
+    <string name="monitoring_recovering_text">Restoring your monitoring state…</string>
     <string name="monitoring_pausing_title">Pausing…</string>
     <string name="monitoring_pausing_text">Stopping call monitoring safely.</string>
     <string name="monitoring_resuming_title">Resuming…</string>
@@ -145,6 +148,7 @@
     <string name="not_now_action">Not now</string>
     <string name="phone_access_denied">Phone access was not allowed. Flip to Mute cannot detect incoming cellular calls without it.</string>
     <string name="notification_access_denied">Notification access was not allowed.</string>
+    <string name="settings_unavailable">Settings could not be opened. Try again.</string>
     <string name="open_app_settings">Open app settings</string>
     <string name="open_app_setup">Open App Setup</string>
     <string name="setup_section">App Setup</string>
@@ -269,4 +273,5 @@
     <string name="monitoring_setup_error">Complete app setup and try again.</string>
     <string name="monitoring_telephony_error">Cellular call detection is unavailable on this device.</string>
     <string name="monitoring_notification_error">Allow notifications before turning on Flip to Mute.</string>
+    <string name="monitoring_cleanup_error">Monitoring stopped, but cleanup could not finish. Check your sound and try again.</string>
 </resources>

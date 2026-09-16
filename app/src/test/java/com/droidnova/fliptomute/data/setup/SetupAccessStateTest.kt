@@ -1,6 +1,7 @@
 package com.droidnova.fliptomute.data.setup
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -12,6 +13,10 @@ class SetupAccessStateTest {
     @Test fun soundMissingIsIncomplete() = assertFalse(state(sound = missing).isSetupComplete)
     @Test fun notificationsMissingIsIncomplete() = assertFalse(state(notifications = missing).isSetupComplete)
     @Test fun allGrantedIsComplete() = assertTrue(state().isSetupComplete)
+    @Test fun unavailableNotificationManagerIsNotSupported() = assertEquals(
+        SetupAccessStatus.NOT_SUPPORTED,
+        notificationServiceAccessStatus(serviceAvailable = false, accessGranted = false),
+    )
 
     private fun state(
         phone: SetupAccessStatus = granted,

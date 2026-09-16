@@ -9,7 +9,6 @@ import com.droidnova.fliptomute.MainActivity
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.app.FlipToMuteApplication
 import com.droidnova.fliptomute.service.MonitoringCommandResult
-import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import androidx.core.service.quicksettings.PendingIntentActivityWrapper
 import androidx.core.service.quicksettings.TileServiceCompat
@@ -40,8 +39,11 @@ class FlipToMuteTileService : TileService() {
         refreshTile()
         listeningJob?.cancel()
         listeningJob = scope.launch {
-            container.monitoringStateRepository.state.collectLatest {
-                commandPending = false
+            container.appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = false)
+            container.monitoringStateRepository.state.collectLatest { runtime ->
+                if (runtime !is MonitoringRuntimeState.Unresolved &&
+                    runtime !is MonitoringRuntimeState.Recovering
+                ) commandPending = false
                 refreshTile()
             }
         }
@@ -56,22 +58,35 @@ class FlipToMuteTileService : TileService() {
     override fun onClick() {
         super.onClick()
         if (commandPending) return
+        commandPending = true
+        scope.launch {
+            container.appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = false)
+            handleResolvedClick()
+        }
+    }
+
+    private suspend fun handleResolvedClick() {
         val setupComplete = container.setupAccessRepository.refreshAndGet().isSetupComplete
         when (clickResolver.resolve(container.monitoringStateRepository.state.value, setupComplete)) {
             QuickSettingsTileClickAction.StartMonitoring -> {
-                commandPending = true
                 updateTile(QuickSettingsTileStatus.STARTING)
-                if (container.monitoringServiceController.startMonitoring() is MonitoringCommandResult.Rejected) {
+                val result = if (container.monitoringStateRepository.state.value is MonitoringRuntimeState.Recovering) {
+                    container.appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = true)
+                    null
+                } else container.monitoringServiceController.startMonitoring()
+                if (result is MonitoringCommandResult.Rejected) {
                     commandPending = false
                     container.monitoringStateRepository.updateState(
-                        MonitoringRuntimeState.Error(MonitoringFailure.SERVICE_START_NOT_ALLOWED),
+                        MonitoringRuntimeState.Error(result.reason),
                     )
                     container.quickSettingsTileUpdateRequester.requestUpdate()
+                    refreshTile()
+                } else if (container.monitoringStateRepository.state.value is MonitoringRuntimeState.Error) {
+                    commandPending = false
                     refreshTile()
                 }
             }
             QuickSettingsTileClickAction.PauseMonitoring -> {
-                commandPending = true
                 updateTile(QuickSettingsTileStatus.PAUSING)
                 if (container.monitoringServiceController.pauseMonitoring() is MonitoringCommandResult.Rejected) {
                     commandPending = false
@@ -79,16 +94,21 @@ class FlipToMuteTileService : TileService() {
                 }
             }
             QuickSettingsTileClickAction.ResumeMonitoring -> {
-                commandPending = true
                 updateTile(QuickSettingsTileStatus.RESUMING)
                 if (container.monitoringServiceController.resumeMonitoring() is MonitoringCommandResult.Rejected) {
                     commandPending = false
                     refreshTile()
                 }
             }
-            QuickSettingsTileClickAction.OpenSetupAndEnable -> unlockAndRun { openSetup(resume = false) }
-            QuickSettingsTileClickAction.OpenSetupAndResume -> unlockAndRun { openSetup(resume = true) }
-            QuickSettingsTileClickAction.Ignore -> refreshTile()
+            QuickSettingsTileClickAction.OpenSetupAndEnable -> {
+                commandPending = false
+                unlockAndRun { openSetup(resume = false) }
+            }
+            QuickSettingsTileClickAction.OpenSetupAndResume -> {
+                commandPending = false
+                unlockAndRun { openSetup(resume = true) }
+            }
+            QuickSettingsTileClickAction.Ignore -> { commandPending = false; refreshTile() }
         }
     }
 
@@ -110,6 +130,7 @@ class FlipToMuteTileService : TileService() {
         tile.icon = Icon.createWithResource(this, R.drawable.ic_qs_flip_to_mute)
         tile.state = when (status) {
             QuickSettingsTileStatus.ON -> Tile.STATE_ACTIVE
+            QuickSettingsTileStatus.RECOVERING,
             QuickSettingsTileStatus.STARTING, QuickSettingsTileStatus.PAUSING,
             QuickSettingsTileStatus.RESUMING, QuickSettingsTileStatus.STOPPING,
             -> Tile.STATE_UNAVAILABLE
@@ -142,6 +163,7 @@ class FlipToMuteTileService : TileService() {
 
     private fun QuickSettingsTileStatus.subtitleResource() = when (this) {
         QuickSettingsTileStatus.ON -> R.string.quick_settings_tile_on
+        QuickSettingsTileStatus.RECOVERING -> R.string.quick_settings_tile_checking
         QuickSettingsTileStatus.OFF -> R.string.quick_settings_tile_off
         QuickSettingsTileStatus.STARTING -> R.string.quick_settings_tile_starting
         QuickSettingsTileStatus.PAUSING -> R.string.quick_settings_tile_pausing

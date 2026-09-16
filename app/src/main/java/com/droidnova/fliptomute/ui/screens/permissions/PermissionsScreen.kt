@@ -47,6 +47,7 @@ import com.droidnova.fliptomute.util.findActivity
 import com.droidnova.fliptomute.util.openAppDetailsSettings
 import com.droidnova.fliptomute.util.openAppNotificationSettings
 import com.droidnova.fliptomute.util.openNotificationPolicySettings
+import com.droidnova.fliptomute.util.SettingsLaunchResult
 import kotlinx.coroutines.launch
 
 private enum class ExplanationDialog { PHONE, NOTIFICATIONS, SOUND }
@@ -63,22 +64,52 @@ fun PermissionsRoute(
     val scope = rememberCoroutineScope()
     var dialog by remember { mutableStateOf<ExplanationDialog?>(null) }
 
+    fun reportSettingsResult(result: SettingsLaunchResult) {
+        if (result == SettingsLaunchResult.UNAVAILABLE) scope.launch {
+            snackbarHostState.showSnackbar(context.getString(R.string.settings_unavailable))
+        }
+    }
+
     val phoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.refreshAccessState()
         if (!granted) scope.launch {
+            val activity = context.findActivity()
+            val permanentlyDenied = viewModel.permissionAction(
+                RuntimeSetupPermission.PHONE,
+                granted = false,
+                shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity,
+                    Manifest.permission.READ_PHONE_STATE,
+                ),
+            ) == RuntimePermissionAction.OPEN_SETTINGS
             val result = snackbarHostState.showSnackbar(
                 message = context.getString(R.string.phone_access_denied),
-                actionLabel = context.getString(R.string.open_app_settings),
+                actionLabel = if (permanentlyDenied) context.getString(R.string.open_app_settings) else null,
             )
-            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
-                context.openAppDetailsSettings()
+            if (permanentlyDenied && result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                reportSettingsResult(context.openAppDetailsSettings())
             }
         }
     }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.refreshAccessState()
         if (!granted) scope.launch {
-            snackbarHostState.showSnackbar(context.getString(R.string.notification_access_denied))
+            val activity = context.findActivity()
+            val permanentlyDenied = viewModel.permissionAction(
+                RuntimeSetupPermission.NOTIFICATIONS,
+                granted = false,
+                shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ),
+            ) == RuntimePermissionAction.OPEN_SETTINGS
+            val result = snackbarHostState.showSnackbar(
+                message = context.getString(R.string.notification_access_denied),
+                actionLabel = if (permanentlyDenied) context.getString(R.string.open_settings_action) else null,
+            )
+            if (permanentlyDenied && result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                reportSettingsResult(context.openAppNotificationSettings())
+            }
         }
     }
 
@@ -91,18 +122,19 @@ fun PermissionsRoute(
             when (type) {
                 SetupAccessType.PHONE_STATE -> {
                     val activity = context.findActivity()
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) ==
-                        PackageManager.PERMISSION_GRANTED
-                    ) {
-                        viewModel.refreshAccessState()
-                    } else if (activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                    val granted = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.READ_PHONE_STATE,
+                    ) == PackageManager.PERMISSION_GRANTED
+                    val rationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
                             activity,
                             Manifest.permission.READ_PHONE_STATE,
                         )
-                    ) {
-                        dialog = ExplanationDialog.PHONE
-                    } else {
-                        phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                    when (viewModel.permissionAction(RuntimeSetupPermission.PHONE, granted, rationale)) {
+                        RuntimePermissionAction.REFRESH -> viewModel.refreshAccessState()
+                        RuntimePermissionAction.SHOW_EXPLANATION -> dialog = ExplanationDialog.PHONE
+                        RuntimePermissionAction.OPEN_SETTINGS ->
+                            reportSettingsResult(context.openAppDetailsSettings())
                     }
                 }
                 SetupAccessType.NOTIFICATIONS -> {
@@ -110,9 +142,23 @@ fun PermissionsRoute(
                         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
                         PackageManager.PERMISSION_GRANTED
                     ) {
-                        dialog = ExplanationDialog.NOTIFICATIONS
+                        val activity = context.findActivity()
+                        val rationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                            activity,
+                            Manifest.permission.POST_NOTIFICATIONS,
+                        )
+                        when (viewModel.permissionAction(
+                            RuntimeSetupPermission.NOTIFICATIONS,
+                            granted = false,
+                            shouldShowRationale = rationale,
+                        )) {
+                            RuntimePermissionAction.SHOW_EXPLANATION -> dialog = ExplanationDialog.NOTIFICATIONS
+                            RuntimePermissionAction.OPEN_SETTINGS ->
+                                reportSettingsResult(context.openAppNotificationSettings())
+                            RuntimePermissionAction.REFRESH -> viewModel.refreshAccessState()
+                        }
                     } else {
-                        context.openAppNotificationSettings()
+                        reportSettingsResult(context.openAppNotificationSettings())
                     }
                 }
                 SetupAccessType.SOUND_CONTROL -> dialog = ExplanationDialog.SOUND
@@ -130,9 +176,15 @@ fun PermissionsRoute(
             onContinue = {
                 dialog = null
                 when (shownDialog) {
-                    ExplanationDialog.PHONE -> phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE)
-                    ExplanationDialog.NOTIFICATIONS -> notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    ExplanationDialog.SOUND -> context.openNotificationPolicySettings()
+                    ExplanationDialog.PHONE -> {
+                        viewModel.markPermissionRequested(RuntimeSetupPermission.PHONE)
+                        phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                    }
+                    ExplanationDialog.NOTIFICATIONS -> {
+                        viewModel.markPermissionRequested(RuntimeSetupPermission.NOTIFICATIONS)
+                        notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    ExplanationDialog.SOUND -> reportSettingsResult(context.openNotificationPolicySettings())
                 }
             },
         )

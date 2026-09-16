@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
+import com.droidnova.fliptomute.service.MonitoringErrorRecoveryIntent
 import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.SectionHeader
@@ -109,6 +110,7 @@ fun HomeScreen(
             MonitoringFailure.SETUP_REQUIRED -> R.string.monitoring_setup_error
             MonitoringFailure.TELEPHONY_UNAVAILABLE -> R.string.monitoring_telephony_error
             MonitoringFailure.NOTIFICATION_UNAVAILABLE -> R.string.monitoring_notification_error
+            MonitoringFailure.CLEANUP_FAILED -> R.string.monitoring_cleanup_error
             else -> R.string.monitoring_start_error
         })
         LaunchedEffect(failure) {
@@ -194,6 +196,8 @@ private fun MainStatusCard(
     val runtime = state.monitoringState
     val title = when {
         runtime is MonitoringRuntimeState.Paused -> R.string.monitoring_paused_title
+        runtime is MonitoringRuntimeState.Recovering || runtime is MonitoringRuntimeState.Unresolved ->
+            R.string.monitoring_recovering_title
         !state.isSetupComplete && !state.isMonitoringChecked -> R.string.home_setup_title
         runtime is MonitoringRuntimeState.Starting -> R.string.turning_on
         runtime is MonitoringRuntimeState.Active -> R.string.monitoring_notification_title
@@ -205,6 +209,8 @@ private fun MainStatusCard(
     }
     val body = when {
         runtime is MonitoringRuntimeState.Paused -> R.string.monitoring_paused_home_text
+        runtime is MonitoringRuntimeState.Recovering || runtime is MonitoringRuntimeState.Unresolved ->
+            R.string.monitoring_recovering_text
         !state.isSetupComplete && !state.isMonitoringChecked -> R.string.home_setup_description
         runtime is MonitoringRuntimeState.Active -> R.string.monitoring_notification_text
         runtime is MonitoringRuntimeState.Pausing -> R.string.monitoring_pausing_text
@@ -232,7 +238,7 @@ private fun MainStatusCard(
                         onCheckedChange = onMonitoringChanged,
                         enabled = state.isMonitoringSwitchEnabled,
                     )
-                    if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Pausing ||
+                    if (runtime is MonitoringRuntimeState.Unresolved || runtime is MonitoringRuntimeState.Recovering || runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Pausing ||
                         runtime is MonitoringRuntimeState.Resuming || runtime is MonitoringRuntimeState.Stopping
                     ) {
                         CircularProgressIndicator()
@@ -241,7 +247,8 @@ private fun MainStatusCard(
                 if (runtime is MonitoringRuntimeState.Active) {
                     TextButton(onClick = onPauseMonitoring) { Text(stringResource(R.string.pause_monitoring)) }
                 } else if (runtime is MonitoringRuntimeState.Paused ||
-                    (runtime is MonitoringRuntimeState.Error && state.isMonitoringChecked)
+                    (runtime is MonitoringRuntimeState.Error &&
+                        runtime.recoveryIntent == MonitoringErrorRecoveryIntent.RESUME)
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(onClick = onResumeMonitoring) { Text(stringResource(R.string.resume_monitoring)) }

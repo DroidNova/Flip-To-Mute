@@ -6,6 +6,7 @@ interface RingerModeController {
     fun getCurrentMode(): DeviceRingerMode
     suspend fun applyTemporaryAction(action: FlipAction): RingerModeResult
     suspend fun restorePreviousMode(): RingerModeResult
+    fun restorePreviousModeImmediately(): RingerModeResult
     suspend fun recoverPendingChange(): RingerModeRecoveryResult
     suspend fun clearTemporaryChange()
 }

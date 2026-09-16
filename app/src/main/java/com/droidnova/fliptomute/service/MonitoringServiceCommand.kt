@@ -1,12 +1,13 @@
 package com.droidnova.fliptomute.service
 
-internal enum class MonitoringServiceCommand { START, PAUSE, RESUME, STOP, RESTART, UNKNOWN }
+internal enum class MonitoringServiceCommand { START, PAUSE, RESUME, STOP, REVALIDATE_ACCESS, RESTART, UNKNOWN }
 
 internal object MonitoringServiceCommandClassifier {
     const val START_ACTION = "com.droidnova.fliptomute.action.START_MONITORING"
     const val STOP_ACTION = "com.droidnova.fliptomute.action.STOP_MONITORING"
     const val PAUSE_ACTION = "com.droidnova.fliptomute.action.PAUSE_MONITORING"
     const val RESUME_ACTION = "com.droidnova.fliptomute.action.RESUME_MONITORING"
+    const val REVALIDATE_ACCESS_ACTION = "com.droidnova.fliptomute.action.REVALIDATE_ACCESS"
 
     fun classify(hasIntent: Boolean, action: String?): MonitoringServiceCommand = when {
         !hasIntent -> MonitoringServiceCommand.RESTART
@@ -14,6 +15,7 @@ internal object MonitoringServiceCommandClassifier {
         action == PAUSE_ACTION -> MonitoringServiceCommand.PAUSE
         action == RESUME_ACTION -> MonitoringServiceCommand.RESUME
         action == STOP_ACTION -> MonitoringServiceCommand.STOP
+        action == REVALIDATE_ACCESS_ACTION -> MonitoringServiceCommand.REVALIDATE_ACCESS
         else -> MonitoringServiceCommand.UNKNOWN
     }
 }
@@ -30,4 +32,26 @@ internal object StickyRestartPolicy {
         !setupComplete -> StickyRestartDecision.StopFailure(MonitoringFailure.SETUP_REQUIRED)
         else -> StickyRestartDecision.Continue
     }
+}
+
+internal fun shouldShutdownForAccessLoss(
+    runtime: MonitoringRuntimeState,
+    setupComplete: Boolean,
+): Boolean = !setupComplete && (
+    runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Resuming ||
+        runtime is MonitoringRuntimeState.Active
+    )
+
+internal class MonitoringCommandSequencer {
+    private var generation = 0
+    var latestStartId: Int = 0
+        private set
+
+    fun record(startId: Int) {
+        latestStartId = maxOf(latestStartId, startId)
+    }
+
+    fun supersede(): Int = ++generation
+
+    fun isCurrent(token: Int): Boolean = token == generation
 }

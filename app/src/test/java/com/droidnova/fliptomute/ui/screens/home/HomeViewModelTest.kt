@@ -1,5 +1,6 @@
 package com.droidnova.fliptomute.ui.screens.home
 
+import androidx.lifecycle.SavedStateHandle
 import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessState
@@ -30,9 +31,11 @@ class HomeViewModelTest {
     @Test fun incompleteSetupDisablesActivation() = runTest {
         val fixture = fixture()
         collect(fixture.viewModel)
-        assertFalse(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringChecked)
+        assertTrue(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
         fixture.viewModel.onMonitoringChanged(true)
         assertEquals(0, fixture.controller.startCount)
+        assertTrue(fixture.viewModel.uiState.value.showPermissionsSheet)
     }
 
     @Test fun completeSetupStartsOnceAndRuntimeDrivesSwitch() = runTest {
@@ -47,6 +50,18 @@ class HomeViewModelTest {
         assertTrue(fixture.viewModel.uiState.value.isMonitoringChecked)
         fixture.viewModel.onMonitoringChanged(false)
         assertEquals(1, fixture.controller.stopCount)
+    }
+
+    @Test fun recoveringActiveIntentIsCheckedDisabledAndNotOff() = runTest {
+        val preferences = FakeAppPreferencesRepository(
+            com.droidnova.fliptomute.data.preferences.AppPreferences(monitoringEnabled = true),
+        )
+        val fixture = fixture(granted = true, preferences = preferences, recovering = true)
+        collect(fixture.viewModel)
+
+        assertEquals(MonitoringRuntimeState.Recovering, fixture.viewModel.uiState.value.monitoringState)
+        assertTrue(fixture.viewModel.uiState.value.isMonitoringChecked)
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringSwitchEnabled)
     }
 
     @Test fun rejectionShowsSimpleErrorAndActionPersists() = runTest {
@@ -101,9 +116,88 @@ class HomeViewModelTest {
         assertEquals(0, fixture.controller.resumeCount)
     }
 
+    @Test fun startUsesFreshAccessAndPreservesPendingStartWhenIncomplete() = runTest {
+        val fixture = fixture(granted = true)
+        collect(fixture.viewModel)
+        fixture.setup.stateOnRefresh = SetupAccessState()
+
+        fixture.viewModel.onMonitoringChanged(true)
+
+        assertEquals(1, fixture.setup.refreshCount)
+        assertEquals(0, fixture.controller.startCount)
+        assertTrue(fixture.viewModel.uiState.value.showPermissionsSheet)
+    }
+
+    @Test fun resumeUsesFreshAccessAndPreservesPendingResumeWhenIncomplete() = runTest {
+        val fixture = fixture(granted = true)
+        collect(fixture.viewModel)
+        fixture.setup.stateOnRefresh = SetupAccessState()
+
+        fixture.viewModel.onResumeMonitoring()
+
+        assertEquals(1, fixture.setup.refreshCount)
+        assertEquals(0, fixture.controller.resumeCount)
+        assertTrue(fixture.viewModel.uiState.value.showPermissionsSheet)
+    }
+
+    @Test fun restoredPendingStartDispatchesOnceWhenSetupCompletes() = runTest {
+        val savedState = SavedStateHandle()
+        val setup = FakeSetupAccessRepository()
+        val first = fixture(setupRepository = setup, savedStateHandle = savedState)
+        first.viewModel.onMonitoringChanged(true)
+        setup.stateOnRefresh = grantedState()
+
+        val restored = fixture(setupRepository = setup, savedStateHandle = savedState)
+
+        assertEquals(1, restored.controller.startCount)
+        restored.viewModel.refreshAccessState()
+        assertEquals(1, restored.controller.startCount)
+        assertEquals(0, restored.controller.resumeCount)
+    }
+
+    @Test fun restoredPendingResumeDispatchesOnceWhenSetupCompletes() = runTest {
+        val savedState = SavedStateHandle()
+        val setup = FakeSetupAccessRepository()
+        val first = fixture(setupRepository = setup, savedStateHandle = savedState)
+        first.viewModel.onResumeMonitoring()
+        setup.stateOnRefresh = grantedState()
+
+        val restored = fixture(setupRepository = setup, savedStateHandle = savedState)
+
+        assertEquals(1, restored.controller.resumeCount)
+        restored.viewModel.refreshAccessState()
+        assertEquals(1, restored.controller.resumeCount)
+        assertEquals(0, restored.controller.startCount)
+    }
+
+    @Test fun foregroundRefreshSignalsSerializedRevalidationWhenActiveAccessIsMissing() = runTest {
+        val fixture = fixture(granted = true)
+        collect(fixture.viewModel)
+        fixture.runtime.updateState(MonitoringRuntimeState.Active)
+        fixture.setup.stateOnRefresh = SetupAccessState()
+
+        fixture.viewModel.refreshAccessState()
+
+        assertEquals(1, fixture.controller.revalidateCount)
+        assertEquals(0, fixture.controller.stopCount)
+    }
+
+    @Test fun missingAccessWhilePausedDoesNotStopOrRevalidate() = runTest {
+        val fixture = fixture()
+        fixture.runtime.updateState(MonitoringRuntimeState.Paused)
+
+        fixture.viewModel.refreshAccessState()
+
+        assertEquals(0, fixture.controller.revalidateCount)
+        assertEquals(0, fixture.controller.stopCount)
+    }
+
     private fun fixture(
         granted: Boolean = false,
         preferences: FakeAppPreferencesRepository = FakeAppPreferencesRepository(),
+        recovering: Boolean = false,
+        setupRepository: FakeSetupAccessRepository? = null,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ): Fixture {
         val setup = if (granted) SetupAccessState(
             SetupAccessStatus.GRANTED,
@@ -111,13 +205,29 @@ class HomeViewModelTest {
             SetupAccessStatus.GRANTED,
         ) else SetupAccessState()
         val runtime = InMemoryMonitoringStateRepository()
+        runtime.updateState(if (recovering) MonitoringRuntimeState.Recovering else MonitoringRuntimeState.Stopped)
         val controller = FakeMonitoringServiceController()
+        val setupRepo = setupRepository ?: FakeSetupAccessRepository(setup)
         return Fixture(
-            HomeViewModel(preferences, FakeSetupAccessRepository(setup), runtime, controller, FakeAppRecoveryManager()),
+            HomeViewModel(
+                preferences,
+                setupRepo,
+                runtime,
+                controller,
+                FakeAppRecoveryManager(),
+                savedStateHandle,
+            ),
             runtime,
             controller,
+            setupRepo,
         )
     }
+
+    private fun grantedState() = SetupAccessState(
+        SetupAccessStatus.GRANTED,
+        SetupAccessStatus.GRANTED,
+        SetupAccessStatus.GRANTED,
+    )
 
     private fun kotlinx.coroutines.test.TestScope.collect(viewModel: HomeViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
@@ -127,9 +237,10 @@ class HomeViewModelTest {
         val viewModel: HomeViewModel,
         val runtime: InMemoryMonitoringStateRepository,
         val controller: FakeMonitoringServiceController,
+        val setup: FakeSetupAccessRepository,
     )
 }
 
 private class FakeAppRecoveryManager : AppRecoveryManager {
-    override suspend fun recoverOnAppLaunch() = AppRecoveryResult.Complete
+    override suspend fun reconcileMonitoringState(requestActiveReconstruction: Boolean) = AppRecoveryResult.Complete
 }

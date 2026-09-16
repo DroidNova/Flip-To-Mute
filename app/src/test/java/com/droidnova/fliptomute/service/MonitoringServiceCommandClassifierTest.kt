@@ -26,6 +26,27 @@ class MonitoringServiceCommandClassifierTest {
             MonitoringServiceCommand.RESUME,
             MonitoringServiceCommandClassifier.classify(true, MonitoringServiceCommandClassifier.RESUME_ACTION),
         )
+        assertEquals(
+            MonitoringServiceCommand.REVALIDATE_ACCESS,
+            MonitoringServiceCommandClassifier.classify(
+                true,
+                MonitoringServiceCommandClassifier.REVALIDATE_ACCESS_ACTION,
+            ),
+        )
+    }
+
+    @Test fun missingAccessTerminatesOnlyOperationalStates() {
+        listOf(
+            MonitoringRuntimeState.Starting,
+            MonitoringRuntimeState.Resuming,
+            MonitoringRuntimeState.Active,
+        ).forEach { assertEquals(true, shouldShutdownForAccessLoss(it, setupComplete = false)) }
+        listOf(
+            MonitoringRuntimeState.Paused,
+            MonitoringRuntimeState.Stopped,
+            MonitoringRuntimeState.Recovering,
+        ).forEach { assertEquals(false, shouldShutdownForAccessLoss(it, setupComplete = false)) }
+        assertEquals(false, shouldShutdownForAccessLoss(MonitoringRuntimeState.Active, setupComplete = true))
     }
 
     @Test fun stickyRestartRequiresStoredIntentAndCompleteSetup() {
@@ -35,5 +56,19 @@ class MonitoringServiceCommandClassifierTest {
             StickyRestartPolicy.decide(true, false),
         )
         assertEquals(StickyRestartDecision.Continue, StickyRestartPolicy.decide(true, true))
+    }
+
+    @Test fun sequencerTracksNewestStartIdAndRejectsStaleGenerations() {
+        val sequencer = MonitoringCommandSequencer()
+        sequencer.record(4)
+        val pauseGeneration = sequencer.supersede()
+        sequencer.record(5)
+
+        assertEquals(5, sequencer.latestStartId)
+        assertEquals(true, sequencer.isCurrent(pauseGeneration))
+
+        val stopGeneration = sequencer.supersede()
+        assertEquals(false, sequencer.isCurrent(pauseGeneration))
+        assertEquals(true, sequencer.isCurrent(stopGeneration))
     }
 }
