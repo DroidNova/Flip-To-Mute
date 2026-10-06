@@ -17,7 +17,7 @@ import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.FactCheck
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.SettingsBrightness
@@ -43,6 +44,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -88,6 +90,7 @@ interface SettingsActions {
     fun reportProblem()
     fun openAbout()
     fun openPrivacyPolicy()
+    fun openPrivacyOptions()
 }
 
 @Composable
@@ -98,6 +101,8 @@ fun SettingsRoute(
     onReportProblem: () -> Unit,
     onAbout: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
+    privacyOptionsRequired: Boolean = false,
+    onOpenPrivacyOptions: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     RefreshOnResume {
@@ -132,7 +137,7 @@ fun SettingsRoute(
         }
     }
     SettingsScreen(
-        state = state,
+        state = state.copy(privacyOptionsRequired = privacyOptionsRequired),
         snackbarHostState = snackbar,
         actions = object : SettingsActions {
             override fun back() = onBack()
@@ -162,6 +167,7 @@ fun SettingsRoute(
             override fun reportProblem() = onReportProblem()
             override fun openAbout() = onAbout()
             override fun openPrivacyPolicy() = onOpenPrivacyPolicy()
+            override fun openPrivacyOptions() = onOpenPrivacyOptions()
         },
     )
     if (showManualInstructions) {
@@ -215,6 +221,8 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions, snackbarHos
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
+            // Centred on tablets and in landscape (design spec 8)
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             item(key = "flip") { FlipBehaviourGroup(state, actions) }
             if (state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED) {
@@ -222,7 +230,7 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions, snackbarHos
             }
             item(key = "keep") { KeepRunningGroup(state, actions) }
             item(key = "appearance") { AppearanceGroup(state, actions) }
-            item(key = "help") { HelpGroup(actions) }
+            item(key = "help") { HelpGroup(state, actions) }
         }
     }
 }
@@ -360,14 +368,18 @@ private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
 }
 
 @Composable
-private fun HelpGroup(actions: SettingsActions) {
+private fun HelpGroup(state: SettingsUiState, actions: SettingsActions) {
     SettingsGroup(stringResource(R.string.settings_group_help), Modifier.widthIn(max = 560.dp)) {
-        SettingsRow(Icons.Filled.FactCheck, stringResource(R.string.attention_check_setup), onClick = actions::openCheckSetup)
+        SettingsRow(Icons.AutoMirrored.Filled.FactCheck, stringResource(R.string.attention_check_setup), onClick = actions::openCheckSetup)
         SettingsRow(Icons.Filled.BugReport, stringResource(R.string.report_a_problem), onClick = actions::reportProblem)
         SettingsRow(Icons.Filled.Info, stringResource(R.string.about_title), onClick = actions::openAbout)
         // Shown once the privacy policy address is set (decision D7, M6-06)
         if (AppConstants.PRIVACY_POLICY_URL.isNotBlank()) {
             SettingsRow(Icons.Filled.Policy, stringResource(R.string.privacy_policy), onClick = actions::openPrivacyPolicy)
+        }
+        // Where consent law requires it, the ad choice can be changed at any time (M7-02)
+        if (state.privacyOptionsRequired) {
+            SettingsRow(Icons.Filled.PrivacyTip, stringResource(R.string.privacy_options), onClick = actions::openPrivacyOptions)
         }
     }
 }
@@ -423,4 +435,5 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun reportProblem() = Unit
     override fun openAbout() = Unit
     override fun openPrivacyPolicy() = Unit
+    override fun openPrivacyOptions() = Unit
 }

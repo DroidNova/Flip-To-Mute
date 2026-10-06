@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
@@ -270,7 +270,7 @@ private fun CheckStep.text(): StepText = when (this) {
     CheckStep.ACCESS -> StepText(Icons.Filled.Security, R.string.check_access_title, R.string.check_access_body, R.string.check_access_problem, R.string.attention_fix_access)
     CheckStep.BATTERY -> StepText(Icons.Filled.BatteryChargingFull, R.string.check_battery_title, R.string.check_battery_body, R.string.check_battery_problem, R.string.battery_card_fix)
     CheckStep.FLIP_SENSOR -> StepText(Icons.Filled.ScreenRotation, R.string.check_sensor_title, R.string.check_sensor_body, R.string.check_sensor_problem, R.string.try_again)
-    CheckStep.SOUND -> StepText(Icons.Filled.VolumeOff, R.string.check_sound_title, R.string.check_sound_body, R.string.check_sound_problem, R.string.attention_check_sound_access)
+    CheckStep.SOUND -> StepText(Icons.AutoMirrored.Filled.VolumeOff, R.string.check_sound_title, R.string.check_sound_body, R.string.check_sound_problem, R.string.attention_check_sound_access)
     CheckStep.CALLS -> StepText(Icons.Filled.Call, R.string.check_calls_title, R.string.check_calls_body, R.string.check_calls_problem, R.string.try_again)
 }
 

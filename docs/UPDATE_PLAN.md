@@ -207,6 +207,19 @@ recommend it, for the guideline reason above.
 | Placement | Collapsible banner on every screen (U9) | **Proposed:** no ads in onboarding, access setup and Check my setup, the way Secret Calculator keeps ads off its calculator and PIN screens. Banner on Home, Settings and About. Collapsible variant on Home only. |
 | Full-screen ads | None | None. If added later, Secret Calculator's managers and guardrails are reused. |
 
+Remote Config keys, created in the Firebase console for v2.0 (M7-04). Until a key exists, the default in the app applies.
+
+| Key | Type | Default | Effect |
+|-----|------|---------|--------|
+| `ad_banner_home_enabled` | Boolean | true | Banner on Home |
+| `ad_banner_settings_enabled` | Boolean | true | Banner on Settings |
+| `ad_banner_about_enabled` | Boolean | true | Banner on About |
+| `ad_banner_keep_running_enabled` | Boolean | true | Banner on Keep it running |
+| `ad_banner_check_setup_enabled` | Boolean | true | Banner on Check my setup |
+| `latest_play_store_version_code` | Number | -1 | Home shows the update dialog when this is higher than the installed version code |
+
+No banner shows until consent allows ads and the first fetch of the session finishes, so a switched-off banner never flashes. Debug builds use Google's sample banner unit.
+
 ## 10. Analytics and crash reporting
 
 `Funnel` milestones, each logged once per install, following Secret Calculator:

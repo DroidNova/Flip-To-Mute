@@ -117,6 +117,8 @@ dependencies {
     // The Lite SDK provides the same client API while loading the ads runtime
     // from Google Play services instead of packaging native runtime binaries.
     implementation(libs.google.mobile.ads.lite)
+    // Consent before any ad request (M7-02, X5); Lite does not bring it in
+    implementation(libs.ump)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
@@ -132,5 +134,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    // Ad switches and the update dialog, as in Secret Calculator (M7-04, D10)
+    implementation(libs.firebase.config)
 
 }

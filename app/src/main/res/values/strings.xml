@@ -55,6 +55,7 @@
     <string name="share_app">Share app</string>
     <string name="share_app_message">Try Flip to Mute: %1$s</string>
     <string name="unknown_version">Unknown</string>
+    <string name="version_label">v%1$s</string>
     <string name="no_compatible_app">No compatible app found</string>
     <string name="no_email_app">No email app found</string>
     <string name="support_subject_bug">Bug report - %1$s v%2$s</string>
@@ -85,6 +86,7 @@
     <string name="only_when_lying_flat_description">Only detect flips from a flat surface.</string>
     <string name="detection_feedback">Buzz when a flip is detected</string>
     <string name="detection_feedback_description">Vibrate briefly when a flip is detected.</string>
+    <string name="privacy_options">Privacy options</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="about_app_description">Mute or vibrate incoming calls with a simple flip.</string>
     <string name="monitoring_channel_description">Shows when Flip to Mute is active.</string>

@@ -43,6 +43,9 @@ fun AppNavHost(
     onRateUsTapped: () -> Unit,
     /** Home is calm: the activity may show the review prompt (M6-07). */
     onHomeCalm: () -> Unit,
+    /** Consent requires a way to change the ad choice (M7-02). */
+    privacyOptionsRequired: Boolean,
+    onOpenPrivacyOptions: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // A tile or notification asked to turn Flip to Mute on: show Home, where the request is handled
@@ -90,6 +93,8 @@ fun AppNavHost(
                 onReportProblem = { onReportProblem(null) },
                 onAbout = { navController.go(Routes.ABOUT) },
                 onOpenPrivacyPolicy = onOpenPrivacyPolicy,
+                privacyOptionsRequired = privacyOptionsRequired,
+                onOpenPrivacyOptions = onOpenPrivacyOptions,
             )
         }
         composable(Routes.KEEP_RUNNING) { entry ->

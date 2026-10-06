@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -56,7 +57,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -187,16 +187,12 @@ fun SettingsRow(
                 title,
                 style = MaterialTheme.typography.titleSmall,
                 color = if (destructive) colors.error else colors.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
             if (summary != null) {
                 Text(
                     summary,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -251,6 +247,8 @@ fun ChoicePill(
     )
     Row(
         modifier = modifier
+            // A 48 dp touch area around the smaller pill (design spec 7)
+            .minimumInteractiveComponentSize()
             .pressScale(interaction)
             .clip(RoundedCornerShape(50))
             .background(container)

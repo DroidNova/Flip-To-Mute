@@ -57,6 +57,7 @@ import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
 import com.droidnova.fliptomute.utils.MonitoringLog
 import com.droidnova.fliptomute.utils.AppVersion
 import com.droidnova.fliptomute.utils.UpdateAvailability
+import com.droidnova.fliptomute.utils.ads.RemoteAdGate
 import com.droidnova.fliptomute.utils.androidAppVersion
 import dagger.Module
 import dagger.Provides
@@ -228,9 +229,9 @@ object AppModule {
     @Provides @Singleton
     fun provideAppVersion(@ApplicationContext context: Context): AppVersion = androidAppVersion(context)
 
-    /** No update check until the Remote Config switch in M7-04. */
+    /** The latest version code on Play, from Remote Config (M7-04). */
     @Provides @Singleton
-    fun provideUpdateAvailability(): UpdateAvailability = UpdateAvailability { false }
+    fun provideUpdateAvailability(): UpdateAvailability = RemoteAdGate.updateAvailability
 
     // --- Analytics ---
 

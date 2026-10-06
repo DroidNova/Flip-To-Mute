@@ -19,7 +19,7 @@ This is the working document. Update it in every session.
 | M4 | First run and access | Blocked | 9 of 9 | 7 days |
 | M5 | Home | Blocked | 13 of 13 | 10 days |
 | M6 | Settings, help, about, review | Done except M6-06 (blocked on D7) | 11 of 12 | 10 days |
-| M7 | Ads, consent, remote switches, polish | Not started | 0 of 11 | 7 days, plus 2 for stretch items |
+| M7 | Ads, consent, remote switches, polish | In progress | 6 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
@@ -251,14 +251,14 @@ Goal: compliant ads, and a product that is fast and accessible.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
-| [ ] | M7-01 | Replace the sample AdMob App ID with the production ID | S | R9, D2 |
-| [ ] | M7-02 | Consent with the User Messaging Platform. Ads initialised off the main thread after consent. "Privacy options" row in Settings. | M | R9, X5, X10 |
-| [ ] | M7-03 | `AdConfig` and an activity-owned banner with three retries, hidden on the routes chosen in D4 | M | U9, A17, D4 |
-| [ ] | M7-04 | `RemoteAdGate` style switches: banner per placement, latest version code for the update dialog | M | A16, D10 |
-| [ ] | M7-05 | Accessibility pass against `DESIGN_SPEC.md` section 7 | M | |
-| [ ] | M7-06 | Layout pass: tablet, landscape, 320 dp wide phone | S | U14 |
+| Blocked | M7-01 | Replace the sample AdMob App ID with the production ID. The manifest still has Google's sample App ID, so release ads cannot serve until the owner supplies it (D2). | S | R9, D2 |
+| [x] | M7-02 | Consent with the User Messaging Platform. Ads initialised off the main thread after consent. "Privacy options" row in Settings. | M | R9, X5, X10 |
+| [x] | M7-03 | `AdConfig` and an activity-owned banner with three retries, hidden on the routes chosen in D4. D4 has no answer, so its default applies: banner on every screen, each one switchable remotely. | M | U9, A17, D4 |
+| [x] | M7-04 | `RemoteAdGate` style switches: banner per placement, latest version code for the update dialog | M | A16, D10 |
+| [x] | M7-05 | Accessibility pass against `DESIGN_SPEC.md` section 7. Automated: 200% font, 48 dp targets, switch semantics. The TalkBack walk needs a phone. | M | |
+| [x] | M7-06 | Layout pass: tablet, landscape, 320 dp wide phone | S | U14 |
 | [ ] | M7-07 | Performance: cold start, release build check, download size compared with 1.7 | M | |
-| [ ] | M7-08 | Translation readiness. Stretch: Hindi translation. | M | U13, D8 |
+| [x] | M7-08 | Translation readiness. Stretch: Hindi translation, not included by the D8 default. | M | U13, D8 |
 | [ ] | M7-09 | Stretch: in-app update prompt | M | T4 |
 | [ ] | M7-10 | Target SDK 37 as its own change, then rerun the device matrix | M | X11 |
 | [ ] | M7-11 | Upload to the internal track and fix everything in the Play pre-launch report | S | R10 |
@@ -342,6 +342,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-06 | M7 | M7-02 to M7-06 and M7-08: consent through the User Messaging Platform before any ad request, with "Privacy options" in Settings where required; ads initialised off the main thread after consent; one activity-owned banner with three load attempts and Google's sample unit on debug builds; `RemoteAdGate` brought back with a switch per banner placement and the latest version code, which now drives the Home update dialog; text wraps at 200% font, pills have 48 dp touch areas, Settings centres on tablets; `AdaptiveSnapshots` checks 200% font, touch targets, 320 dp, landscape and tablet; six dead 1.x components removed. 313 tests, lint and release build pass. | M7-01 waits for the App ID (D2). Then M7-10 |
 | 2026-10-06 | M6 | M6-01 to M6-05 and M6-07 to M6-12: Settings rebuilt in groups (flip, gestures, keep it running, appearance, help and about) with theme and colour pills and the explain-first flip to lock; Keep it running screen with brand steps and battery status; Check my setup guided flow reusing the sensor, sound and call view models, with a report summary sent in the support email; About in the Secret Calculator layout with "Rate us" unchanged; `ReviewStore` and `InAppReview` with `ReviewPolicy`, counting launches, applied flips and clean setup checks, asked only when Home is on with nothing to fix; old test screens deleted; other apps and support email text moved to resources; 108 unused strings removed. `M6Snapshots` renders the new screens. 302 tests, lint and release build pass. | M6-06 waits for the privacy URL (D7); device checks for Rate us and the review sheet. Start M7 |
 | 2026-10-06 | M5 | M5-01 to M5-13: new Home built on the design kit (power control, status headline per state, Silence or Vibrate, attention card per failure, battery card, stats card, one discovery card, pause sheet, update and what's new dialogs); timed pause in the service (stays running, coordinator ignores calls until the end time by the clock, notification and tile show "Paused until", survives a process restart, health check leaves it alone); `FlipStatsStore`, `HintStore`, `AppVersion`, `UpdateAvailability` (false until M7-04); pure rules for status, cards, discovery and attention with tests; Home tests on Robolectric; About moved into Settings; 80 unused 1.x strings removed. `HomeSnapshots` renders six Home states. 278 tests, lint and release build pass. | Exit criteria need a phone (timed pause end, TalkBack). Start M6 |
 | 2026-10-06 | M4 | M4-01 to M4-09: `OnboardingActivity` with Welcome, Access and Try it, built like Secret Calculator's onboarding; one primary button names the next missing access, permanent denial opens settings, sound control shows a hint sheet first, the step advances by itself on return; Try it uses the real sensor with a buzz, a 20 s hint and Skip; `OnboardingGate` keeps updating users out; Home, Settings and the test screens open the Access step in access-only mode; the 1.x setup screen and its components are deleted. `OnboardingFlowComposeTest` walks the whole first run and saves each step as a PNG. 243 tests, lint and release build pass. | Exit criteria need a phone (timing, Android 12 and 13 denial). Start M5 |

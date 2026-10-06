@@ -42,7 +42,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.ui.components.ActionTile
@@ -172,7 +171,7 @@ private fun AppHeader(versionName: String) {
             modifier = Modifier.padding(top = 6.dp),
         )
         Text(
-            "v$versionName",
+            stringResource(R.string.version_label, versionName),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.clip(RoundedCornerShape(50)).background(novaCardColor()).padding(horizontal = 10.dp, vertical = 3.dp),
@@ -203,7 +202,7 @@ private fun BrandRow(@DrawableRes iconRes: Int, title: String, subtitle: String,
         }
         Column(Modifier.weight(1f).padding(start = 12.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }

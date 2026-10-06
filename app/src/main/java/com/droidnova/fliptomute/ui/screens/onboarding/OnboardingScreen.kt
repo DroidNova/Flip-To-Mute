@@ -23,7 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Button
@@ -249,7 +249,7 @@ private fun AccessStep(state: OnboardingUiState) {
                     state.access.notificationStatus, current = state.nextAccess == AccessStep.NOTIFICATIONS, index = 1,
                 )
                 AccessStepRow(
-                    Icons.Filled.VolumeOff, R.string.access_sound_title, R.string.access_sound_reason,
+                    Icons.AutoMirrored.Filled.VolumeOff, R.string.access_sound_title, R.string.access_sound_reason,
                     state.access.soundControlStatus, current = state.nextAccess == AccessStep.SOUND, index = 2,
                 )
             }
@@ -348,7 +348,7 @@ private fun SoundHintSheet(actions: OnboardingActions) {
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            SheetHeader(Icons.Filled.VolumeOff, stringResource(R.string.sound_hint_title))
+            SheetHeader(Icons.AutoMirrored.Filled.VolumeOff, stringResource(R.string.sound_hint_title))
             Text(
                 stringResource(R.string.sound_hint_body),
                 style = MaterialTheme.typography.bodyLarge,

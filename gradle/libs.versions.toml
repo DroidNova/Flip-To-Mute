@@ -16,6 +16,7 @@ coroutines = "1.10.2"
 dataStore = "1.2.0"
 work = "2.10.1"
 googleMobileAds = "25.0.0"
+ump = "4.0.0"
 junit = "4.13.2"
 robolectric = "4.17"
 turbine = "1.2.0"
@@ -53,6 +54,7 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", v
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltAndroidx" }
 google-mobile-ads-lite = { group = "com.google.android.gms", name = "play-services-ads-lite", version.ref = "googleMobileAds" }
+ump = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "ump" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
@@ -61,6 +63,7 @@ androidx-test-core = { group = "androidx.test", name = "core-ktx", version.ref =
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -22,6 +22,8 @@ data class SettingsUiState(
     val tileAdded: Boolean = false,
     val appTheme: AppTheme = AppTheme.BLUE,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    /** Set by the activity from the consent status (M7-02). */
+    val privacyOptionsRequired: Boolean = false,
 )
 
 enum class SettingsMessage {
