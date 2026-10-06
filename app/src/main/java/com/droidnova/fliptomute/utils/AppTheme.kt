@@ -1,10 +1,16 @@
 package com.droidnova.fliptomute.utils
 
-/** The colour themes, as Secret Calculator's AppTheme enum (architecture A8). Blue is the default. */
-enum class AppTheme(val value: String) {
+/**
+ * The colour themes, as Secret Calculator's AppTheme enum (architecture A8). Blue is the default.
+ * A theme with [unlockAt] above 0 is earned: it opens at that many calls silenced (future features F36).
+ */
+enum class AppTheme(val value: String, val unlockAt: Int = 0) {
     BLUE("blue"),
     TEAL("teal"),
     SUNSET("sunset"),
+    FOREST("forest", unlockAt = 10),
+    ROSE("rose", unlockAt = 25),
+    MIDNIGHT("midnight", unlockAt = 50),
     ;
 
     companion object {

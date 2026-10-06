@@ -52,6 +52,9 @@ fun AppNavHost(
     /** Consent requires a way to change the ad choice (M7-02). */
     privacyOptionsRequired: Boolean,
     onOpenPrivacyOptions: () -> Unit,
+    /** The rewarded ad that opens an earned theme for a week (future features F34). */
+    rewardedThemeAvailable: Boolean,
+    onWatchAdForTheme: (onRewarded: () -> Unit, onUnavailable: () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // A tile or notification asked to turn Flip to Mute on: show Home, where the request is handled
@@ -113,6 +116,8 @@ fun AppNavHost(
                 onOpenPrivacyPolicy = onOpenPrivacyPolicy,
                 privacyOptionsRequired = privacyOptionsRequired,
                 onOpenPrivacyOptions = onOpenPrivacyOptions,
+                rewardedThemeAvailable = rewardedThemeAvailable,
+                onWatchAdForTheme = onWatchAdForTheme,
             )
         }
         composable(Routes.ACTIVITY) { entry ->

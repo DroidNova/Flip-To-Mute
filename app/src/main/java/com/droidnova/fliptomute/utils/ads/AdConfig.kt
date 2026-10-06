@@ -11,12 +11,22 @@ object AdConfig {
     /** Google's sample adaptive banner: testers on debug builds never click real ads. */
     private const val TEST_BANNER = "ca-app-pub-3940256099942544/9214589741"
 
+    /** Empty until the owner creates the unit in AdMob; a release build then offers no ad unlock. */
+    private const val PROD_REWARDED_THEME = ""
+
+    /** Google's sample rewarded ad. */
+    private const val TEST_REWARDED = "ca-app-pub-3940256099942544/5224354917"
+
     /** Load attempts for the banner, as in Secret Calculator. */
     const val BANNER_LOAD_ATTEMPTS = 3
     const val BANNER_RETRY_DELAY_MS = 5_000L
 
     fun mainBottomBannerUnitId(context: Context): String =
         if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) TEST_BANNER else PROD_MAIN_BOTTOM_BANNER
+
+    /** The rewarded ad that opens an earned theme for a week (future features F34), or null when there is none. */
+    fun rewardedThemeUnitId(context: Context): String? =
+        if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) TEST_REWARDED else PROD_REWARDED_THEME.ifBlank { null }
 }
 
 /**

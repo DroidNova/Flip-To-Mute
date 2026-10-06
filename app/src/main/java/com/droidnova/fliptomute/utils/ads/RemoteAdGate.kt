@@ -11,6 +11,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
  */
 object RemoteAdGate {
     private const val KEY_LATEST_PLAY_STORE_VERSION_CODE = "latest_play_store_version_code"
+    private const val KEY_REWARDED_THEME = "ad_rewarded_theme_enabled"
 
     private val remoteConfig: FirebaseRemoteConfig by lazy { FirebaseRemoteConfig.getInstance() }
 
@@ -38,7 +39,8 @@ object RemoteAdGate {
         remoteConfig.setConfigSettingsAsync(configSettings)
         remoteConfig.setDefaultsAsync(
             BannerPlacement.entries.associate { it.remoteKey to true } +
-                (KEY_LATEST_PLAY_STORE_VERSION_CODE to -1L),
+                (KEY_LATEST_PLAY_STORE_VERSION_CODE to -1L) +
+                (KEY_REWARDED_THEME to true),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener { finish() }
     }
@@ -53,6 +55,9 @@ object RemoteAdGate {
     /** False until the first fetch finishes, as in Secret Calculator, so a switched-off banner never flashes. */
     fun isBannerEnabled(placement: BannerPlacement): Boolean =
         initialized && remoteConfig.getBoolean(placement.remoteKey)
+
+    /** The "watch an ad to use this theme for a week" offer (future features F34). */
+    fun isRewardedThemeEnabled(): Boolean = initialized && remoteConfig.getBoolean(KEY_REWARDED_THEME)
 
     /**
      * Reads the last activated value, so the Home dialog (read when Home opens) uses the previous

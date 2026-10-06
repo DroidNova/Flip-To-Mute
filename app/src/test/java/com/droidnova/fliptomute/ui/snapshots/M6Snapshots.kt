@@ -27,6 +27,7 @@ import com.droidnova.fliptomute.ui.screens.settings.PreviewSettingsActions
 import com.droidnova.fliptomute.ui.screens.settings.SettingsScreen
 import com.droidnova.fliptomute.ui.screens.settings.SettingsUiState
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
+import com.droidnova.fliptomute.utils.AppTheme
 import com.droidnova.fliptomute.utils.about_utils.OtherAppItem
 import java.io.File
 import org.junit.Rule
@@ -39,11 +40,15 @@ import org.robolectric.annotation.GraphicsMode
 /** The M6 screens, saved as PNGs under app/build/snapshots for a visual check (M6-12). */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w400dp-h1400dp-xhdpi")
+@Config(qualifiers = "w400dp-h1700dp-xhdpi")
 class M6Snapshots {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test fun settings() = snapshot("settings") { SettingsScreen(SettingsUiState(batteryRestricted = true), PreviewSettingsActions) }
+
+    @Test fun settingsLockedThemes() = snapshot("settings_locked_themes") {
+        SettingsScreen(SettingsUiState(lockedThemes = setOf(AppTheme.ROSE, AppTheme.MIDNIGHT), totalFlips = 12), PreviewSettingsActions)
+    }
 
     @Test fun settingsDark() = snapshot("settings_dark", dark = true) { SettingsScreen(SettingsUiState(), PreviewSettingsActions) }
 

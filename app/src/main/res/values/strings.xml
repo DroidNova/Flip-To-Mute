@@ -214,6 +214,16 @@
     <string name="theme_blue">Blue</string>
     <string name="theme_teal">Teal</string>
     <string name="theme_sunset">Sunset</string>
+    <string name="theme_forest">Forest</string>
+    <string name="theme_rose">Rose</string>
+    <string name="theme_midnight">Midnight</string>
+    <string name="theme_locked_title">%1$s theme</string>
+    <string name="theme_locked_body">Unlocks when you have silenced %1$d calls. You are at %2$d.</string>
+    <string name="theme_locked_body_with_ad">Unlocks when you have silenced %1$d calls. You are at %2$d.\n\nOr watch a short ad to use it for 7 days.</string>
+    <string name="theme_watch_ad">Watch ad</string>
+    <string name="theme_ad_loading">Loading the ad…</string>
+    <string name="theme_ad_unavailable">No ad is available right now. Try again later.</string>
+    <string name="milestone_unlocks_theme">Unlocks the %1$s theme</string>
     <string name="report_a_problem">Report a problem</string>
     <string name="keep_running_status">Battery restrictions: %1$s</string>
     <string name="keep_running_body">Some phones stop apps in the background to save battery. Allow Flip to Mute to keep running so it never misses a call.</string>

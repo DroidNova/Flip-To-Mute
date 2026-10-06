@@ -67,8 +67,12 @@ import com.droidnova.fliptomute.ui.components.SettingsRow
 import com.droidnova.fliptomute.ui.components.SwitchRow
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.ui.theme.BlueLightColorScheme
+import com.droidnova.fliptomute.ui.theme.ForestLightColorScheme
+import com.droidnova.fliptomute.ui.theme.MidnightLightColorScheme
+import com.droidnova.fliptomute.ui.theme.RoseLightColorScheme
 import com.droidnova.fliptomute.ui.theme.SunsetLightColorScheme
 import com.droidnova.fliptomute.ui.theme.TealLightColorScheme
+import com.droidnova.fliptomute.ui.theme.labelRes
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
 import com.droidnova.fliptomute.utils.AppTheme
 import com.droidnova.fliptomute.utils.ThemeMode
@@ -109,6 +113,9 @@ fun SettingsRoute(
     onOpenPrivacyPolicy: () -> Unit,
     privacyOptionsRequired: Boolean = false,
     onOpenPrivacyOptions: () -> Unit = {},
+    /** A rewarded ad can be shown to open an earned theme for a week (future features F34). */
+    rewardedThemeAvailable: Boolean = false,
+    onWatchAdForTheme: (onRewarded: () -> Unit, onUnavailable: () -> Unit) -> Unit = { _, _ -> },
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     RefreshOnResume {
@@ -123,6 +130,7 @@ fun SettingsRoute(
     var showManualInstructions by remember { mutableStateOf(false) }
     var showAdminExplanation by remember { mutableStateOf(false) }
     var showRemoveAdminConfirmation by remember { mutableStateOf(false) }
+    var lockedTheme by remember { mutableStateOf<AppTheme?>(null) }
     // The switch turns on only after Android grants screen-lock access (architecture A11)
     val adminLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.onDeviceAdminActivationResult()
@@ -131,6 +139,7 @@ fun SettingsRoute(
         viewModel.events.collect { event ->
             when (event) {
                 SettingsUiEvent.ShowDeviceAdminExplanation -> showAdminExplanation = true
+                is SettingsUiEvent.ShowThemeLocked -> lockedTheme = event.theme
                 is SettingsUiEvent.ShowMessage -> snackbar.showSnackbar(
                     activity.getString(
                         when (event.message) {
@@ -200,6 +209,40 @@ fun SettingsRoute(
                 }) { Text(stringResource(R.string.continue_action)) }
             },
             dismissButton = { TextButton(onClick = { showAdminExplanation = false }) { Text(stringResource(R.string.cancel_action)) } },
+        )
+    }
+    // An earned theme that is not open yet: say how to earn it, and offer the ad where there is one
+    lockedTheme?.let { theme ->
+        AlertDialog(
+            onDismissRequest = { lockedTheme = null },
+            title = { Text(stringResource(R.string.theme_locked_title, stringResource(theme.labelRes()))) },
+            text = {
+                Text(
+                    stringResource(
+                        if (rewardedThemeAvailable) R.string.theme_locked_body_with_ad else R.string.theme_locked_body,
+                        theme.unlockAt, state.totalFlips,
+                    ),
+                )
+            },
+            confirmButton = {
+                if (rewardedThemeAvailable) {
+                    TextButton(onClick = {
+                        lockedTheme = null
+                        scope.launch { snackbar.showSnackbar(activity.getString(R.string.theme_ad_loading)) }
+                        onWatchAdForTheme(
+                            { viewModel.onThemeUnlockedByAd(theme) },
+                            { scope.launch { snackbar.showSnackbar(activity.getString(R.string.theme_ad_unavailable)) } },
+                        )
+                    }) { Text(stringResource(R.string.theme_watch_ad)) }
+                } else {
+                    TextButton(onClick = { lockedTheme = null }) { Text(stringResource(R.string.got_it)) }
+                }
+            },
+            dismissButton = if (rewardedThemeAvailable) {
+                { TextButton(onClick = { lockedTheme = null }) { Text(stringResource(R.string.discovery_not_now)) } }
+            } else {
+                null
+            },
         )
     }
     if (showRemoveAdminConfirmation) {
@@ -399,6 +442,7 @@ private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
                     selected = state.appTheme == theme,
                     onClick = { actions.selectTheme(theme) },
                     dotColor = theme.dotColor(),
+                    locked = theme in state.lockedThemes,
                 )
             }
         }
@@ -434,17 +478,14 @@ private fun ThemeMode.icon() = when (this) {
     ThemeMode.DARK -> Icons.Filled.DarkMode
 }
 
-private fun AppTheme.labelRes(): Int = when (this) {
-    AppTheme.BLUE -> R.string.theme_blue
-    AppTheme.TEAL -> R.string.theme_teal
-    AppTheme.SUNSET -> R.string.theme_sunset
-}
-
 /** The light primary of each theme, as Secret Calculator shows a dot per theme. */
 private fun AppTheme.dotColor(): Color = when (this) {
     AppTheme.BLUE -> BlueLightColorScheme.primary
     AppTheme.TEAL -> TealLightColorScheme.primary
     AppTheme.SUNSET -> SunsetLightColorScheme.primary
+    AppTheme.FOREST -> ForestLightColorScheme.primary
+    AppTheme.ROSE -> RoseLightColorScheme.primary
+    AppTheme.MIDNIGHT -> MidnightLightColorScheme.primary
 }
 
 private fun QuickSettingsTileAddResult.messageResource() = when (this) {

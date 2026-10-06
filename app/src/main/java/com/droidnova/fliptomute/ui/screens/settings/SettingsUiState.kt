@@ -25,6 +25,9 @@ data class SettingsUiState(
     val tileAdded: Boolean = false,
     val appTheme: AppTheme = AppTheme.BLUE,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    /** Earned themes that are not open yet (future features F36). */
+    val lockedThemes: Set<AppTheme> = emptySet(),
+    val totalFlips: Int = 0,
     /** Set by the activity from the consent status (M7-02). */
     val privacyOptionsRequired: Boolean = false,
 )
@@ -37,4 +40,5 @@ enum class SettingsMessage {
 sealed interface SettingsUiEvent {
     data object ShowDeviceAdminExplanation : SettingsUiEvent
     data class ShowMessage(val message: SettingsMessage) : SettingsUiEvent
+    data class ShowThemeLocked(val theme: AppTheme) : SettingsUiEvent
 }

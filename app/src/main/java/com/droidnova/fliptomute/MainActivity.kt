@@ -37,6 +37,8 @@ import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.review.InAppReview
 import com.droidnova.fliptomute.data.review.ReviewStore
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.data.stats.FlipStatsStore
+import com.droidnova.fliptomute.data.themes.ThemeUnlockStore
 import com.droidnova.fliptomute.data.update.InAppUpdate
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
@@ -61,6 +63,8 @@ import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -87,6 +91,8 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var reviewStore: ReviewStore
     @Inject lateinit var preferencesRepository: AppPreferencesRepository
     @Inject lateinit var setupAccessRepository: SetupAccessRepository
+    @Inject lateinit var flipStatsStore: FlipStatsStore
+    @Inject lateinit var themeUnlockStore: ThemeUnlockStore
 
     private val externalMonitoringRequest = MutableStateFlow(MainActivityLaunchEvent())
 
@@ -131,6 +137,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showContent() {
+        // A theme opened for a week by an ad goes back to the default when the week is over
+        themeUnlockStore.enforce(flipStatsStore.stats.value.total)
         setUpAds()
         setContent {
             FlipToMuteTheme {
@@ -175,6 +183,9 @@ class MainActivity : AppCompatActivity() {
                             onOpenPrivacyOptions = {
                                 AdConsent.showPrivacyOptions(this@MainActivity) { privacyOptionsRequired = AdConsent.isPrivacyOptionsRequired(this@MainActivity) }
                             },
+                            rewardedThemeAvailable = adsReady && remoteConfigReady && RemoteAdGate.isRewardedThemeEnabled() &&
+                                AdConfig.rewardedThemeUnitId(this@MainActivity) != null,
+                            onWatchAdForTheme = ::showRewardedForTheme,
                             modifier = Modifier.weight(1f),
                         )
                         // Read here so the switches are read again once Remote Config arrives
@@ -253,6 +264,29 @@ class MainActivity : AppCompatActivity() {
         // Collapsible, as in 1.x
         val extras = Bundle().apply { putString("collapsible", "bottom") }
         adView.loadAd(AdRequest.Builder().addNetworkExtrasBundle(AdMobAdapter::class.java, extras).build())
+    }
+
+    /** Loads and shows one rewarded ad. [onRewarded] runs only when it was watched to the end. */
+    private fun showRewardedForTheme(onRewarded: () -> Unit, onUnavailable: () -> Unit) {
+        val unitId = AdConfig.rewardedThemeUnitId(this)
+        if (!adsReady || unitId == null) {
+            onUnavailable()
+            return
+        }
+        RewardedAd.load(
+            this, unitId, AdRequest.Builder().build(),
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    if (isFinishing || isDestroyed) return
+                    ad.show(this@MainActivity) { onRewarded() }
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    MonitoringLog.d(this@MainActivity, "Rewarded ad failed to load: ${error.message}")
+                    onUnavailable()
+                }
+            },
+        )
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.data.stats.FlipStatsStore
+import com.droidnova.fliptomute.data.themes.ThemeUnlockStore
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
 import com.droidnova.fliptomute.sensor.ProximitySensorCapability
@@ -35,6 +37,8 @@ class SettingsViewModel @Inject constructor(
     private val batteryOptimizationStatus: BatteryOptimizationStatus = BatteryOptimizationStatus { null },
     /** Null in plain JVM tests; Hilt always provides it. */
     private val hintStore: HintStore? = null,
+    private val flipStatsStore: FlipStatsStore? = null,
+    private val themeUnlockStore: ThemeUnlockStore? = null,
 ) : ViewModel() {
     private val mutableEvents = MutableSharedFlow<SettingsUiEvent>(extraBufferCapacity = 1)
     val events = mutableEvents.asSharedFlow()
@@ -68,6 +72,8 @@ class SettingsViewModel @Inject constructor(
             accessState = accessState,
             batteryRestricted = d.batteryRestricted,
             tileAdded = d.tileAdded,
+            lockedThemes = d.lockedThemes,
+            totalFlips = d.totalFlips,
             appTheme = theme,
             themeMode = mode,
         )
@@ -151,10 +157,17 @@ class SettingsViewModel @Inject constructor(
 
     fun refreshAccessState() {
         setupAccessRepository.refresh()
+        // A week bought with an ad may have ended while the app was away
+        themeUnlockStore?.enforce(totalFlips())
+        appearance.value = Appearance.appTheme to Appearance.themeMode
         device.value = readDevice()
     }
 
     fun selectTheme(theme: AppTheme) {
+        if (themeUnlockStore?.isUnlocked(theme, totalFlips()) == false) {
+            mutableEvents.tryEmit(SettingsUiEvent.ShowThemeLocked(theme))
+            return
+        }
         Appearance.updateTheme(theme)
         appearance.value = theme to appearance.value.second
     }
@@ -164,12 +177,28 @@ class SettingsViewModel @Inject constructor(
         appearance.value = appearance.value.first to mode
     }
 
+    /** A rewarded ad was watched to the end: the theme is open for a week, and applied. */
+    fun onThemeUnlockedByAd(theme: AppTheme) {
+        themeUnlockStore?.unlockWithAd(theme)
+        device.value = readDevice()
+        selectTheme(theme)
+    }
+
+    private fun totalFlips(): Int = flipStatsStore?.stats?.value?.total ?: 0
+
     private fun readDevice() = Device(
         batteryRestricted = batteryOptimizationStatus.isIgnoringBatteryOptimizations()?.not(),
         tileAdded = hintStore?.tileAdded ?: false,
+        lockedThemes = themeUnlockStore?.lockedThemes(totalFlips()) ?: emptySet(),
+        totalFlips = totalFlips(),
     )
 
-    private data class Device(val batteryRestricted: Boolean?, val tileAdded: Boolean)
+    private data class Device(
+        val batteryRestricted: Boolean?,
+        val tileAdded: Boolean,
+        val lockedThemes: Set<AppTheme>,
+        val totalFlips: Int,
+    )
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L

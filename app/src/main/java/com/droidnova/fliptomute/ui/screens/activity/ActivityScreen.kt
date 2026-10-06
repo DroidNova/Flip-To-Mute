@@ -60,7 +60,9 @@ import com.droidnova.fliptomute.ui.components.appearIn
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.ui.screens.home.isSameDay
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
+import com.droidnova.fliptomute.ui.theme.labelRes
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
+import com.droidnova.fliptomute.utils.AppTheme
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Date
@@ -180,6 +182,14 @@ private fun MilestonesCard(progress: MilestoneProgress, modifier: Modifier = Mod
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = 4.dp),
         )
+        // The next milestone may open a colour theme (future features F36)
+        AppTheme.entries.firstOrNull { it.unlockAt != 0 && it.unlockAt == progress.next }?.let { theme ->
+            Text(
+                stringResource(R.string.milestone_unlocks_theme, stringResource(theme.labelRes())),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         LinearProgressIndicator(
             progress = { progress.fraction },
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(8.dp).clip(RoundedCornerShape(4.dp)),

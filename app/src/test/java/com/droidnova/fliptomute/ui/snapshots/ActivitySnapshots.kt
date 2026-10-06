@@ -18,6 +18,7 @@ import com.droidnova.fliptomute.ui.screens.activity.ActivityUiState
 import com.droidnova.fliptomute.ui.screens.activity.activityUiState
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
+import com.droidnova.fliptomute.utils.AppTheme
 import java.io.File
 import org.junit.Rule
 import org.junit.Test
@@ -44,10 +45,19 @@ class ActivitySnapshots {
 
     @Test fun empty() = snapshot("activity_empty", ActivityUiState())
 
-    private fun snapshot(name: String, state: ActivityUiState, dark: Boolean = false) {
+    // The earned themes (future features F36), so their colours can be checked by eye
+    @Test fun forest() = snapshot("theme_forest", activityUiState(records, FlipStats(thisMonth = 9, lastMonth = 9, total = 12), now), theme = AppTheme.FOREST)
+
+    @Test fun roseDark() = snapshot("theme_rose_dark", activityUiState(records, FlipStats(thisMonth = 4, lastMonth = 9, total = 30), now), dark = true, theme = AppTheme.ROSE)
+
+    @Test fun midnightDark() = snapshot("theme_midnight_dark", activityUiState(records, FlipStats(total = 60), now), dark = true, theme = AppTheme.MIDNIGHT)
+
+    @Test fun midnightLight() = snapshot("theme_midnight_light", activityUiState(records, FlipStats(total = 60), now), theme = AppTheme.MIDNIGHT)
+
+    private fun snapshot(name: String, state: ActivityUiState, dark: Boolean = false, theme: AppTheme = AppTheme.BLUE) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
-            FlipToMuteTheme(darkTheme = dark) {
+            FlipToMuteTheme(appTheme = theme, darkTheme = dark) {
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                     Box(Modifier.background(MaterialTheme.colorScheme.background)) {
                         ActivityScreen(state, onBack = {})
