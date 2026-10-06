@@ -286,7 +286,7 @@ Goal: ship to everyone safely and measure the result.
 | [ ] | M8-03 | Closed beta through App Distribution and the Play closed track for at least 7 days. Triage every report. | L | A23 |
 | [ ] | M8-04 | Store listing: screenshots, feature graphic, descriptions, "what's new" text | M | |
 | [ ] | M8-05 | Update the Data safety form and the privacy policy | S | R14 |
-| [ ] | M8-06 | Merge to `master`, tag `v2.0.0`, write release notes | S | |
+| [ ] | M8-06 | Merge to `master`, tag, write release notes. Done 2026-10-07: merged and pushed to `master`, tagged `release10` (the owner's naming: release plus the version code). Release notes still to write. | S | |
 | [ ] | M8-07 | Staged rollout: 5%, 20%, 50%, 100%, checking the gates at each stage | M | |
 | [ ] | M8-08 | Review at day 7 and day 30. Write the results into `UPDATE_PLAN.md` section 2. | S | |
 | [ ] | M8-09 | Choose the v2.1 scope from `FUTURE_FEATURES.md` | S | |
@@ -314,7 +314,7 @@ without it. The owner decides whether it merges into v2.0 or ships as v2.1.
 | [x] | M9-04 | Weekly recap, checked from `HealthCheckWorker`: every 7 days, daytime, only with at least one flip | S | F10 |
 | [x] | M9-05 | Settings group "Notifications" with a switch for each notification, both on by default | S | F10, F31 |
 | [x] | M9-06 | Banner placement and Remote Config switch for the activity screen; `activity_opened` and `weekly_recap_shown` events | S | A16, A17 |
-| [ ] | M9-07 | Device test: flip a real call, then check the notification, the tap, the chart and the count. Let a silenced call ring out and check the callback reminder and its button. | S | |
+| [ ] | M9-07 | Device test: flip a real call, then check the notification, the tap, the chart and the count. Let a silenced call ring out and check the callback reminder and its button. **Owner, 2026-10-07: a real call was flipped on 2.0 and it works.** Not reported separately: the notification tap, the count on "Your flips" and the callback reminder. | S | |
 | [x] | M9-08 | Native ad on the activity screen, after the milestones card, asked for when the screen opens. The banner hides while it shows. Remote switch `ad_native_activity_enabled`. Unit ID from the owner, 2026-10-07. | S | F32 |
 | [ ] | M9-09 | Spike S1: face down and pick-up detection with the screen off, battery cost over 24 hours | M | F30, F1 |
 | [ ] | M9-10 | Flip to Focus: session, Do Not Disturb, summary screen with streak. After M9-09. | L | F30 |
@@ -385,7 +385,7 @@ the alert behaviour that was observed.
 | Pixel or emulator | 16 | | | | | | |
 | Samsung Galaxy A21s (SM-A217F) | 12 | Not checked yet: the phone did not reconnect after the reboot | Pass: the update receiver restarted the service about 10 s after `adb install -r` | Pass: Android restarted the service in about 4 s (`am crash`; `kill` is blocked on this phone) | | | 2026-10-06, debug build. First run passed. Samsung opens the full Do not disturb list, not a page for this app. |
 | Xiaomi, Redmi or POCO | | | | | | | |
-| Realme RMX3031 (realme UI) | 13 | Not checked: a call was running on the phone | Pass: 1.7 to 2.0 and 2.0 to 2.0 with `adb install -r`, service back in about 5 s without opening the app | Pass: Android restarted the service in about 1 s (`am crash`) | | Not checked: needs a real call and a hand | 2026-10-07, debug build. Upgrade from 1.7 with the service on: first run skipped, "What's new" shown once, service on. Battery card shown. |
+| Realme RMX3031 (realme UI) | 13 | Not checked: a call was running on the phone | Pass: 1.7 to 2.0 and 2.0 to 2.0 with `adb install -r`, service back in about 5 s without opening the app | Pass: Android restarted the service in about 1 s (`am crash`) | | Pass, as reported by the owner on 2026-10-07 | 2026-10-07, debug build. Upgrade from 1.7 with the service on: first run skipped, "What's new" shown once, service on. Battery card shown. |
 | Oldest available | 8 to 10 | | | | | | |
 
 ## Regression script
@@ -419,6 +419,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-07 | M8, M9 | Owner tested a real call with a flip on 2.0: it works. `master` pushed and tagged `release10`. | Signed bundle (owner). Data safety form, store listing, internal track and pre-launch report (M7-11), staged rollout |
 | 2026-10-07 | M8 | Checkpoint `release10`: version code 10, pushed to `master`. The release build (R8) was installed over the debug build on the Realme and opened every screen without a crash; the production banner unit served (the phone is an AdMob test device). Fixed on the way: on "Your flips" with no flips yet, the native ad was requested with nowhere to show and the banner was hidden; now the banner shows there and the native ad waits for the first flip. Owner builds the signed bundle. | A real call with a flip on this build (M9-07). Data safety form, store listing, internal track and pre-launch report (M7-11), staged rollout |
 | 2026-10-07 | M7, M8, M9 | `feature/v2.1-engagement` merged into `release/v2.0` (owner: ship M9 in 2.0). Device pass on a Realme RMX3031 upgraded from 1.7: upgrade path, process kill, cold start (M7-07 done), Settings, About, "Your flips" with test flips, native ad (AdMob validator: no issues), banner hidden beside it, interstitial once and then held back by its cooldown, rewarded ad unlocking Midnight, launcher shortcut actions, share sheet with the picture. Fixed: after an upgrade from 1.7 with "mute and vibrate" both ticked, Settings showed Silence while Home showed Vibrate. Found, not changed: the collapsible banner opens expanded on every launch and covers the lower half of Home until closed (1.7 does the same). **Owner, 2026-10-07: keep it as it is.** | Real call and flip (M9-07), reboot, TalkBack, Samsung rerun |
 | 2026-10-07 | M7, M9 | Owner supplied the AdMob App ID (M7-01, on `release/v2.0`) and the rewarded and native unit IDs, and asked for the purchase to be switched off. M9-08 native ad. Owner's four release points: review cooldown (M9-25), About on All File Reader's layout with other apps in Settings too (M9-24), `docs/AD_OPPORTUNITIES.md` and the interstitial (M9-23), Premium sheet and themes behind `PREMIUM_ENABLED = false` (M9-22). 414 tests, lint with no new warnings, release build passes at 4.04 MB unsigned. Nothing in M9 has run on a phone. | Interstitial unit ID. Decision on merging M9. Then the device pass |
