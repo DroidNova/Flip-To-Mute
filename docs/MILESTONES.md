@@ -19,7 +19,7 @@ This is the working document. Update it in every session.
 | M4 | First run and access | Blocked | 9 of 9 | 7 days |
 | M5 | Home | Blocked | 13 of 13 | 10 days |
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
-| M7 | Ads, consent, remote switches, polish | In progress | 9 of 11 | 7 days, plus 2 for stretch items |
+| M7 | Ads, consent, remote switches, polish | In progress | 10 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
 | M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 22 of 25 | 6 days, plus the Flip to Focus spike |
 
@@ -258,7 +258,7 @@ Goal: compliant ads, and a product that is fast and accessible.
 | [x] | M7-04 | `RemoteAdGate` style switches: banner per placement, latest version code for the update dialog | M | A16, D10 |
 | [x] | M7-05 | Accessibility pass against `DESIGN_SPEC.md` section 7. Automated: 200% font, 48 dp targets, switch semantics. The TalkBack walk needs a phone. | M | |
 | [x] | M7-06 | Layout pass: tablet, landscape, 320 dp wide phone | S | U14 |
-| [ ] | M7-07 | Performance: cold start, release build check, download size compared with 1.7. Size done: release APK 3.68 MB against 2.83 MB for 1.7, so 0.86 MB larger. Cold start needs a phone. | M | |
+| [x] | M7-07 | Performance: cold start, release build check, download size compared with 1.7. Cold start on a Realme RMX3031 (Android 13), debug builds of both, five cold starts each: 1.7 median 1.09 s, 2.0 median 0.86 s, so 2.0 is faster. Size: the 2.0 release APK with all of M9 is 4.04 MB unsigned against 2.83 MB for 1.7. Release-build cold start was not measured. | M | |
 | [x] | M7-08 | Translation readiness. Stretch: Hindi translation, not included by the D8 default. | M | U13, D8 |
 | [x] | M7-09 | Stretch: in-app update prompt. Play's flexible update from the Home update dialog, restart prompt when downloaded, store page as fallback. | M | T4 |
 | [x] | M7-10 | Target SDK 37 as its own change, then rerun the device matrix. Compile and target SDK 37.1, as Secret Calculator. The device matrix rerun waits for a phone. | M | X11 |
@@ -268,7 +268,7 @@ Exit criteria:
 
 - [ ] With a test device set to the EEA, the consent form appears and no ad loads before an answer.
 - [ ] Turning a Remote Config ad flag off hides that banner without a new release.
-- [ ] Cold start is not slower than 1.7 on the same phone.
+- [x] Cold start is not slower than 1.7 on the same phone. (Realme RMX3031, debug builds, 2026-10-07.)
 - [ ] The accessibility checklist passes.
 - [ ] The pre-launch report shows no crashes.
 - [x] Download size is within 2 MB of 1.7. Hilt and the Outfit font add a little. (Release APK 0.86 MB larger.)
@@ -385,7 +385,7 @@ the alert behaviour that was observed.
 | Pixel or emulator | 16 | | | | | | |
 | Samsung Galaxy A21s (SM-A217F) | 12 | Not checked yet: the phone did not reconnect after the reboot | Pass: the update receiver restarted the service about 10 s after `adb install -r` | Pass: Android restarted the service in about 4 s (`am crash`; `kill` is blocked on this phone) | | | 2026-10-06, debug build. First run passed. Samsung opens the full Do not disturb list, not a page for this app. |
 | Xiaomi, Redmi or POCO | | | | | | | |
-| Oppo, Vivo or Realme | | | | | | | |
+| Realme RMX3031 (realme UI) | 13 | Not checked: a call was running on the phone | Pass: 1.7 to 2.0 and 2.0 to 2.0 with `adb install -r`, service back in about 5 s without opening the app | Pass: Android restarted the service in about 1 s (`am crash`) | | Not checked: needs a real call and a hand | 2026-10-07, debug build. Upgrade from 1.7 with the service on: first run skipped, "What's new" shown once, service on. Battery card shown. |
 | Oldest available | 8 to 10 | | | | | | |
 
 ## Regression script
@@ -419,6 +419,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-07 | M7, M8, M9 | `feature/v2.1-engagement` merged into `release/v2.0` (owner: ship M9 in 2.0). Device pass on a Realme RMX3031 upgraded from 1.7: upgrade path, process kill, cold start (M7-07 done), Settings, About, "Your flips" with test flips, native ad (AdMob validator: no issues), banner hidden beside it, interstitial once and then held back by its cooldown, rewarded ad unlocking Midnight, launcher shortcut actions, share sheet with the picture. Fixed: after an upgrade from 1.7 with "mute and vibrate" both ticked, Settings showed Silence while Home showed Vibrate. Found, not changed: the collapsible banner opens expanded on every launch and covers the lower half of Home until closed (1.7 does the same). | Owner decision on the collapsible banner. Real call and flip (M9-07), reboot, TalkBack, Samsung rerun |
 | 2026-10-07 | M7, M9 | Owner supplied the AdMob App ID (M7-01, on `release/v2.0`) and the rewarded and native unit IDs, and asked for the purchase to be switched off. M9-08 native ad. Owner's four release points: review cooldown (M9-25), About on All File Reader's layout with other apps in Settings too (M9-24), `docs/AD_OPPORTUNITIES.md` and the interstitial (M9-23), Premium sheet and themes behind `PREMIUM_ENABLED = false` (M9-22). 414 tests, lint with no new warnings, release build passes at 4.04 MB unsigned. Nothing in M9 has run on a phone. | Interstitial unit ID. Decision on merging M9. Then the device pass |
 | 2026-10-07 | M9 | M9-15 to M9-22: three earned themes with a rewarded ad as the short cut, schedule, flip to pause media, ring again when turned face up, sensitivity, launcher shortcuts, share card, remove ads purchase. 402 tests (one address check skipped on Windows), lint with no new warnings, release build passes. Release APK 4.06 MB unsigned, up from 3.71 MB, mostly Play Billing. Nothing in M9 has run on a phone. | Owner items in the M9 table. Then the device pass, M9-08 and the Flip to Focus spike |
 | 2026-10-07 | M9 | Owner: build every feature first, test on phones at the end. M9-11 to M9-14: milestones, callback reminder, month comparison, two more Home tips. 357 tests pass. | M9-15 themes, then the rest of the list in order |

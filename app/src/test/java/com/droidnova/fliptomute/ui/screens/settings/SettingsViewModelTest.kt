@@ -2,6 +2,9 @@ package com.droidnova.fliptomute.ui.screens.settings
 
 import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.data.preferences.AppPreferences
+import com.droidnova.fliptomute.data.preferences.CallActionSelection
+import com.droidnova.fliptomute.ui.components.FlipChoice
+import com.droidnova.fliptomute.ui.screens.home.toFlipChoice
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.utils.MainDispatcherRule
 import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
@@ -97,6 +100,17 @@ class SettingsViewModelTest {
         java.time.DayOfWeek.entries.forEach { if (it in repository.current.schedule.days) viewModel.onScheduleDayToggled(it) }
         assertEquals(1, repository.current.schedule.days.size)
         assertEquals(repository.current.schedule, viewModel.uiState.value.schedule)
+    }
+
+    @Test
+    fun muteAndVibrateTogetherFromOneX_showsAsVibrate_asOnHome() = runTest {
+        // Found on a Realme upgraded from 1.7: Home said Vibrate, Settings said Silence
+        val both = AppPreferences(callActionSelection = CallActionSelection(muteRingtone = true, vibratePhone = true))
+        val viewModel = SettingsViewModel(FakeAppPreferencesRepository(both), FakeSetupAccessRepository())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+
+        assertEquals(FlipAction.VIBRATE, viewModel.uiState.value.selectedFlipAction)
+        assertEquals(FlipChoice.VIBRATE, both.callActionSelection.toFlipChoice())
     }
 
     @Test

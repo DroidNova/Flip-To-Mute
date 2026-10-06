@@ -188,7 +188,7 @@
     <string name="discovery_not_now">Not now</string>
     <string name="stats_today_at">today, %1$s</string>
     <string name="whats_new_title">What\'s new</string>
-    <string name="whats_new_body">• A fresh, simpler look\n• Keeps working after restarts and updates\n• Pause for 30 minutes, 1 hour or 2 hours</string>
+    <string name="whats_new_body">• A fresh, simpler look\n• Keeps working after restarts and updates\n• Pause for 30 minutes, 1 hour or 2 hours\n• See your flips, reach milestones and open new colour themes</string>
     <string name="update_available_title">Update available</string>
     <string name="update_available_body">A newer version of Flip to Mute is ready.</string>
     <string name="update_available_action">Update</string>

@@ -61,7 +61,9 @@ class SettingsViewModel @Inject constructor(
         appearance,
     ) { preferences, accessState, adminAvailability, d, (theme, mode) ->
         SettingsUiState(
-            selectedFlipAction = preferences.selectedFlipAction,
+            // The same rule as Home: any selection with vibrate shows as Vibrate. 1.x could store
+            // "mute and vibrate" together, which Settings used to show as Silence while Home said Vibrate.
+            selectedFlipAction = if (preferences.callActionSelection.vibratePhone) FlipAction.VIBRATE else FlipAction.SILENT,
             detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
             requireFlatSurfaceBeforeFlip = preferences.requireFlatSurfaceBeforeFlip,
             pocketProtectionEnabled = preferences.pocketProtectionEnabled,
