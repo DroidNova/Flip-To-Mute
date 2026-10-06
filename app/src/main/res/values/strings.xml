@@ -279,4 +279,16 @@
     <string name="alert_channel_description">Tells you when Flip to Mute stopped and needs a tap to come back.</string>
     <string name="stopped_alert_title">Flip to Mute stopped</string>
     <string name="stopped_alert_text">Tap to turn it back on.</string>
+    <string name="power_state_on">On</string>
+    <string name="power_state_off">Off</string>
+    <string name="power_state_paused">Paused</string>
+    <string name="power_state_busy">One moment</string>
+    <string name="power_state_attention">Needs attention</string>
+    <string name="action_silence">Silence</string>
+    <string name="action_vibrate">Vibrate</string>
+    <string name="stats_last_flip">Last flip: %1$s</string>
+    <plurals name="stats_silenced_this_month">
+        <item quantity="one">%d call silenced this month</item>
+        <item quantity="other">%d calls silenced this month</item>
+    </plurals>
 </resources>

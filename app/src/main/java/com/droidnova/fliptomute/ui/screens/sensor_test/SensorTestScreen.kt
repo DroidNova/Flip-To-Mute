@@ -214,7 +214,7 @@ private fun TechnicalValues(state: SensorTestUiState) {
 
 @Composable
 private fun PreviewContent(state: SensorTestUiState) {
-    FlipToMuteTheme(dynamicColor = false) { SensorTestContent(state, {}, {}, {}) }
+    FlipToMuteTheme() { SensorTestContent(state, {}, {}, {}) }
 }
 
 private fun testingState(orientation: DeviceOrientation) = SensorTestUiState(

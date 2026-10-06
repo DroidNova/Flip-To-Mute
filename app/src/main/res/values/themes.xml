@@ -2,8 +2,10 @@
 <resources>
     <!--
         Window theme only; Compose draws everything inside. AppCompat because MainActivity is an
-        AppCompatActivity, as in Secret Calculator (M2-07). Still light: the dark window and
-        splash colours arrive with the design system in M3-05.
+        AppCompatActivity, as in Secret Calculator (M2-07). DayNight with a matching background, so
+        launch shows the right colour in light and dark (M3-05).
     -->
-    <style name="Theme.FlipToMute" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.FlipToMute" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
 </resources>

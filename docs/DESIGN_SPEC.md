@@ -52,21 +52,20 @@ Dark. Both are held by `Appearance` as Compose state, so a change in Settings
 redraws every screen at once. Wallpaper based dynamic colour is not used, the
 same as Secret Calculator, so the brand is always visible (U12).
 
-Flip to Mute ships three colour themes. Theme mode defaults to System.
+Flip to Mute ships three of Secret Calculator's colour schemes unchanged, so both apps share tested
+palettes. Theme mode defaults to System. Full schemes are in `ui/theme/Color.kt`.
 
 | Theme | Role | Light | Dark |
 |-------|------|-------|------|
-| Indigo (default) | Primary | `#3457D5` | `#B8C4FF` |
-| | Primary container | `#DDE1FF` | `#173BAB` |
+| Blue (default) | Primary | `#575992` | `#C3C0FF` |
+| | Primary container | `#E1E0FF` | `#424078` |
 | | Background | `#FBF8FF` | `#131318` |
-| Teal | Primary | `#006A64` | `#4FDBD0` |
-| | Primary container | `#9EF2E8` | `#00504B` |
-| | Background | `#F4FBF9` | `#0E1514` |
-| Sunset | Primary | `#A3410F` | `#FFB596` |
-| | Primary container | `#FFDBCD` | `#7F2B00` |
-| | Background | `#FFF8F6` | `#1A110E` |
-
-The full Material roles for each theme are generated from these seeds in M3-03.
+| Teal | Primary | `#006A6A` | `#80D5D4` |
+| | Primary container | `#9CF1F0` | `#004F4F` |
+| | Background | `#F4FBFA` | `#0E1514` |
+| Sunset | Primary | `#994700` | `#FFB68E` |
+| | Primary container | `#FFDBC9` | `#753400` |
+| | Background | `#FFF8F5` | `#1A120D` |
 
 State colours are separate from the themes, so the state reads the same in
 every theme.
@@ -79,6 +78,10 @@ every theme.
 | Attention | Needs a fix | `#BA1A1A` | `#FFDAD6` | `#FFB4AB` | `#93000A` |
 
 State is never shown by colour alone. Every state also has an icon and a sentence.
+
+Contrast, checked in M3-03: every accent on its container is at least 3.5:1 (icons and borders
+need 3:1), and every text colour on its container is at least 7.2:1 (text needs 4.5:1), in light
+and dark.
 
 Status bar and navigation bar icons follow the light or dark choice, set in the
 theme function exactly as Secret Calculator does.
@@ -377,7 +380,7 @@ KEEP IT RUNNING
 
 APPEARANCE
   Theme      ( System ) ( Light ) ( Dark )
-  Colour     ( ● Indigo ) ( ● Teal ) ( ● Sunset )
+  Colour     ( ● Blue ) ( ● Teal ) ( ● Sunset )
 
 HELP AND ABOUT
   (◎) Check my setup                   ›
@@ -547,7 +550,8 @@ cutout and the banner height.
 |-------|--------|-----------|
 | Phone flip illustration, face up and face down | Compose vector | M3 |
 | Adaptive launcher icon with monochrome layer (U15), same artwork as today | `mipmap-anydpi-v26` XML plus layers | M3 |
-| Seed colours for Indigo, Teal and Sunset, expanded to full Material schemes | Kotlin colour file, as `Color.kt` in Secret Calculator | M3 |
+| Blue, Teal and Sunset schemes, copied from Secret Calculator | `ui/theme/Color.kt` | M3 (done) |
+| Adaptive icon layers: transparent foreground and a single-colour glyph | PNG or vector, exported from the icon source | Owner, for M3-06 |
 | Google Fonts certificate array for Outfit | `values/font_certs.xml`, copied from Secret Calculator | M3 |
 | Icons for the access steps, settings rows and state colours | Material icons, as Secret Calculator uses | M3 |
 | Store screenshots, 6 to 8, light and dark | PNG | M8 |

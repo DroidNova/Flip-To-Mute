@@ -215,7 +215,7 @@ private fun CallTestInstructions() {
 )
 
 @Composable private fun PreviewCall(state: CallStateTestUiState) {
-    FlipToMuteTheme(dynamicColor = false) { CallStateTestContent(state, {}, {}, {}, {}) }
+    FlipToMuteTheme() { CallStateTestContent(state, {}, {}, {}, {}) }
 }
 
 private fun listeningState(state: CellularCallState) = CallStateTestUiState(

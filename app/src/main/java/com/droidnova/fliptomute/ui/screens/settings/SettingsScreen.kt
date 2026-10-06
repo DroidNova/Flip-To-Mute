@@ -61,7 +61,7 @@ import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.FlipActionOption
 import com.droidnova.fliptomute.ui.components.SettingsItem
-import com.droidnova.fliptomute.ui.components.SettingsGroup
+import com.droidnova.fliptomute.ui.components.LegacySettingsGroup
 import com.droidnova.fliptomute.ui.components.SettingsGroupDivider
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
@@ -609,14 +609,14 @@ private fun SettingsSection(
             fontSize = 18.sp,
         )
         description?.let { SecondaryText(it) }
-        SettingsGroup(content = content)
+        LegacySettingsGroup(content = content)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenPreview() {
-    FlipToMuteTheme(dynamicColor = false) {
+    FlipToMuteTheme() {
         SettingsScreen(
             state = SettingsUiState(),
             onBack = {},

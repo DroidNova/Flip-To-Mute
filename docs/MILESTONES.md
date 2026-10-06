@@ -15,7 +15,7 @@ This is the working document. Update it in every session.
 | M0 | Foundations and baseline | In progress | 11 of 13 | 5 days |
 | M1 | Reliability fixes on today's code | Blocked | 13 of 15 | 12 days |
 | M2 | Architecture migration, behaviour unchanged | Blocked | 13 of 14 | 10 days |
-| M3 | Design system from Secret Calculator | Not started | 0 of 9 | 7 days |
+| M3 | Design system from Secret Calculator | Blocked | 8 of 9 | 7 days |
 | M4 | First run and access | Not started | 0 of 9 | 7 days |
 | M5 | Home | Not started | 0 of 13 | 10 days |
 | M6 | Settings, help, about, review | Not started | 0 of 12 | 10 days |
@@ -143,15 +143,15 @@ themed for Flip to Mute.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
-| [ ] | M3-01 | Copy `VaultDesign.kt`, `States.kt` and `TopBars.kt` as `NovaDesign`, `States` and `TopBars` with the same sizes and motion | M | A7 |
-| [ ] | M3-02 | Copy `Appearance`, `AppTheme`, `ThemeMode` and the theme function. Theme mode defaults to System. | M | A8 |
-| [ ] | M3-03 | Flip to Mute colour themes in `DESIGN_SPEC.md` section 3.1, with contrast checks | M | U12 |
-| [ ] | M3-04 | Outfit plus platform font, with the Google Fonts certificate array | S | A9 |
-| [ ] | M3-05 | Window theme for light and dark so there is no white flash, set before `super.onCreate` as Secret Calculator does | S | R13 |
-| [ ] | M3-06 | Adaptive launcher icon with a monochrome layer, same artwork | S | U15 |
-| [ ] | M3-07 | `PhoneFlipIllustration` with animations and a still version for reduced motion | L | |
-| [ ] | M3-08 | Flip to Mute components on top of the kit: `FlipPowerControl`, `ActionSelector`, `AttentionCard`, `StatsCard` | L | |
-| [ ] | M3-09 | Previews for every component in both themes and at 200% font | S | |
+| [x] | M3-01 | Copy `VaultDesign.kt`, `States.kt` and `TopBars.kt` as `NovaDesign`, `States` and `TopBars` with the same sizes and motion | M | A7 |
+| [x] | M3-02 | Copy `Appearance`, `AppTheme`, `ThemeMode` and the theme function. Theme mode defaults to System. | M | A8 |
+| [x] | M3-03 | Flip to Mute colour themes in `DESIGN_SPEC.md` section 3.1, with contrast checks | M | U12 |
+| [x] | M3-04 | Outfit plus platform font, with the Google Fonts certificate array | S | A9 |
+| [x] | M3-05 | Window theme for light and dark so there is no white flash, set before `super.onCreate` as Secret Calculator does | S | R13 |
+| [ ] | M3-06 | Adaptive launcher icon with a monochrome layer, same artwork. **Blocked: needs artwork from the owner**: the current icon has its background baked in, so a transparent foreground layer and a single-colour glyph for themed icons must be exported from the source design. | S | U15 |
+| [x] | M3-07 | `PhoneFlipIllustration` with animations and a still version for reduced motion | L | |
+| [x] | M3-08 | Flip to Mute components on top of the kit: `FlipPowerControl`, `ActionSelector`, `AttentionCard`, `StatsCard` | L | |
+| [x] | M3-09 | Previews for every component in both themes and at 200% font | S | |
 
 Exit criteria:
 
@@ -342,6 +342,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-06 | M3 | M3-01 to M3-05 and M3-07 to M3-09: Secret Calculator's design kit copied as `NovaDesign`, `States`, `TopBars`; its Blue, Teal and Sunset schemes, `Appearance`, `AppTheme`, `ThemeMode` and Outfit typography; state colours with contrast checked (all pass); DayNight window background; `PhoneFlipIllustration` and `PhoneFlipDemo`; `FlipPowerControl`, `ActionSelector`, `AttentionCard`, `StatsCard`. `ComponentSnapshots` renders them to `app/build/snapshots` under Robolectric, checked in four themes. App now uses the Blue theme instead of wallpaper colours. | M3-06 needs icon artwork. Start M4 |
 | 2026-10-06 | M2 | M2-01 to M2-13: AGP 9.3.1, Kotlin 2.4.10, KSP, Hilt 2.60.1; `AppModule` reproduces the old container exactly; service and tile `@AndroidEntryPoint`, receivers and worker through `BackgroundEntryPoint`; `@HiltViewModel` everywhere; `AppContainer` and `ViewModelFactories` deleted; `MainActivity` is an `AppCompatActivity` with the Secret Calculator shell; `Routes` and `AppNavHost` with `go`, `back(entry)` and 280 ms transitions; packages moved to `utils`, `utils/ads`, `utils/about_utils`; funnel `app_opened` and first-time `setup_complete` wired; `ObjectGraphTest` proves the shared state. Deviations X12 to X14 recorded. 223 tests, lint and clean release build pass. | M2-14 needs a phone. Start M3 |
 | 2026-10-06 | M1 | M1-01 to M1-13 built and unit tested on today's code: start sources and `InterruptionPolicy`; restart setting on by default; `PackageReplacedReceiver`; automatic failures keep the saved choice and post the "stopped" alert (Alerts channel, once per interruption, tap turns it back on); `HealthCheckWorker` every 6 hours (WorkManager 2.10.1); battery status and brand steps; guarded `IntentUtil`; flip buzz; backup off including device transfer; sensor at UI rate; analytics for state, interruptions, auto resume and flips. 216 tests, lint and release build pass. Home now shows an interrupted session as off with "Try again". | M1-14 needs a phone; M1-15 is the owner's 1.8 decision; start M2 meanwhile |
 | 2026-10-06 | M0 | M0-10: App Distribution plugin 5.3.0 on debug builds, group `me-flip-to-mute` (override with `firebaseAppDistribution.groups`), key path in `local.properties` (not committed). `appDistributionUploadDebug` exists; no upload run, so the group is not yet confirmed to exist in Firebase. M0-13: per-machine `.idea` files ignored. M0-11 and M0-12 wait for the owner. | Start M1 |

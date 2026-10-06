@@ -261,7 +261,7 @@ private fun MainStatusCard(
 @Preview(showBackground = true)
 @Composable
 private fun HomePreview() {
-    FlipToMuteTheme(dynamicColor = false) {
+    FlipToMuteTheme() {
         HomeScreen(
             HomeUiState(isSetupComplete = true, isMonitoringSwitchEnabled = true),
             {}, {}, {}, {}, {}, {}, {}, {}, {}, {},

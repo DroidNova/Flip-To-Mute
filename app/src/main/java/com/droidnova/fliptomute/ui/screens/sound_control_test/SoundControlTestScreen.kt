@@ -213,5 +213,5 @@ private fun actionText(action: FlipAction) = stringResource(
 )
 
 @Composable private fun PreviewSound(state: SoundControlTestUiState) {
-    FlipToMuteTheme(dynamicColor = false) { SoundControlTestContent(state, {}, {}, {}, {}) }
+    FlipToMuteTheme() { SoundControlTestContent(state, {}, {}, {}, {}) }
 }

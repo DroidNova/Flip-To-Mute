@@ -12,7 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SettingsGroup(
+/** 1.x settings card; replaced by the design-kit SettingsGroup when Settings is rebuilt in M6. */
+fun LegacySettingsGroup(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {

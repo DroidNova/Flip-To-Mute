@@ -64,6 +64,8 @@ android {
     testOptions {
         // Robolectric tests read the app's own resources, as in Secret Calculator
         unitTests.isIncludeAndroidResources = true
+        // Lets Robolectric capture Compose screenshots (ComponentSnapshots)
+        unitTests.all { it.systemProperty("robolectric.pixelCopyRenderMode", "hardware") }
     }
     buildFeatures {
         buildConfig = false
@@ -89,6 +91,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -117,6 +120,9 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.test.core)
+    // Compose UI tests and off-device screenshots under Robolectric
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.hilt.android.testing)
     kspTest(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
