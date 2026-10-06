@@ -55,6 +55,8 @@ fun AppNavHost(
     /** The rewarded ad that opens an earned theme for a week (future features F34). */
     rewardedThemeAvailable: Boolean,
     onWatchAdForTheme: (onRewarded: () -> Unit, onUnavailable: () -> Unit) -> Unit,
+    /** The native ad card for the activity screen, or null when there is none to show (future features F32). */
+    activityNativeAd: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     // A tile or notification asked to turn Flip to Mute on: show Home, where the request is handled
@@ -121,7 +123,7 @@ fun AppNavHost(
             )
         }
         composable(Routes.ACTIVITY) { entry ->
-            ActivityRoute(onBack = { navController.back(entry) })
+            ActivityRoute(onBack = { navController.back(entry) }, nativeAd = activityNativeAd)
         }
         composable(Routes.KEEP_RUNNING) { entry ->
             KeepRunningRoute(onBack = { navController.back(entry) })

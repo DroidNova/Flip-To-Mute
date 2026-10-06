@@ -179,6 +179,7 @@ fun SettingsRoute(
     SettingsScreen(
         state = state.copy(
             privacyOptionsRequired = privacyOptionsRequired,
+            removeAdsAvailable = AppConstants.REMOVE_ADS_ENABLED,
             adsRemoved = premiumUi.isPremium,
             removeAdsPrice = premiumUi.priceLabel,
         ),
@@ -607,7 +608,7 @@ private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
 private fun HelpGroup(state: SettingsUiState, actions: SettingsActions) {
     SettingsGroup(stringResource(R.string.settings_group_help), Modifier.widthIn(max = 560.dp)) {
         // One purchase, kept on the Google account (future features F19)
-        SettingsRow(
+        if (state.removeAdsAvailable) SettingsRow(
             Icons.Filled.Block,
             stringResource(R.string.remove_ads_title),
             onClick = if (state.adsRemoved) null else actions::removeAds,

@@ -37,6 +37,8 @@ data class SettingsUiState(
     /** Set by the activity from the consent status (M7-02). */
     val privacyOptionsRequired: Boolean = false,
     /** "Remove ads" (future features F19): set by the route from the activity's billing state. */
+    /** False while the purchase is switched off (`AppConstants.REMOVE_ADS_ENABLED`): the row is hidden. */
+    val removeAdsAvailable: Boolean = false,
     val adsRemoved: Boolean = false,
     val removeAdsPrice: String? = null,
 )

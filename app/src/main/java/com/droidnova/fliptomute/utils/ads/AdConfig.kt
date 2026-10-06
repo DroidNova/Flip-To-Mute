@@ -11,11 +11,12 @@ object AdConfig {
     /** Google's sample adaptive banner: testers on debug builds never click real ads. */
     private const val TEST_BANNER = "ca-app-pub-3940256099942544/9214589741"
 
-    /** Empty until the owner creates the unit in AdMob; a release build then offers no ad unlock. */
-    private const val PROD_REWARDED_THEME = ""
+    private const val PROD_REWARDED_THEME = "ca-app-pub-4788231589271799/3830345974"
+    private const val PROD_NATIVE_ACTIVITY = "ca-app-pub-4788231589271799/4080618252"
 
-    /** Google's sample rewarded ad. */
+    /** Google's sample rewarded and native ads. */
     private const val TEST_REWARDED = "ca-app-pub-3940256099942544/5224354917"
+    private const val TEST_NATIVE = "ca-app-pub-3940256099942544/2247696110"
 
     /** Load attempts for the banner, as in Secret Calculator. */
     const val BANNER_LOAD_ATTEMPTS = 3
@@ -27,6 +28,10 @@ object AdConfig {
     /** The rewarded ad that opens an earned theme for a week (future features F34), or null when there is none. */
     fun rewardedThemeUnitId(context: Context): String? =
         if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) TEST_REWARDED else PROD_REWARDED_THEME.ifBlank { null }
+
+    /** The native ad on the activity screen (future features F32). */
+    fun nativeActivityUnitId(context: Context): String =
+        if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) TEST_NATIVE else PROD_NATIVE_ACTIVITY
 }
 
 /**
@@ -47,6 +52,18 @@ enum class BannerPlacement(val route: String, val remoteKey: String) {
         fun forRoute(route: String?): BannerPlacement? = entries.firstOrNull { it.route == route }
     }
 }
+
+/**
+ * Whether to ask for the activity screen's native ad now: only on that screen, after consent and
+ * the remote switches, never for someone who removed ads, and one request at a time.
+ */
+fun shouldLoadNativeAd(
+    onActivityScreen: Boolean,
+    adsReady: Boolean,
+    remoteEnabled: Boolean,
+    adsRemoved: Boolean,
+    alreadyRequested: Boolean,
+): Boolean = onActivityScreen && adsReady && remoteEnabled && !adsRemoved && !alreadyRequested
 
 /** Whether the banner shows now. Pure, so the rule is tested without the ads SDK. */
 fun shouldShowBanner(adsReady: Boolean, placement: BannerPlacement?, isEnabled: (BannerPlacement) -> Boolean): Boolean =

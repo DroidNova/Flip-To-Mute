@@ -14,4 +14,11 @@ object AppConstants {
      * as Secret Calculator does with an empty key.
      */
     const val PLAY_STORE_LICENSE_KEY = ""
+
+    /**
+     * "Remove ads" is built but switched off (owner, 2026-10-07). To switch it on: create the in-app
+     * product `one_time_remove_ads` in Play Console, paste the licence key above, and set this to true.
+     * While false, Settings has no "Remove ads" row and the app never connects to Play Billing.
+     */
+    const val REMOVE_ADS_ENABLED = false
 }

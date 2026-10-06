@@ -25,4 +25,21 @@ class BannerPlacementTest {
         assertFalse(shouldShowBanner(adsReady = true, placement = BannerPlacement.HOME) { it != BannerPlacement.HOME })
         assertTrue(shouldShowBanner(adsReady = true, placement = BannerPlacement.SETTINGS) { it != BannerPlacement.HOME })
     }
+
+    @Test fun nativeAdIsAskedForOnlyOnTheActivityScreen_afterConsent_once_andNeverForBuyers() {
+        fun wanted(
+            onScreen: Boolean = true,
+            adsReady: Boolean = true,
+            remote: Boolean = true,
+            removed: Boolean = false,
+            requested: Boolean = false,
+        ) = shouldLoadNativeAd(onScreen, adsReady, remote, removed, requested)
+
+        assertTrue(wanted())
+        assertFalse(wanted(onScreen = false))
+        assertFalse(wanted(adsReady = false))
+        assertFalse(wanted(remote = false))
+        assertFalse(wanted(removed = true))
+        assertFalse(wanted(requested = true))
+    }
 }

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,15 +66,19 @@ import com.droidnova.fliptomute.utils.about_utils.IntentUtil
 import com.droidnova.fliptomute.utils.ads.AdConfig
 import com.droidnova.fliptomute.utils.ads.AdConsent
 import com.droidnova.fliptomute.utils.ads.BannerPlacement
+import com.droidnova.fliptomute.utils.ads.NativeAdCard
 import com.droidnova.fliptomute.utils.ads.RemoteAdGate
+import com.droidnova.fliptomute.utils.ads.shouldLoadNativeAd
 import com.droidnova.fliptomute.utils.ads.shouldShowBanner
 import com.google.ads.mediation.admob.AdMobAdapter
 import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import dagger.hilt.android.AndroidEntryPoint
@@ -135,6 +140,10 @@ class MainActivity : AppCompatActivity(), PremiumController {
     private val adsStarted = AtomicBoolean(false)
     private var bannerView: AdView? = null
 
+    /** The native ad on the activity screen (future features F32): asked for when that screen opens. */
+    private var activityNativeAd by mutableStateOf<NativeAd?>(null)
+    private var nativeAdRequested = false
+
     /** A flexible in-app update finished downloading; ask for the restart (M7-09). */
     private var updateReady by mutableStateOf(false)
 
@@ -194,6 +203,13 @@ class MainActivity : AppCompatActivity(), PremiumController {
                             onDispose { navController.removeOnDestinationChangedListener(listener) }
                         }
                         val monitoringRequest by externalMonitoringRequest.collectAsStateWithLifecycle()
+                        val premium by premiumUi.collectAsStateWithLifecycle()
+                        // Read here so the switches are read again once Remote Config arrives
+                        val remoteReady = remoteConfigReady
+                        LaunchedEffect(currentRoute, adsReady, remoteReady, premium.isPremium) {
+                            loadActivityNativeAd(remoteReady)
+                        }
+                        val nativeAd = activityNativeAd.takeUnless { premium.isPremium }
                         AppNavHost(
                             navController = navController,
                             externalMonitoringRequest = monitoringRequest,
@@ -220,11 +236,9 @@ class MainActivity : AppCompatActivity(), PremiumController {
                             rewardedThemeAvailable = adsReady && remoteConfigReady && RemoteAdGate.isRewardedThemeEnabled() &&
                                 AdConfig.rewardedThemeUnitId(this@MainActivity) != null,
                             onWatchAdForTheme = ::showRewardedForTheme,
+                            activityNativeAd = nativeAd?.let { ad -> { NativeAdCard(ad) } },
                             modifier = Modifier.weight(1f),
                         )
-                        // Read here so the switches are read again once Remote Config arrives
-                        val remoteReady = remoteConfigReady
-                        val premium by premiumUi.collectAsStateWithLifecycle()
                         if (remoteReady && !premium.isPremium &&
                             shouldShowBanner(adsReady, BannerPlacement.forRoute(currentRoute), RemoteAdGate::isBannerEnabled)
                         ) {
@@ -263,6 +277,7 @@ class MainActivity : AppCompatActivity(), PremiumController {
 
     override fun onDestroy() {
         billingManager?.endConnection()
+        activityNativeAd?.destroy()
         bannerView?.destroy()
         super.onDestroy()
     }
@@ -270,7 +285,7 @@ class MainActivity : AppCompatActivity(), PremiumController {
     // --- Premium (PremiumController), as in Secret Calculator's AppActivity ---
 
     private fun initializeBilling() {
-        if (billingManager != null) return
+        if (!AppConstants.REMOVE_ADS_ENABLED || billingManager != null) return
         val manager = try {
             PremiumBillingManager(
                 context = applicationContext,
@@ -307,10 +322,11 @@ class MainActivity : AppCompatActivity(), PremiumController {
 
     private fun isDebugBuild(): Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
 
-    private fun isPremiumPurchased(): Boolean = premiumStore.hasBoughtPremium || debugSessionPremiumPurchased
+    private fun isPremiumPurchased(): Boolean =
+        AppConstants.REMOVE_ADS_ENABLED && (premiumStore.hasBoughtPremium || debugSessionPremiumPurchased)
 
     override fun launchPurchase() {
-        if (isPremiumPurchased()) return
+        if (!AppConstants.REMOVE_ADS_ENABLED || isPremiumPurchased()) return
         hasPendingRemoveAdsClick = true
         if (isDebugBuild()) {
             // Debug builds unlock premium for the session without the store
@@ -387,6 +403,36 @@ class MainActivity : AppCompatActivity(), PremiumController {
         // Collapsible, as in 1.x
         val extras = Bundle().apply { putString("collapsible", "bottom") }
         adView.loadAd(AdRequest.Builder().addNetworkExtrasBundle(AdMobAdapter::class.java, extras).build())
+    }
+
+    /** One native ad for the activity screen, kept until the activity ends. A failed load may be tried again on the next visit. */
+    private fun loadActivityNativeAd(remoteReady: Boolean) {
+        val wanted = shouldLoadNativeAd(
+            onActivityScreen = currentRoute == Routes.ACTIVITY,
+            adsReady = adsReady,
+            remoteEnabled = remoteReady && RemoteAdGate.isNativeActivityEnabled(),
+            adsRemoved = isPremiumPurchased(),
+            alreadyRequested = nativeAdRequested,
+        )
+        if (!wanted) return
+        nativeAdRequested = true
+        AdLoader.Builder(this, AdConfig.nativeActivityUnitId(this))
+            .forNativeAd { ad ->
+                if (isFinishing || isDestroyed) {
+                    ad.destroy()
+                } else {
+                    activityNativeAd?.destroy()
+                    activityNativeAd = ad
+                }
+            }
+            .withAdListener(object : AdListener() {
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    MonitoringLog.d(this@MainActivity, "Native ad failed to load: ${error.message}")
+                    nativeAdRequested = false
+                }
+            })
+            .build()
+            .loadAd(AdRequest.Builder().build())
     }
 
     /** Loads and shows one rewarded ad. [onRewarded] runs only when it was watched to the end. */

@@ -73,16 +73,31 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun ActivityRoute(onBack: () -> Unit, viewModel: ActivityViewModel = hiltViewModel()) {
+fun ActivityRoute(
+    onBack: () -> Unit,
+    /** The native ad card, drawn by the activity that owns the ad; null when there is none. */
+    nativeAd: (@Composable () -> Unit)? = null,
+    viewModel: ActivityViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     RefreshOnResume(viewModel::refresh)
-    ActivityScreen(state = state, onBack = onBack, onShare = { IntentUtil.shareFlips(context, state.total) })
+    ActivityScreen(
+        state = state,
+        onBack = onBack,
+        onShare = { IntentUtil.shareFlips(context, state.total) },
+        nativeAd = nativeAd,
+    )
 }
 
 /** The flips this phone has made (future features F13): a week at a glance, then the recent ones. */
 @Composable
-fun ActivityScreen(state: ActivityUiState, onBack: () -> Unit, onShare: () -> Unit = {}) {
+fun ActivityScreen(
+    state: ActivityUiState,
+    onBack: () -> Unit,
+    onShare: () -> Unit = {},
+    nativeAd: (@Composable () -> Unit)? = null,
+) {
     Scaffold(
         topBar = {
             NovaTopBar(stringResource(R.string.activity_title), onBack = onBack) {
@@ -117,6 +132,10 @@ fun ActivityScreen(state: ActivityUiState, onBack: () -> Unit, onShare: () -> Un
             item(key = "week") { WeekCard(state, Modifier.widthIn(max = 560.dp).appearIn(0)) }
             item(key = "month") { MonthCard(state, Modifier.widthIn(max = 560.dp).appearIn(1)) }
             item(key = "milestones") { MilestonesCard(state.milestones, Modifier.widthIn(max = 560.dp).appearIn(2)) }
+            // One native ad at the natural break before the list (future features F32)
+            if (nativeAd != null) {
+                item(key = "ad") { Box(Modifier.widthIn(max = 560.dp)) { nativeAd() } }
+            }
             if (state.recent.isNotEmpty()) {
                 item(key = "recent") { RecentCard(state.recent, Modifier.widthIn(max = 560.dp).appearIn(3)) }
             }

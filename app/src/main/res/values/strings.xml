@@ -380,4 +380,5 @@
     <string name="remove_ads_unavailable">Purchases are not available on this phone.</string>
     <string name="premium_welcome_title">Ads removed</string>
     <string name="premium_welcome_body">Thank you for supporting Flip to Mute.</string>
+    <string name="ad_badge">Ad</string>
 </resources>
