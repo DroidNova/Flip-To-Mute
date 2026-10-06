@@ -57,6 +57,8 @@ class WeeklyRecapTest {
     private val notifier = object : FlipActivityNotifier {
         val recaps = mutableListOf<Int>()
         override fun showFlipNotification(action: FlipAction, at: Long, flipsToday: Int) = Unit
+        override fun showMilestone(total: Int) = Unit
+        override fun showCallbackReminder(flipAt: Long) = Unit
         override fun showWeeklyRecap(flipsThisWeek: Int) { recaps += flipsThisWeek }
     }
     private val events = mutableListOf<String>()

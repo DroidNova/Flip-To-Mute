@@ -35,4 +35,6 @@ interface AppPreferencesRepository {
     suspend fun setFlipNotificationEnabled(enabled: Boolean)
 
     suspend fun setWeeklyRecapEnabled(enabled: Boolean)
+
+    suspend fun setCallbackReminderEnabled(enabled: Boolean)
 }

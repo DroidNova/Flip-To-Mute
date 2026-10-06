@@ -299,4 +299,35 @@
         <item quantity="one">You silenced %d call this week. Tap to see your flips.</item>
         <item quantity="other">You silenced %d calls this week. Tap to see your flips.</item>
     </plurals>
+    <string name="milestone_notification_text">A new milestone. Tap to see your flips.</string>
+    <string name="callback_reminder_title">You silenced a call at %1$s</string>
+    <string name="callback_reminder_text">It was not answered. Want to call back?</string>
+    <string name="callback_reminder_action">Open phone</string>
+    <string name="callback_reminder_setting">Remind me to call back</string>
+    <string name="callback_reminder_setting_description">After a silenced call that was not answered.</string>
+    <string name="activity_milestones">Milestones</string>
+    <string name="milestone_all_reached">Every milestone reached</string>
+    <string name="milestone_reached_description">%1$s, reached</string>
+    <string name="milestone_locked_description">%1$s, not reached yet</string>
+    <string name="month_same_as_last">Same as last month</string>
+    <string name="discovery_check_title">No flips yet?</string>
+    <string name="discovery_check_body">Run a quick check to see that everything works on this phone.</string>
+    <string name="discovery_flat_title">Flipping by accident?</string>
+    <string name="discovery_flat_body">Flip to Mute can react only when your phone lies flat on a surface.</string>
+    <plurals name="milestone_title">
+        <item quantity="one">%d call silenced</item>
+        <item quantity="other">%d calls silenced</item>
+    </plurals>
+    <plurals name="milestone_next">
+        <item quantity="one">%1$d more to reach %2$d</item>
+        <item quantity="other">%1$d more to reach %2$d</item>
+    </plurals>
+    <plurals name="month_more_than_last">
+        <item quantity="one">%d more than last month</item>
+        <item quantity="other">%d more than last month</item>
+    </plurals>
+    <plurals name="month_fewer_than_last">
+        <item quantity="one">%d fewer than last month</item>
+        <item quantity="other">%d fewer than last month</item>
+    </plurals>
 </resources>

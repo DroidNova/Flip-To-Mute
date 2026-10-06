@@ -124,6 +124,7 @@ class HomeLogicTest {
         tileAdded = false,
         tileRequestSupported = true,
         dismissed = emptySet(),
+        totalFlips = 0,
     )
 
     @Test fun restartSettingOffComesFirst() =
@@ -135,9 +136,23 @@ class HomeLogicTest {
         assertEquals(HomeHint.QUICK_SETTINGS_TILE, nextDiscovery(base.copy(now = 4 * day, flipToLockEnabled = true)))
     }
 
+    @Test fun aWeekWithoutAFlip_offersTheSetupCheckFirst() {
+        assertEquals(HomeHint.CHECK_SETUP, nextDiscovery(base.copy(now = 7 * day)))
+        assertEquals(HomeHint.FLIP_TO_LOCK, nextDiscovery(base.copy(now = 7 * day, totalFlips = 1)))
+        assertEquals(HomeHint.FLIP_TO_LOCK, nextDiscovery(base.copy(now = 6 * day)))
+    }
+
+    @Test fun flatOnlyTip_comesLast_andOnlyForPeopleWhoFlip() {
+        val seenTheRest = base.copy(flipToLockEnabled = true, tileAdded = true, totalFlips = 4)
+        assertEquals(HomeHint.FLAT_ONLY, nextDiscovery(seenTheRest.copy(now = 6 * day)))
+        assertNull(nextDiscovery(seenTheRest.copy(now = 5 * day)))
+        assertNull(nextDiscovery(seenTheRest.copy(flatOnlyEnabled = true)))
+        assertNull(nextDiscovery(seenTheRest.copy(dismissed = setOf(HomeHint.FLAT_ONLY))))
+    }
+
     @Test fun dismissedOrIrrelevantCards_neverShow() {
-        assertNull(nextDiscovery(base.copy(dismissed = setOf(HomeHint.FLIP_TO_LOCK, HomeHint.QUICK_SETTINGS_TILE))))
-        assertNull(nextDiscovery(base.copy(flipToLockSupported = false, tileAdded = true)))
+        assertNull(nextDiscovery(base.copy(dismissed = setOf(HomeHint.FLIP_TO_LOCK, HomeHint.QUICK_SETTINGS_TILE, HomeHint.CHECK_SETUP))))
+        assertNull(nextDiscovery(base.copy(flipToLockSupported = false, tileAdded = true, dismissed = setOf(HomeHint.CHECK_SETUP))))
         assertNull(nextDiscovery(base.copy(firstOnAt = null)))
     }
 }

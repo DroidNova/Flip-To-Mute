@@ -21,7 +21,7 @@ This is the working document. Update it in every session.
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | In progress | 8 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
-| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 6 of 10 | 6 days, plus the Flip to Focus spike |
+| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 10 of 22 | 6 days, plus the Flip to Focus spike |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
 then migration with behaviour unchanged, then redesign, then features. Keeping
@@ -314,10 +314,24 @@ without it. The owner decides whether it merges into v2.0 or ships as v2.1.
 | [x] | M9-04 | Weekly recap, checked from `HealthCheckWorker`: every 7 days, daytime, only with at least one flip | S | F10 |
 | [x] | M9-05 | Settings group "Notifications" with a switch for each notification, both on by default | S | F10, F31 |
 | [x] | M9-06 | Banner placement and Remote Config switch for the activity screen; `activity_opened` and `weekly_recap_shown` events | S | A16, A17 |
-| [ ] | M9-07 | Device test: flip a real call, then check the notification, the tap, the chart and the count | S | |
+| [ ] | M9-07 | Device test: flip a real call, then check the notification, the tap, the chart and the count. Let a silenced call ring out and check the callback reminder and its button. | S | |
 | [ ] | M9-08 | Native ad on the activity screen. **Blocked: needs a native ad unit ID from the owner.** | S | F32 |
 | [ ] | M9-09 | Spike S1: face down and pick-up detection with the screen off, battery cost over 24 hours | M | F30, F1 |
 | [ ] | M9-10 | Flip to Focus: session, Do Not Disturb, summary screen with streak. After M9-09. | L | F30 |
+| [x] | M9-11 | Milestones at 1, 10, 25, 50, 100, 250, 500 and 1000 calls: card on the activity screen, and a milestone notification in place of the flip notification | S | F35 |
+| [x] | M9-12 | Callback reminder: when a silenced call ends unanswered, the flip notification becomes "You silenced a call at 3:40. Want to call back?" with an "Open phone" button. Own switch in Settings. | S | F37 |
+| [x] | M9-13 | Month card on the activity screen: this month against last month. `FlipStatsStore` keeps the finished month. | S | F39 |
+| [x] | M9-14 | Two more Home tips: "No flips yet?" after a week without a flip (opens Check my setup), and "Flipping by accident?" (turns on Only when lying flat) | S | F18 |
+| [ ] | M9-15 | More colour themes and true black, unlocked by milestones or early with a rewarded ad (test ad unit until the owner supplies one) | M | F21, F34, F36 |
+| [ ] | M9-16 | Schedule: active hours and days | M | F9 |
+| [ ] | M9-17 | Flip to pause music or video | M | F3 |
+| [ ] | M9-18 | Flip back to ring again | S | F4 |
+| [ ] | M9-19 | Sensitivity: Quick, Normal, Careful | S | F7 |
+| [ ] | M9-20 | App shortcuts on the launcher icon | S | F12 |
+| [ ] | M9-21 | Share card from the activity screen | S | F38 |
+| [ ] | M9-22 | Remove ads purchase (needs an in-app product in Play Console from the owner) | M | F19 |
+
+Device testing for all of M9 happens in one pass at the end (owner decision, 2026-10-07).
 
 Exit criteria:
 
@@ -372,6 +386,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-07 | M9 | Owner: build every feature first, test on phones at the end. M9-11 to M9-14: milestones, callback reminder, month comparison, two more Home tips. 357 tests pass. | M9-15 themes, then the rest of the list in order |
 | 2026-10-07 | M9 | Owner direction: retention and ad views first. Branch `feature/v2.1-engagement`. M9-01 to M9-06: flip history store, silent "Call silenced" notification, "Your flips" activity screen opened from the Home stats card and both notifications, weekly recap run from the health check worker, two switches in Settings, banner placement for the new screen. `FUTURE_FEATURES.md` section 1.1 added (F30 to F34). 341 tests, lint and release build pass. | M9-07 on a phone. Native ad unit ID from the owner. Spike S1 for Flip to Focus |
 | 2026-10-06 | M1 | M1-14 started on a Samsung Galaxy A21s (Android 12): first run completes, the service returns after a process death (about 4 s) and after `adb install -r` (about 10 s). 1.7 built from `master` in `../FlipToMute-v17` for the cold start and upgrade tests. | Reboot result, force stop, cold start against 1.7, upgrade from 1.7 |
 | 2026-10-06 | M6, M7 | Owner answers: privacy URL set (M6-06 done), banner on every screen (D4). M7-09: Play in-app update from the Home update dialog with a restart prompt. | App ID (D2) still needed |

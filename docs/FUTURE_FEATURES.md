@@ -50,6 +50,11 @@ Work happens on the branch `feature/v2.1-engagement`, tracked as M9 in `MILESTON
 | F32 | **Native ad on the activity screen** | One native ad between the week card and the recent flips. Earns more than a banner. Needs a native ad unit ID from the owner, and a Remote Config switch. | Medium, revenue | S | None | Waiting for the ad unit ID |
 | F33 | **Interstitial at a natural end** | Only after closing a Flip to Focus summary, at most once a day, limit set by Remote Config. Never on app open: app-open ads stay out, as in v2.0. | Medium, revenue | S | None | After F30 |
 | F34 | **Rewarded theme** | Watch one ad to unlock a premium colour theme for 7 days. The user chooses to watch, and has a reason to return. Depends on F21. | Low to medium | M | None | After F21 |
+| F35 | **Milestones** | Round numbers of calls silenced: 1, 10, 25, 50, 100, 250, 500, 1000. A card on the activity screen shows progress to the next one. The flip that reaches one gets a milestone notification. | Medium, a goal to reach | S | None | Built 2026-10-07 |
+| F36 | **Themes unlocked by milestones** | Extra colour themes open at 25 and 50 calls, or early through F34. Ties the milestones to a reward. | Medium | M | None | Next |
+| F37 | **Callback reminder** | When a silenced call ends without being answered, the flip notification becomes "You silenced a call at 3:40. Want to call back?" with an "Open phone" button. The app never knows the number. | Medium, useful and a second touch per flip | S | None | Built 2026-10-07 |
+| F38 | **Share card** | "I've silenced 50 calls with Flip to Mute" as an image to share from the activity screen. | Medium, new installs | S | None | Planned |
+| F39 | **Month comparison** | "14 calls silenced this month, 5 more than last month" on the activity screen. | Low, fresh content each month | S | None | Built 2026-10-07 |
 
 Rules for this theme:
 

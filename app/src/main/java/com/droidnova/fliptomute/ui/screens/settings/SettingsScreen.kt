@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PhoneCallback
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.RestartAlt
@@ -86,6 +87,7 @@ interface SettingsActions {
     fun setStartAfterRestart(enabled: Boolean)
     fun setFlipNotification(enabled: Boolean)
     fun setWeeklyRecap(enabled: Boolean)
+    fun setCallbackReminder(enabled: Boolean)
     fun openKeepRunning()
     fun addTile()
     fun selectThemeMode(mode: ThemeMode)
@@ -156,6 +158,7 @@ fun SettingsRoute(
             override fun setStartAfterRestart(enabled: Boolean) = viewModel.onStartAfterPhoneRestartChanged(enabled)
             override fun setFlipNotification(enabled: Boolean) = viewModel.onFlipNotificationChanged(enabled)
             override fun setWeeklyRecap(enabled: Boolean) = viewModel.onWeeklyRecapChanged(enabled)
+            override fun setCallbackReminder(enabled: Boolean) = viewModel.onCallbackReminderChanged(enabled)
             override fun openKeepRunning() = onOpenKeepRunning()
             override fun addTile() {
                 addRequester.request { result ->
@@ -348,6 +351,13 @@ private fun NotificationsGroup(state: SettingsUiState, actions: SettingsActions)
             summary = stringResource(R.string.flip_notification_setting_description),
         )
         SwitchRow(
+            Icons.Filled.PhoneCallback,
+            stringResource(R.string.callback_reminder_setting),
+            state.callbackReminderEnabled,
+            actions::setCallbackReminder,
+            summary = stringResource(R.string.callback_reminder_setting_description),
+        )
+        SwitchRow(
             Icons.Filled.Insights,
             stringResource(R.string.weekly_recap_setting),
             state.weeklyRecapEnabled,
@@ -457,6 +467,7 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun setStartAfterRestart(enabled: Boolean) = Unit
     override fun setFlipNotification(enabled: Boolean) = Unit
     override fun setWeeklyRecap(enabled: Boolean) = Unit
+    override fun setCallbackReminder(enabled: Boolean) = Unit
     override fun openKeepRunning() = Unit
     override fun addTile() = Unit
     override fun selectThemeMode(mode: ThemeMode) = Unit

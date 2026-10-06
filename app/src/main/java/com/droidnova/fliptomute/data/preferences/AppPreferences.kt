@@ -20,6 +20,8 @@ data class AppPreferences(
     val flipNotificationEnabled: Boolean = true,
     /** "You silenced 9 calls this week", only in weeks with a flip (future features F10). */
     val weeklyRecapEnabled: Boolean = true,
+    /** After a silenced call that was not answered, offer the way back to it (future features F37). */
+    val callbackReminderEnabled: Boolean = true,
 )
 
 data class CallActionSelection(

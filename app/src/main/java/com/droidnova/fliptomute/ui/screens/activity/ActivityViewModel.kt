@@ -7,6 +7,8 @@ import com.droidnova.fliptomute.data.stats.FlipHistoryStore
 import com.droidnova.fliptomute.data.stats.FlipRecord
 import com.droidnova.fliptomute.data.stats.FlipStats
 import com.droidnova.fliptomute.data.stats.FlipStatsStore
+import com.droidnova.fliptomute.data.stats.MilestoneProgress
+import com.droidnova.fliptomute.data.stats.Milestones
 import com.droidnova.fliptomute.data.stats.dailyCounts
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.ZoneId
@@ -25,6 +27,10 @@ data class ActivityUiState(
     val days: List<DayCount> = emptyList(),
     /** Newest first. */
     val recent: List<FlipRecord> = emptyList(),
+    val thisMonth: Int = 0,
+    /** 0 when there is no earlier month to compare with. */
+    val lastMonth: Int = 0,
+    val milestones: MilestoneProgress = Milestones.progress(0),
 ) {
     val isEmpty: Boolean get() = total == 0 && recent.isEmpty()
 }
@@ -32,12 +38,16 @@ data class ActivityUiState(
 /** Pure, so the numbers are tested without a view model. */
 fun activityUiState(records: List<FlipRecord>, stats: FlipStats, now: Long, zone: ZoneId = ZoneId.systemDefault()): ActivityUiState {
     val days = records.dailyCounts(now, CHART_DAYS, zone)
+    // The lifetime count also covers flips made before the history existed
+    val total = maxOf(stats.total, records.size)
     return ActivityUiState(
         lastSevenDays = days.sumOf { it.count },
-        // The lifetime count also covers flips made before the history existed
-        total = maxOf(stats.total, records.size),
+        total = total,
         days = days,
         recent = records.take(RECENT_LIMIT),
+        thisMonth = stats.thisMonth,
+        lastMonth = stats.lastMonth,
+        milestones = Milestones.progress(total),
     )
 }
 

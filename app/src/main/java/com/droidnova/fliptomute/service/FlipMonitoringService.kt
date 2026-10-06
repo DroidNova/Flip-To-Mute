@@ -15,6 +15,7 @@ import com.droidnova.fliptomute.data.analytics.Funnel
 import com.droidnova.fliptomute.data.review.ReviewStore
 import com.droidnova.fliptomute.data.stats.FlipHistoryStore
 import com.droidnova.fliptomute.data.stats.FlipStatsStore
+import com.droidnova.fliptomute.data.stats.Milestones
 import com.droidnova.fliptomute.data.stats.countOnDayOf
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
@@ -72,6 +73,8 @@ class FlipMonitoringService : Service() {
     private var coordinator: FlipMonitoringCoordinator? = null
     private var commandJob: Job? = null
     private var foregroundStarted = false
+    /** When the last flip was applied; the callback reminder names this time. */
+    private var lastFlipAt: Long? = null
     private val commandSequencer = MonitoringCommandSequencer()
     private var accessRevalidationJob: Job? = null
     /** Who started the current session; decides what a later failure may change (InterruptionPolicy). */
@@ -243,6 +246,7 @@ class FlipMonitoringService : Service() {
                     monitoringStateRepository = monitoringStateRepository,
                     flipFeedback = flipFeedback,
                     onFlipApplied = ::onFlipApplied,
+                    onFlippedCallMissed = ::onFlippedCallMissed,
                 )
                 debugLog("Starting cellular call monitor")
                 when (val result = coordinator?.startAndAwaitReady()) {
@@ -647,9 +651,22 @@ class FlipMonitoringService : Service() {
     private fun showFlipNotification(action: FlipAction) {
         val at = System.currentTimeMillis()
         val flipsToday = flipHistoryStore.records.value.countOnDayOf(at)
+        val milestone = Milestones.reachedAt(flipStatsStore.stats.value.total)
+        lastFlipAt = at
         serviceScope.launch {
             if (appPreferencesRepository.preferences.first().flipNotificationEnabled) {
-                notificationHelper.showFlipNotification(action, at, flipsToday)
+                if (milestone != null) notificationHelper.showMilestone(milestone)
+                else notificationHelper.showFlipNotification(action, at, flipsToday)
+            }
+        }
+    }
+
+    /** The silenced call rang out or was declined: the reminder takes the place of the flip notification (F37). */
+    private fun onFlippedCallMissed() {
+        val at = lastFlipAt ?: return
+        serviceScope.launch {
+            if (appPreferencesRepository.preferences.first().callbackReminderEnabled) {
+                notificationHelper.showCallbackReminder(at)
             }
         }
     }

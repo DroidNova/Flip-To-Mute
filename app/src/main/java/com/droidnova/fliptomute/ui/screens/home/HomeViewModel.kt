@@ -131,6 +131,8 @@ class HomeViewModel @Inject constructor(
                 flipToLockSupported = d.lockSupported,
                 tileAdded = d.tileAdded,
                 tileRequestSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
+                totalFlips = l.stats.total,
+                flatOnlyEnabled = l.preferences.requireFlatSurfaceBeforeFlip,
                 dismissed = t.dismissedHints,
             ),
         )
@@ -262,6 +264,8 @@ class HomeViewModel @Inject constructor(
             HomeHint.START_AFTER_RESTART -> viewModelScope.launch { preferencesRepository.setStartAfterPhoneRestart(true) }
             HomeHint.FLIP_TO_LOCK -> sendEvent(HomeEvent.OPEN_SETTINGS)
             HomeHint.QUICK_SETTINGS_TILE -> sendEvent(HomeEvent.REQUEST_TILE)
+            HomeHint.CHECK_SETUP -> sendEvent(HomeEvent.OPEN_CHECK_SETUP)
+            HomeHint.FLAT_ONLY -> viewModelScope.launch { preferencesRepository.setRequireFlatSurfaceBeforeFlip(true) }
         }
     }
 

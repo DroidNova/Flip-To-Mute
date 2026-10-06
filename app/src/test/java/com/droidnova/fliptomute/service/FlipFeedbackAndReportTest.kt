@@ -68,6 +68,42 @@ class FlipFeedbackAndReportTest {
         assertEquals(1, ringer.applyCount)
     }
 
+    // --- The callback reminder (future features F37) ---
+
+    @Test fun silencedCallThatRingsOut_isReportedAsMissed() = runTest {
+        val fixture = fixture(backgroundScope, AppPreferences())
+        ringAndFlipTwice(fixture)
+        assertEquals(0, fixture.missed)
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.IDLE, 1)); runCurrent()
+        assertEquals(1, fixture.missed)
+    }
+
+    @Test fun silencedCallThatIsAnswered_isNotMissed() = runTest {
+        val fixture = fixture(backgroundScope, AppPreferences())
+        ringAndFlipTwice(fixture)
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.ACTIVE, 1)); runCurrent()
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.IDLE, 1)); runCurrent()
+        assertEquals(0, fixture.missed)
+    }
+
+    @Test fun callThatWasNeverFlipped_isNotMissed() = runTest {
+        val fixture = fixture(backgroundScope, AppPreferences())
+        fixture.coordinator.startAndAwaitReady(); runCurrent()
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.RINGING, 1)); runCurrent()
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.IDLE, 1)); runCurrent()
+        assertEquals(0, fixture.missed)
+    }
+
+    @Test fun missedIsReportedOncePerCall() = runTest {
+        val fixture = fixture(backgroundScope, AppPreferences())
+        ringAndFlipTwice(fixture)
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.IDLE, 1)); runCurrent()
+        // The next call rings out without a flip
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.RINGING, 1)); runCurrent()
+        fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.IDLE, 1)); runCurrent()
+        assertEquals(1, fixture.missed)
+    }
+
     private suspend fun TestScope.ringAndFlipTwice(fixture: Fixture) {
         fixture.coordinator.startAndAwaitReady(); runCurrent()
         fixture.call.emit(CellularCallMonitorState.Listening(CellularCallState.RINGING, 1)); runCurrent()
@@ -99,6 +135,7 @@ class FlipFeedbackAndReportTest {
                 if (reporterThrows) throw IllegalStateException("analytics down")
                 fixture.reports += event
             },
+            onFlippedCallMissed = { fixture.missed++ },
         )
         return fixture
     }
@@ -106,6 +143,7 @@ class FlipFeedbackAndReportTest {
     private class Fixture(val call: FakeCellularCallMonitor, val sensor: FakeDeviceOrientationMonitor) {
         lateinit var coordinator: FlipMonitoringCoordinator
         var buzzes = 0
+        var missed = 0
         val reports = mutableListOf<FlipAppliedEvent>()
     }
 

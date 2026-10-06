@@ -118,6 +118,8 @@ data class DiscoveryInputs(
     val flipToLockSupported: Boolean,
     val tileAdded: Boolean,
     val tileRequestSupported: Boolean,
+    val totalFlips: Int = 0,
+    val flatOnlyEnabled: Boolean = false,
     val dismissed: Set<HomeHint>,
 )
 
@@ -126,10 +128,13 @@ fun nextDiscovery(input: DiscoveryInputs): HomeHint? {
     fun onForDays(days: Int) = input.firstOnAt != null && input.now - input.firstOnAt >= days * DAY_MS
     return when {
         HomeHint.START_AFTER_RESTART !in input.dismissed && !input.startAfterRestart -> HomeHint.START_AFTER_RESTART
+        // On for a week without a single flip: it may not be working on this phone
+        HomeHint.CHECK_SETUP !in input.dismissed && onForDays(7) && input.totalFlips == 0 -> HomeHint.CHECK_SETUP
         HomeHint.FLIP_TO_LOCK !in input.dismissed && onForDays(2) && !input.flipToLockEnabled && input.flipToLockSupported ->
             HomeHint.FLIP_TO_LOCK
         HomeHint.QUICK_SETTINGS_TILE !in input.dismissed && onForDays(4) && !input.tileAdded && input.tileRequestSupported ->
             HomeHint.QUICK_SETTINGS_TILE
+        HomeHint.FLAT_ONLY !in input.dismissed && onForDays(6) && input.totalFlips > 0 && !input.flatOnlyEnabled -> HomeHint.FLAT_ONLY
         else -> null
     }
 }

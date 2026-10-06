@@ -34,6 +34,14 @@ class ActivityUiStateTest {
         assertFalse(state.isEmpty)
     }
 
+    @Test fun monthAndMilestonesComeFromTheLifetimeStats() {
+        val state = activityUiState(listOf(flip(now)), FlipStats(thisMonth = 14, lastMonth = 9, total = 40), now, ZoneOffset.UTC)
+        assertEquals(14, state.thisMonth)
+        assertEquals(9, state.lastMonth)
+        assertEquals(50, state.milestones.next)
+        assertEquals(10, state.milestones.remaining)
+    }
+
     @Test fun recentListIsCapped() {
         val state = activityUiState((1..50).map { flip(now - it) }, FlipStats(total = 50), now, ZoneOffset.UTC)
         assertEquals(30, state.recent.size)

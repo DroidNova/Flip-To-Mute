@@ -29,7 +29,7 @@ import org.robolectric.annotation.GraphicsMode
 /** The activity screen, saved as PNGs under app/build/snapshots for a visual check. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w400dp-h860dp-xhdpi")
+@Config(qualifiers = "w400dp-h1200dp-xhdpi")
 class ActivitySnapshots {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
@@ -38,7 +38,7 @@ class ActivitySnapshots {
         FlipRecord(now - hoursAgo * 3_600_000L, if (index == 2) FlipAction.VIBRATE else FlipAction.SILENT)
     }
 
-    @Test fun week() = snapshot("activity", activityUiState(records, FlipStats(total = 40), now))
+    @Test fun week() = snapshot("activity", activityUiState(records, FlipStats(thisMonth = 14, lastMonth = 9, total = 40), now))
 
     @Test fun weekDark() = snapshot("activity_dark", activityUiState(records.take(2), FlipStats(total = 2), now), dark = true)
 

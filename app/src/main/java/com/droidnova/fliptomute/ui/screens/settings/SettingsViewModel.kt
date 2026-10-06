@@ -63,6 +63,7 @@ class SettingsViewModel @Inject constructor(
             flipToLockEnabled = preferences.flipToLockEnabled && adminAvailability != DeviceAdminAvailability.UNSUPPORTED,
             flipNotificationEnabled = preferences.flipNotificationEnabled,
             weeklyRecapEnabled = preferences.weeklyRecapEnabled,
+            callbackReminderEnabled = preferences.callbackReminderEnabled,
             deviceAdminAvailability = adminAvailability,
             accessState = accessState,
             batteryRestricted = d.batteryRestricted,
@@ -99,6 +100,10 @@ class SettingsViewModel @Inject constructor(
 
     fun onWeeklyRecapChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setWeeklyRecapEnabled(enabled) }
+    }
+
+    fun onCallbackReminderChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setCallbackReminderEnabled(enabled) }
     }
 
     fun onFlipToLockChanged(enabled: Boolean) {

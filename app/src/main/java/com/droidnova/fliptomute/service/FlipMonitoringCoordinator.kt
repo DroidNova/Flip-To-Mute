@@ -56,6 +56,8 @@ class FlipMonitoringCoordinator(
     private val monitoringStateRepository: MonitoringStateRepository = InMemoryMonitoringStateRepository(),
     private val flipFeedback: FlipFeedback? = null,
     private val onFlipApplied: (FlipAppliedEvent) -> Unit = {},
+    /** A call that was silenced or vibrated by a flip stopped ringing without being answered. */
+    private val onFlippedCallMissed: () -> Unit = {},
     /** Wall clock in epoch ms; a parameter so tests can control timed pauses. */
     private val now: () -> Long = System::currentTimeMillis,
 ) {
@@ -82,6 +84,7 @@ class FlipMonitoringCoordinator(
     private val pocketProtectionGate = PocketProtectionGate()
     private val flipToLockGestureGate = FlipToLockGestureGate()
     private var ringingSession: RingingSession? = null
+    private var flipAppliedThisCall = false
     private var currentCallState = CellularCallState.UNKNOWN
     private var latestRuntimeState: MonitoringRuntimeState = MonitoringRuntimeState.Stopped
     private var started = false
@@ -246,6 +249,8 @@ class FlipMonitoringCoordinator(
                     pocketProtectionGate.reset()
                     ringerModeController.restorePreviousMode()
                     ringingSession = null
+                    if (flipAppliedThisCall && state.callState == CellularCallState.IDLE) reportFlippedCallMissed()
+                    flipAppliedThisCall = false
                 }
                 updateOrientationMonitoring()
             }
@@ -329,7 +334,16 @@ class FlipMonitoringCoordinator(
         }
     }
 
+    private fun reportFlippedCallMissed() {
+        try {
+            onFlippedCallMissed()
+        } catch (_: RuntimeException) {
+            // A reminder must never disturb call handling
+        }
+    }
+
     private fun reportFlipApplied(session: RingingSession, action: FlipAction) {
+        flipAppliedThisCall = true
         try {
             onFlipApplied(
                 FlipAppliedEvent(

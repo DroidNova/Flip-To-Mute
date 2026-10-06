@@ -103,6 +103,10 @@ class DataStoreAppPreferencesRepository(
         updateBoolean(Keys.WEEKLY_RECAP_ENABLED, enabled)
     }
 
+    override suspend fun setCallbackReminderEnabled(enabled: Boolean) {
+        updateBoolean(Keys.CALLBACK_REMINDER_ENABLED, enabled)
+    }
+
     private fun mapPreferences(preferences: Preferences): AppPreferences {
         val selectedAction = preferences[Keys.SELECTED_FLIP_ACTION]
             ?.let { storedValue -> FlipAction.entries.firstOrNull { it.name == storedValue } }
@@ -134,6 +138,7 @@ class DataStoreAppPreferencesRepository(
             pauseUntilEpochMs = preferences[Keys.PAUSE_UNTIL_EPOCH_MS]?.takeIf { it > 0 },
             flipNotificationEnabled = preferences[Keys.FLIP_NOTIFICATION_ENABLED] ?: true,
             weeklyRecapEnabled = preferences[Keys.WEEKLY_RECAP_ENABLED] ?: true,
+            callbackReminderEnabled = preferences[Keys.CALLBACK_REMINDER_ENABLED] ?: true,
         )
     }
 
@@ -158,5 +163,6 @@ class DataStoreAppPreferencesRepository(
         val PAUSE_UNTIL_EPOCH_MS = longPreferencesKey("pause_until_epoch_ms")
         val FLIP_NOTIFICATION_ENABLED = booleanPreferencesKey("flip_notification_enabled")
         val WEEKLY_RECAP_ENABLED = booleanPreferencesKey("weekly_recap_enabled")
+        val CALLBACK_REMINDER_ENABLED = booleanPreferencesKey("callback_reminder_enabled")
     }
 }

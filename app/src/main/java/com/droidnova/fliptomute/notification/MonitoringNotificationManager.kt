@@ -35,6 +35,12 @@ interface FlipActivityNotifier {
     /** A call was just silenced or vibrated by a flip. Silent: the phone is face down and ringing. */
     fun showFlipNotification(action: FlipAction, at: Long, flipsToday: Int)
 
+    /** The flip that reached a milestone (future features F35); shown in place of the flip notification. */
+    fun showMilestone(total: Int)
+
+    /** The silenced call was not answered: offer the way back to it (future features F37). */
+    fun showCallbackReminder(flipAt: Long)
+
     fun showWeeklyRecap(flipsThisWeek: Int)
 }
 
@@ -182,6 +188,30 @@ class MonitoringNotificationManager(context: Context) :
         )
     }
 
+    override fun showMilestone(total: Int) {
+        postActivityNotification(
+            FLIP_NOTIFICATION_ID, FLIP_CONTENT_REQUEST_CODE, MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_FLIP_ACTION,
+            context.resources.getQuantityString(R.plurals.milestone_title, total, total),
+            context.getString(R.string.milestone_notification_text),
+        )
+    }
+
+    /** Replaces the flip notification. The app never knows the number, so the button opens the phone app. */
+    override fun showCallbackReminder(flipAt: Long) {
+        val dialIntent = PendingIntent.getActivity(
+            context, CALLBACK_REQUEST_CODE,
+            Intent(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        postActivityNotification(
+            FLIP_NOTIFICATION_ID, FLIP_CONTENT_REQUEST_CODE, MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_FLIP_ACTION,
+            context.getString(R.string.callback_reminder_title, formatTime(flipAt)),
+            context.getString(R.string.callback_reminder_text),
+            actionLabel = context.getString(R.string.callback_reminder_action),
+            actionIntent = dialIntent,
+        )
+    }
+
     override fun showWeeklyRecap(flipsThisWeek: Int) {
         postActivityNotification(
             RECAP_NOTIFICATION_ID, RECAP_CONTENT_REQUEST_CODE, MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_RECAP_ACTION,
@@ -191,7 +221,15 @@ class MonitoringNotificationManager(context: Context) :
     }
 
     /** Both open the activity screen, and neither makes a sound. */
-    private fun postActivityNotification(id: Int, requestCode: Int, action: String, title: String, text: String) {
+    private fun postActivityNotification(
+        id: Int,
+        requestCode: Int,
+        action: String,
+        title: String,
+        text: String,
+        actionLabel: String? = null,
+        actionIntent: PendingIntent? = null,
+    ) {
         createActivityChannel()
         val intent = Intent(context, MainActivity::class.java)
             .setAction(action)
@@ -199,7 +237,7 @@ class MonitoringNotificationManager(context: Context) :
         val contentIntent = PendingIntent.getActivity(
             context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(context, ACTIVITY_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, ACTIVITY_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_flip)
             .setContentTitle(title)
             .setContentText(text)
@@ -208,7 +246,8 @@ class MonitoringNotificationManager(context: Context) :
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)
-            .build()
+        if (actionLabel != null && actionIntent != null) builder.addAction(0, actionLabel, actionIntent)
+        val notification = builder.build()
         try {
             notificationManager?.notify(id, notification)
         } catch (_: SecurityException) {
@@ -257,6 +296,7 @@ class MonitoringNotificationManager(context: Context) :
         const val RECAP_NOTIFICATION_ID = 1005
         private const val FLIP_CONTENT_REQUEST_CODE = 8
         private const val RECAP_CONTENT_REQUEST_CODE = 9
+        private const val CALLBACK_REQUEST_CODE = 10
         private const val ALERT_PREFS ="interruption_alert"
         private const val KEY_ALERT_SHOWN = "shown"
     }

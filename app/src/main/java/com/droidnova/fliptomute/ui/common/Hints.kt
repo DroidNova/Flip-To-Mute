@@ -7,7 +7,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** Discovery cards on Home (design spec 4.4), shown one at a time. */
-enum class HomeHint { START_AFTER_RESTART, FLIP_TO_LOCK, QUICK_SETTINGS_TILE }
+enum class HomeHint { START_AFTER_RESTART, FLIP_TO_LOCK, QUICK_SETTINGS_TILE, CHECK_SETUP, FLAT_ONLY }
 
 /**
  * Remembers which Home cards were dismissed, and the other one-time things Home shows. Copied from

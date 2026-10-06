@@ -18,8 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.RestartAlt
@@ -344,6 +346,8 @@ private fun HomeCardView(card: HomeCard, actions: HomeActions) {
                 HomeHint.START_AFTER_RESTART -> DiscoveryText(Icons.Filled.RestartAlt, R.string.discovery_restart_title, R.string.discovery_restart_body, R.string.discovery_restart_action)
                 HomeHint.FLIP_TO_LOCK -> DiscoveryText(Icons.Filled.Lock, R.string.discovery_lock_title, R.string.discovery_lock_body, R.string.discovery_lock_action)
                 HomeHint.QUICK_SETTINGS_TILE -> DiscoveryText(Icons.Filled.Dashboard, R.string.discovery_tile_title, R.string.discovery_tile_body, R.string.discovery_tile_action)
+                HomeHint.CHECK_SETUP -> DiscoveryText(Icons.AutoMirrored.Filled.FactCheck, R.string.discovery_check_title, R.string.discovery_check_body, R.string.attention_check_setup)
+                HomeHint.FLAT_ONLY -> DiscoveryText(Icons.Filled.Layers, R.string.discovery_flat_title, R.string.discovery_flat_body, R.string.discovery_restart_action)
             }
             PromptCard(
                 icon = icon,

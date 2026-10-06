@@ -71,6 +71,10 @@ class SettingsViewModelTest {
 
         viewModel.onWeeklyRecapChanged(false)
         assertFalse(repository.current.weeklyRecapEnabled)
+
+        assertTrue(viewModel.uiState.value.callbackReminderEnabled)
+        viewModel.onCallbackReminderChanged(false)
+        assertFalse(repository.current.callbackReminderEnabled)
     }
 
     @Test

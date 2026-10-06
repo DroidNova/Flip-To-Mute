@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,14 +16,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -45,6 +50,7 @@ import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.data.stats.DayCount
 import com.droidnova.fliptomute.data.stats.FlipRecord
 import com.droidnova.fliptomute.data.stats.FlipStats
+import com.droidnova.fliptomute.data.stats.MilestoneProgress
 import com.droidnova.fliptomute.ui.components.EmptyState
 import com.droidnova.fliptomute.ui.components.IconBadge
 import com.droidnova.fliptomute.ui.components.NovaCard
@@ -93,8 +99,10 @@ fun ActivityScreen(state: ActivityUiState, onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             item(key = "week") { WeekCard(state, Modifier.widthIn(max = 560.dp).appearIn(0)) }
+            item(key = "month") { MonthCard(state, Modifier.widthIn(max = 560.dp).appearIn(1)) }
+            item(key = "milestones") { MilestonesCard(state.milestones, Modifier.widthIn(max = 560.dp).appearIn(2)) }
             if (state.recent.isNotEmpty()) {
-                item(key = "recent") { RecentCard(state.recent, Modifier.widthIn(max = 560.dp).appearIn(1)) }
+                item(key = "recent") { RecentCard(state.recent, Modifier.widthIn(max = 560.dp).appearIn(3)) }
             }
             item(key = "privacy") {
                 Text(
@@ -126,6 +134,81 @@ private fun WeekCard(state: ActivityUiState, modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.height(18.dp))
         WeekChart(state.days)
+    }
+}
+
+/** This month against the last one (future features F39). The comparison waits until there is a last month. */
+@Composable
+private fun MonthCard(state: ActivityUiState, modifier: Modifier = Modifier) {
+    NovaCard(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Filled.CalendarMonth)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    pluralStringResource(R.plurals.stats_silenced_this_month, state.thisMonth, state.thisMonth),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (state.lastMonth > 0) {
+                    val difference = state.thisMonth - state.lastMonth
+                    Text(
+                        when {
+                            difference > 0 -> pluralStringResource(R.plurals.month_more_than_last, difference, difference)
+                            difference < 0 -> pluralStringResource(R.plurals.month_fewer_than_last, -difference, -difference)
+                            else -> stringResource(R.string.month_same_as_last)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Round numbers of calls silenced (future features F35): how far to the next, and which are done. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MilestonesCard(progress: MilestoneProgress, modifier: Modifier = Modifier) {
+    NovaCard(modifier = modifier, contentPadding = PaddingValues(18.dp)) {
+        SectionLabel(stringResource(R.string.activity_milestones))
+        Text(
+            progress.next?.let { pluralStringResource(R.plurals.milestone_next, progress.remaining, progress.remaining, it) }
+                ?: stringResource(R.string.milestone_all_reached),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        LinearProgressIndicator(
+            progress = { progress.fraction },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(8.dp).clip(RoundedCornerShape(4.dp)),
+            trackColor = MaterialTheme.colorScheme.outlineVariant,
+            drawStopIndicator = {},
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            progress.steps.forEach { step ->
+                val name = pluralStringResource(R.plurals.milestone_title, step.count, step.count)
+                val description = stringResource(
+                    if (step.reached) R.string.milestone_reached_description else R.string.milestone_locked_description, name,
+                )
+                Box(
+                    Modifier
+                        .size(width = 56.dp, height = 40.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (step.reached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+                        .clearAndSetSemantics { contentDescription = description },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        step.count.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (step.reached) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -226,7 +309,7 @@ private fun ActivityScreenPreview() {
     }
     FlipToMuteTheme {
         ActivityScreen(
-            state = activityUiState(records, FlipStats(total = 40), now),
+            state = activityUiState(records, FlipStats(thisMonth = 14, lastMonth = 9, total = 40), now),
             onBack = {},
         )
     }

@@ -68,6 +68,10 @@ class FakeAppPreferencesRepository(
         mutablePreferences.update { it.copy(weeklyRecapEnabled = enabled) }
     }
 
+    override suspend fun setCallbackReminderEnabled(enabled: Boolean) {
+        mutablePreferences.update { it.copy(callbackReminderEnabled = enabled) }
+    }
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         mutablePreferences.update { it.copy(onboardingCompleted = completed) }
     }
