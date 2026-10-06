@@ -1,4 +1,4 @@
-package com.droidnova.fliptomute.util
+package com.droidnova.fliptomute.utils
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

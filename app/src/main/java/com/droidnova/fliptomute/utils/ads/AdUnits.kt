@@ -1,4 +1,4 @@
-package com.droidnova.fliptomute.ads
+package com.droidnova.fliptomute.utils.ads
 
 /** AdMob ad unit IDs used by Flip To Mute. */
 object AdUnits {

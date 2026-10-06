@@ -1,5 +1,7 @@
 package com.droidnova.fliptomute.ui.screens.call_state_test
 
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
@@ -16,7 +18,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
-class CallStateTestViewModel(
+@HiltViewModel
+class CallStateTestViewModel @Inject constructor(
     private val callMonitor: CellularCallMonitor,
     private val setupAccessRepository: SetupAccessRepository,
 ) : ViewModel() {

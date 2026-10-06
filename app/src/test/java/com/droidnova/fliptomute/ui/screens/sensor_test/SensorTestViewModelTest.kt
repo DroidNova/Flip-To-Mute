@@ -2,7 +2,7 @@ package com.droidnova.fliptomute.ui.screens.sensor_test
 
 import com.droidnova.fliptomute.sensor.DeviceOrientation
 import com.droidnova.fliptomute.sensor.FakeDeviceOrientationMonitor
-import com.droidnova.fliptomute.util.MainDispatcherRule
+import com.droidnova.fliptomute.utils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch

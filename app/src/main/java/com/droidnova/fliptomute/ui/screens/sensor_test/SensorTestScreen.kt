@@ -30,10 +30,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.sensor.DeviceOrientation
 import com.droidnova.fliptomute.sensor.OrientationSensorSource
@@ -44,9 +43,8 @@ import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 @Composable
 fun SensorTestScreen(
     onBack: () -> Unit,
-    viewModelFactory: ViewModelProvider.Factory,
 ) {
-    val viewModel: SensorTestViewModel = viewModel(factory = viewModelFactory)
+    val viewModel: SensorTestViewModel = hiltViewModel()
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     StopTestOnLifecycleStop(viewModel::stopTest)
     SensorTestContent(

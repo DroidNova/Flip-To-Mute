@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.FlipToMute" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        Window theme only; Compose draws everything inside. AppCompat because MainActivity is an
+        AppCompatActivity, as in Secret Calculator (M2-07). Still light: the dark window and
+        splash colours arrive with the design system in M3-05.
+    -->
+    <style name="Theme.FlipToMute" parent="Theme.AppCompat.Light.NoActionBar" />
 </resources>

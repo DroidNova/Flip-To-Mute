@@ -55,9 +55,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.FlipActionOption
@@ -77,9 +76,8 @@ fun SettingsRoute(
     onCallStateTest: () -> Unit,
     onSensorTest: () -> Unit,
     onSoundControlTest: () -> Unit,
-    viewModelFactory: ViewModelProvider.Factory,
 ) {
-    val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
+    val viewModel: SettingsViewModel = hiltViewModel()
     RefreshOnResume {
         viewModel.refreshAccessState()
         viewModel.refreshDeviceAdminState()

@@ -28,9 +28,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.telephony.CellularCallMonitorError
 import com.droidnova.fliptomute.telephony.CellularCallState
@@ -43,9 +42,8 @@ import com.droidnova.fliptomute.ui.util.RefreshOnResume
 fun CallStateTestScreen(
     onBack: () -> Unit,
     onOpenSetup: () -> Unit,
-    viewModelFactory: ViewModelProvider.Factory,
 ) {
-    val viewModel: CallStateTestViewModel = viewModel(factory = viewModelFactory)
+    val viewModel: CallStateTestViewModel = hiltViewModel()
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     RefreshOnResume(viewModel::refreshAccessState)
     DisposableEffect(viewModel) { onDispose { viewModel.stopListening() } }

@@ -4,8 +4,8 @@ import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
 import com.droidnova.fliptomute.R
-import com.droidnova.fliptomute.app.FlipToMuteApplication
-import com.droidnova.fliptomute.util.MonitoringLog
+import com.droidnova.fliptomute.di.backgroundEntryPoint
+import com.droidnova.fliptomute.utils.MonitoringLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,10 +17,10 @@ class FlipToLockDeviceAdminReceiver : DeviceAdminReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val container = (context.applicationContext as? FlipToMuteApplication)?.container
-                container?.deviceAdminCapabilityRepository?.refresh()
-                container?.appPreferencesRepository?.setFlipToLockEnabled(false)
-                container?.quickSettingsTileUpdateRequester?.requestUpdate()
+                val graph = context.backgroundEntryPoint()
+                graph.deviceAdminCapabilityRepository().refresh()
+                graph.appPreferencesRepository().setFlipToLockEnabled(false)
+                graph.quickSettingsTileUpdateRequester().requestUpdate()
                 MonitoringLog.d(context, "FlipToLock Disabled")
             } finally {
                 pendingResult.finish()

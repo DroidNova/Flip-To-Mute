@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.firebase.appdistribution)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 // Machine-specific values such as the App Distribution key path. Never committed.
@@ -101,6 +103,12 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     // Health check (M1-06). Declared explicitly; it used to arrive only through the ads SDK, at 2.7.0.
     implementation(libs.androidx.work.runtime.ktx)
+    // Dependency injection, as in Secret Calculator (M2)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    // AppCompatActivity shell, as in Secret Calculator (M2-07)
+    implementation(libs.androidx.appcompat)
     // The Lite SDK provides the same client API while loading the ads runtime
     // from Google Play services instead of packaging native runtime binaries.
     implementation(libs.google.mobile.ads.lite)
@@ -109,6 +117,8 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(platform(libs.firebase.bom))

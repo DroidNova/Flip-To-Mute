@@ -1,4 +1,4 @@
-package com.droidnova.fliptomute.util
+package com.droidnova.fliptomute.utils
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

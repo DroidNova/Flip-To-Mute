@@ -3,8 +3,8 @@ package com.droidnova.fliptomute.boot
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.droidnova.fliptomute.app.FlipToMuteApplication
-import com.droidnova.fliptomute.util.MonitoringLog
+import com.droidnova.fliptomute.di.backgroundEntryPoint
+import com.droidnova.fliptomute.utils.MonitoringLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,8 +23,7 @@ class PackageReplacedReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val application = applicationContext as FlipToMuteApplication
-                val result = application.container.bootMonitoringCoordinator.handle(AutoStartTrigger.PACKAGE_REPLACED)
+                val result = applicationContext.backgroundEntryPoint().bootMonitoringCoordinator().handle(AutoStartTrigger.PACKAGE_REPLACED)
                 MonitoringLog.d(applicationContext, "Update action finished: ${result.javaClass.simpleName}")
             } catch (error: RuntimeException) {
                 MonitoringLog.failure(applicationContext, "Update handling failed", error)

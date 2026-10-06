@@ -1,10 +1,14 @@
 [versions]
-agp = "9.0.0"
+agp = "9.3.1"
 coreKtx = "1.17.0"
 lifecycle = "2.10.0"
 activityCompose = "1.12.4"
 fragment = "1.8.9"
-kotlin = "2.2.10"
+kotlin = "2.4.10"
+ksp = "2.3.10"
+hilt = "2.60.1"
+hiltAndroidx = "1.2.0"
+appcompat = "1.7.0"
 composeBom = "2026.02.01"
 navigationCompose = "2.9.7"
 coroutines = "1.10.2"
@@ -39,6 +43,11 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStore" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltAndroidx" }
 google-mobile-ads-lite = { group = "com.google.android.gms", name = "play-services-ads-lite", version.ref = "googleMobileAds" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
@@ -55,3 +64,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "crashlyticsPlugin" }
 firebase-appdistribution = { id = "com.google.firebase.appdistribution", version.ref = "appDistributionPlugin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

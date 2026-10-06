@@ -3,7 +3,7 @@ package com.droidnova.fliptomute.ui.screens.settings
 import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.data.preferences.AppPreferences
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
-import com.droidnova.fliptomute.util.MainDispatcherRule
+import com.droidnova.fliptomute.utils.MainDispatcherRule
 import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect

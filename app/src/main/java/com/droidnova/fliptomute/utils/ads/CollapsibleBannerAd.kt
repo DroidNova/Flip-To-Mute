@@ -1,4 +1,4 @@
-package com.droidnova.fliptomute.ads
+package com.droidnova.fliptomute.utils.ads
 
 import android.os.Bundle
 import android.view.ViewGroup

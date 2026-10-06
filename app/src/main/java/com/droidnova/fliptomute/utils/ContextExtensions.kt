@@ -1,4 +1,4 @@
-package com.droidnova.fliptomute.util
+package com.droidnova.fliptomute.utils
 
 import android.app.Activity
 import android.content.ActivityNotFoundException

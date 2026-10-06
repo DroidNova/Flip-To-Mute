@@ -6,15 +6,14 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.droidnova.fliptomute.app.FlipToMuteApplication
-import com.droidnova.fliptomute.util.MonitoringLog
+import com.droidnova.fliptomute.di.backgroundEntryPoint
+import com.droidnova.fliptomute.utils.MonitoringLog
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 
 /**
  * Runs [com.droidnova.fliptomute.service.MonitoringHealthCheck] about every six hours. Built like
- * Secret Calculator's TrashCleanupWorker. It reaches its dependencies through the app container
- * for now; M2 moves this to a Hilt entry point, as in Secret Calculator.
+ * Secret Calculator's TrashCleanupWorker: its dependencies come from a Hilt entry point.
  */
 class HealthCheckWorker(
     appContext: Context,
@@ -22,9 +21,8 @@ class HealthCheckWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        val container = (applicationContext as FlipToMuteApplication).container
         return try {
-            val result = container.monitoringHealthCheck.run()
+            val result = applicationContext.backgroundEntryPoint().monitoringHealthCheck().run()
             MonitoringLog.d(applicationContext, "Health check: ${result.name}")
             Result.success()
         } catch (error: CancellationException) {

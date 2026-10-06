@@ -97,6 +97,9 @@ and closes a gap that matters more for Flip to Mute.
 | X9 | The App Distribution service account path is written in `build.gradle.kts`. | It is a path on one computer, and a key file must never be committed. | Read the path from `local.properties`, which is already git-ignored. |
 | X10 | `MobileAds.initialize` called on the main thread in the activity. | Adds to cold start. | Initialise ads off the main thread, after consent. |
 | X11 | min SDK 24, target SDK 37. | Flip to Mute's foreground service rules depend on the target SDK. A target bump changes service behaviour and needs device testing. | Keep min SDK 26. Raise the target to 37 as its own task, with the device matrix run afterwards. |
+| X12 | The launcher activity was moved to `ui.activities` and kept reachable through an activity-alias with the old name. | Flip to Mute has no reason to rename its launcher component, and a rename can remove users' home-screen icons. | `MainActivity` stays at `com.droidnova.fliptomute.MainActivity`. Only its contents follow Secret Calculator. |
+| X13 | `AppActivity` and `OnBoardingActivity` are `@AndroidEntryPoint`; the worker uses a Hilt `@EntryPoint`. | Hilt's `@AndroidEntryPoint` on a `BroadcastReceiver` needs a base class to call `super.onReceive`, which is easy to get wrong. | Activities and services use `@AndroidEntryPoint`. Receivers and the worker use one `BackgroundEntryPoint`, the same mechanism as Secret Calculator's worker. |
+| X14 | Window theme is a Material3 XML theme from the Material Components library. | Flip to Mute does not need the Material Components library; Compose draws the whole screen. | `Theme.AppCompat` window theme, which `AppCompatActivity` requires. Light only until M3-05 adds the dark window and splash colours. |
 
 ## 4. Flip to Mute package layout in v2.0
 
@@ -104,10 +107,11 @@ Package names follow Secret Calculator. Flip to Mute's domain packages stay.
 
 ```
 com.droidnova.fliptomute
-├── FlipToMuteApp.kt                @HiltAndroidApp
-├── di/                             AppModule, RepositoryModule (@Binds), ApplicationScope
+├── FlipToMuteApplication.kt        @HiltAndroidApp (name kept from 1.x)
+├── MainActivity.kt                 stays here (X12)
+├── di/                             AppModule (@Provides, one module like Secret Calculator), BackgroundEntryPoint
 ├── ui/
-│   ├── activities/                 MainActivity, OnboardingActivity
+│   ├── activities/                 OnboardingActivity (M4)
 │   ├── navigation/                 Routes, AppNavHost
 │   ├── theme/                      Appearance, Color, Theme, Type
 │   ├── components/                 NovaDesign (from VaultDesign), States, TopBars, PhoneFlipIllustration

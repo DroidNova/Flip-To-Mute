@@ -34,9 +34,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.data.setup.SetupAccessStatus
 import com.droidnova.fliptomute.data.setup.SetupAccessType
@@ -44,11 +43,11 @@ import com.droidnova.fliptomute.ui.components.AppTopBar
 import com.droidnova.fliptomute.ui.components.SetupItem
 import com.droidnova.fliptomute.ui.components.toSetupItems
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
-import com.droidnova.fliptomute.util.findActivity
-import com.droidnova.fliptomute.util.openAppDetailsSettings
-import com.droidnova.fliptomute.util.openAppNotificationSettings
-import com.droidnova.fliptomute.util.openNotificationPolicySettings
-import com.droidnova.fliptomute.util.SettingsLaunchResult
+import com.droidnova.fliptomute.utils.findActivity
+import com.droidnova.fliptomute.utils.openAppDetailsSettings
+import com.droidnova.fliptomute.utils.openAppNotificationSettings
+import com.droidnova.fliptomute.utils.openNotificationPolicySettings
+import com.droidnova.fliptomute.utils.SettingsLaunchResult
 import kotlinx.coroutines.launch
 
 private enum class ExplanationDialog { PHONE, NOTIFICATIONS, SOUND }
@@ -56,9 +55,8 @@ private enum class ExplanationDialog { PHONE, NOTIFICATIONS, SOUND }
 @Composable
 fun PermissionsRoute(
     onBack: () -> Unit,
-    viewModelFactory: ViewModelProvider.Factory,
 ) {
-    val viewModel: PermissionsViewModel = viewModel(factory = viewModelFactory)
+    val viewModel: PermissionsViewModel = hiltViewModel()
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val context = LocalContext.current
     val resources = LocalResources.current

@@ -1,5 +1,7 @@
 package com.droidnova.fliptomute.ui.screens.sound_control_test
 
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.audio.DeviceRingerMode
@@ -20,7 +22,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class SoundControlTestViewModel(
+@HiltViewModel
+class SoundControlTestViewModel @Inject constructor(
     preferencesRepository: AppPreferencesRepository,
     private val setupAccessRepository: SetupAccessRepository,
     private val ringerModeController: RingerModeController,

@@ -1,5 +1,7 @@
 package com.droidnova.fliptomute.ui.screens.sensor_test
 
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.sensor.DeviceOrientation
@@ -10,7 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-class SensorTestViewModel(
+@HiltViewModel
+class SensorTestViewModel @Inject constructor(
     private val orientationMonitor: DeviceOrientationMonitor,
 ) : ViewModel() {
     val uiState: StateFlow<SensorTestUiState> = orientationMonitor.state

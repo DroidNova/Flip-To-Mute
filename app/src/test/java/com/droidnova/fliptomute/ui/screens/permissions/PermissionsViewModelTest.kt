@@ -5,7 +5,7 @@ import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessState
 import com.droidnova.fliptomute.data.setup.SetupAccessStatus
-import com.droidnova.fliptomute.util.MainDispatcherRule
+import com.droidnova.fliptomute.utils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest

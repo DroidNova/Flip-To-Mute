@@ -1,4 +1,4 @@
-package com.droidnova.fliptomute.core.utils.about_utils
+package com.droidnova.fliptomute.utils.about_utils
 
 object AppConstants {
     const val PLAY_CONSOLE_URL = "https://play.google.com/store/apps/dev?id=8766579115812433944"

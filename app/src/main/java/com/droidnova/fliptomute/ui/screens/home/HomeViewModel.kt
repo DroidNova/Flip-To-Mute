@@ -1,5 +1,7 @@
 package com.droidnova.fliptomute.ui.screens.home
 
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,7 +21,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class HomeViewModel(
+@HiltViewModel
+class HomeViewModel @Inject constructor(
     private val preferencesRepository: AppPreferencesRepository,
     private val setupAccessRepository: SetupAccessRepository,
     private val monitoringStateRepository: MonitoringStateRepository,

@@ -42,8 +42,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.droidnova.fliptomute.R
-import com.droidnova.fliptomute.core.utils.about_utils.IntentUtil
-import com.droidnova.fliptomute.core.utils.about_utils.getFeaturedOtherApps
+import com.droidnova.fliptomute.utils.about_utils.IntentUtil
+import com.droidnova.fliptomute.utils.about_utils.getFeaturedOtherApps
 import com.droidnova.fliptomute.ui.components.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)

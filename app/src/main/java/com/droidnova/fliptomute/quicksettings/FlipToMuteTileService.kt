@@ -7,7 +7,12 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.droidnova.fliptomute.MainActivity
 import com.droidnova.fliptomute.R
-import com.droidnova.fliptomute.app.FlipToMuteApplication
+import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.service.AppRecoveryManager
+import com.droidnova.fliptomute.service.MonitoringServiceController
+import com.droidnova.fliptomute.service.MonitoringStateRepository
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.droidnova.fliptomute.service.MonitoringCommandResult
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import androidx.core.service.quicksettings.PendingIntentActivityWrapper
@@ -20,9 +25,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class FlipToMuteTileService : TileService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val container by lazy { (application as FlipToMuteApplication).container }
+    @Inject lateinit var appRecoveryManager: AppRecoveryManager
+    @Inject lateinit var monitoringServiceController: MonitoringServiceController
+    @Inject lateinit var monitoringStateRepository: MonitoringStateRepository
+    @Inject lateinit var quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester
+    @Inject lateinit var setupAccessRepository: SetupAccessRepository
     private val stateResolver = QuickSettingsTileStateResolver()
     private val clickResolver = QuickSettingsTileClickResolver()
     private var listeningJob: Job? = null
@@ -30,17 +40,17 @@ class FlipToMuteTileService : TileService() {
 
     override fun onTileAdded() {
         super.onTileAdded()
-        container.setupAccessRepository.refresh()
+        setupAccessRepository.refresh()
         refreshTile()
     }
     override fun onStartListening() {
         super.onStartListening()
-        container.setupAccessRepository.refresh()
+        setupAccessRepository.refresh()
         refreshTile()
         listeningJob?.cancel()
         listeningJob = scope.launch {
-            container.appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = false)
-            container.monitoringStateRepository.state.collectLatest { runtime ->
+            appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = false)
+            monitoringStateRepository.state.collectLatest { runtime ->
                 if (runtime !is MonitoringRuntimeState.Unresolved &&
                     runtime !is MonitoringRuntimeState.Recovering
                 ) commandPending = false
@@ -60,42 +70,42 @@ class FlipToMuteTileService : TileService() {
         if (commandPending) return
         commandPending = true
         scope.launch {
-            container.appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = false)
+            appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = false)
             handleResolvedClick()
         }
     }
 
     private suspend fun handleResolvedClick() {
-        val setupComplete = container.setupAccessRepository.refreshAndGet().isSetupComplete
-        when (clickResolver.resolve(container.monitoringStateRepository.state.value, setupComplete)) {
+        val setupComplete = setupAccessRepository.refreshAndGet().isSetupComplete
+        when (clickResolver.resolve(monitoringStateRepository.state.value, setupComplete)) {
             QuickSettingsTileClickAction.StartMonitoring -> {
                 updateTile(QuickSettingsTileStatus.STARTING)
-                val result = if (container.monitoringStateRepository.state.value is MonitoringRuntimeState.Recovering) {
-                    container.appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = true)
+                val result = if (monitoringStateRepository.state.value is MonitoringRuntimeState.Recovering) {
+                    appRecoveryManager.reconcileMonitoringState(requestActiveReconstruction = true)
                     null
-                } else container.monitoringServiceController.startMonitoring()
+                } else monitoringServiceController.startMonitoring()
                 if (result is MonitoringCommandResult.Rejected) {
                     commandPending = false
-                    container.monitoringStateRepository.updateState(
+                    monitoringStateRepository.updateState(
                         MonitoringRuntimeState.Error(result.reason),
                     )
-                    container.quickSettingsTileUpdateRequester.requestUpdate()
+                    quickSettingsTileUpdateRequester.requestUpdate()
                     refreshTile()
-                } else if (container.monitoringStateRepository.state.value is MonitoringRuntimeState.Error) {
+                } else if (monitoringStateRepository.state.value is MonitoringRuntimeState.Error) {
                     commandPending = false
                     refreshTile()
                 }
             }
             QuickSettingsTileClickAction.PauseMonitoring -> {
                 updateTile(QuickSettingsTileStatus.PAUSING)
-                if (container.monitoringServiceController.pauseMonitoring() is MonitoringCommandResult.Rejected) {
+                if (monitoringServiceController.pauseMonitoring() is MonitoringCommandResult.Rejected) {
                     commandPending = false
                     refreshTile()
                 }
             }
             QuickSettingsTileClickAction.ResumeMonitoring -> {
                 updateTile(QuickSettingsTileStatus.RESUMING)
-                if (container.monitoringServiceController.resumeMonitoring() is MonitoringCommandResult.Rejected) {
+                if (monitoringServiceController.resumeMonitoring() is MonitoringCommandResult.Rejected) {
                     commandPending = false
                     refreshTile()
                 }
@@ -117,8 +127,8 @@ class FlipToMuteTileService : TileService() {
     private fun refreshTile() {
         updateTile(
             stateResolver.resolve(
-                container.monitoringStateRepository.state.value,
-                container.setupAccessRepository.accessState.value.isSetupComplete,
+                monitoringStateRepository.state.value,
+                setupAccessRepository.accessState.value.isSetupComplete,
             ),
         )
     }

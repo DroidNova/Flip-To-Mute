@@ -1,20 +1,27 @@
 package com.droidnova.fliptomute.ui.screens.permissions
 
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.droidnova.fliptomute.data.analytics.Funnel
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class PermissionsViewModel(
+@HiltViewModel
+class PermissionsViewModel @Inject constructor(
     private val setupAccessRepository: SetupAccessRepository,
     private val preferencesRepository: AppPreferencesRepository,
     private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    /** Null in plain JVM tests; Hilt always provides it. */
+    private val funnel: Funnel? = null,
 ) : ViewModel() {
     val uiState: StateFlow<PermissionsUiState> = setupAccessRepository.accessState
         .map(::PermissionsUiState)
@@ -43,7 +50,10 @@ class PermissionsViewModel(
     fun onSetupFinished(onFinished: () -> Unit = {}) {
         if (uiState.value.isSetupComplete) {
             viewModelScope.launch {
+                // Only a first-time setup starts the funnel; people who set up an earlier version never enter it
+                val firstTime = !preferencesRepository.preferences.first().onboardingCompleted
                 preferencesRepository.setOnboardingCompleted(true)
+                if (firstTime) funnel?.setupComplete()
                 onFinished()
             }
         }

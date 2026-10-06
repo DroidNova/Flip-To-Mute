@@ -7,7 +7,23 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
-import com.droidnova.fliptomute.app.FlipToMuteApplication
+import com.droidnova.fliptomute.audio.FlipFeedback
+import com.droidnova.fliptomute.audio.IncomingCallVibrationControllerFactory
+import com.droidnova.fliptomute.audio.RingerModeControllerFactory
+import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
+import com.droidnova.fliptomute.data.analytics.Funnel
+import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
+import com.droidnova.fliptomute.notification.InterruptionAlertController
+import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
+import com.droidnova.fliptomute.screenlock.ScreenLockController
+import com.droidnova.fliptomute.screenlock.ScreenStateRepository
+import com.droidnova.fliptomute.sensor.DeviceOrientationMonitorFactory
+import com.droidnova.fliptomute.sensor.ProximityMonitorFactory
+import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
 import com.droidnova.fliptomute.audio.RingerModeFailure
 import com.droidnova.fliptomute.audio.RingerModeResult
@@ -15,7 +31,7 @@ import com.droidnova.fliptomute.data.analytics.AnalyticsEvents
 import com.droidnova.fliptomute.data.setup.AndroidSetupAccessObserver
 import com.droidnova.fliptomute.notification.MonitoringNotificationManager
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
-import com.droidnova.fliptomute.util.MonitoringLog
+import com.droidnova.fliptomute.utils.MonitoringLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,9 +41,25 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class FlipMonitoringService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val container by lazy { (application as FlipToMuteApplication).container }
+    @Inject lateinit var analyticsLogger: AnalyticsLogger
+    @Inject lateinit var appPreferencesRepository: AppPreferencesRepository
+    @Inject lateinit var cellularCallMonitorFactory: CellularCallMonitorFactory
+    @Inject lateinit var deviceAdminCapabilityRepository: DeviceAdminCapabilityRepository
+    @Inject lateinit var deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
+    @Inject lateinit var flipFeedback: FlipFeedback
+    @Inject lateinit var funnel: Funnel
+    @Inject lateinit var incomingCallVibrationControllerFactory: IncomingCallVibrationControllerFactory
+    @Inject lateinit var interruptionAlertController: InterruptionAlertController
+    @Inject lateinit var monitoringStateRepository: MonitoringStateRepository
+    @Inject lateinit var proximityMonitorFactory: ProximityMonitorFactory
+    @Inject lateinit var quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester
+    @Inject lateinit var ringerModeControllerFactory: RingerModeControllerFactory
+    @Inject lateinit var screenLockController: ScreenLockController
+    @Inject lateinit var screenStateRepository: ScreenStateRepository
+    @Inject lateinit var setupAccessRepository: SetupAccessRepository
     private val notificationHelper by lazy { MonitoringNotificationManager(this) }
     private var coordinator: FlipMonitoringCoordinator? = null
     private var commandJob: Job? = null
@@ -52,7 +84,7 @@ class FlipMonitoringService : Service() {
             MonitoringServiceCommand.START -> {
                 startMonitoring(
                     isRestart = false,
-                    isResume = container.monitoringStateRepository.state.value is MonitoringRuntimeState.Paused,
+                    isResume = monitoringStateRepository.state.value is MonitoringRuntimeState.Paused,
                     startId = startId,
                     source = MonitoringStartSource.fromName(intent?.getStringExtra(EXTRA_START_SOURCE)),
                 )
@@ -97,7 +129,7 @@ class FlipMonitoringService : Service() {
         source: MonitoringStartSource = MonitoringStartSource.USER,
     ) {
         debugLog("Start command received from ${source.name}")
-        val runtime = container.monitoringStateRepository.state.value
+        val runtime = monitoringStateRepository.state.value
         if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Resuming ||
             runtime is MonitoringRuntimeState.Active
         ) return
@@ -116,8 +148,8 @@ class FlipMonitoringService : Service() {
         commandJob?.cancel()
         commandJob = serviceScope.launch {
             try {
-                val storedPreferences = container.appPreferencesRepository.preferences.first()
-                val recoveryController = container.ringerModeControllerFactory.create()
+                val storedPreferences = appPreferencesRepository.preferences.first()
+                val recoveryController = ringerModeControllerFactory.create()
                 val recovery = recoveryController.recoverPendingChange()
                 if (recovery is RingerModeRecoveryResult.Failure) {
                     if (isResume || storedPreferences.monitoringPaused) {
@@ -132,7 +164,7 @@ class FlipMonitoringService : Service() {
                     return@launch
                 }
                 val storedMonitoring = storedPreferences.monitoringEnabled
-                val setup = container.setupAccessRepository.refreshAndGet()
+                val setup = setupAccessRepository.refreshAndGet()
                 debugLog("Setup state refreshed")
                 debugLog("Phone access status: ${setup.phoneStateStatus.name}")
                 debugLog("Sound control access status: ${setup.soundControlStatus.name}")
@@ -161,11 +193,11 @@ class FlipMonitoringService : Service() {
                 }
                 coordinator?.stop()
                 coordinator = FlipMonitoringCoordinator(
-                    container.appPreferencesRepository,
-                    container.cellularCallMonitorFactory.create(),
-                    container.deviceOrientationMonitorFactory.create(),
-                    container.ringerModeControllerFactory.create(),
-                    container.incomingCallVibrationControllerFactory.create(),
+                    appPreferencesRepository,
+                    cellularCallMonitorFactory.create(),
+                    deviceOrientationMonitorFactory.create(),
+                    ringerModeControllerFactory.create(),
+                    incomingCallVibrationControllerFactory.create(),
                     serviceScope,
                     onFailure = { reason ->
                         serviceScope.launch {
@@ -179,13 +211,13 @@ class FlipMonitoringService : Service() {
                             }
                         }
                     },
-                    proximityMonitor = container.proximityMonitorFactory.create(),
+                    proximityMonitor = proximityMonitorFactory.create(),
                     debugLog = ::debugLog,
-                    deviceAdminRepository = container.deviceAdminCapabilityRepository,
-                    screenLockController = container.screenLockController,
-                    screenStateRepository = container.screenStateRepository,
-                    monitoringStateRepository = container.monitoringStateRepository,
-                    flipFeedback = container.flipFeedback,
+                    deviceAdminRepository = deviceAdminCapabilityRepository,
+                    screenLockController = screenLockController,
+                    screenStateRepository = screenStateRepository,
+                    monitoringStateRepository = monitoringStateRepository,
+                    flipFeedback = flipFeedback,
                     onFlipApplied = ::onFlipApplied,
                 )
                 debugLog("Starting cellular call monitor")
@@ -193,14 +225,14 @@ class FlipMonitoringService : Service() {
                     MonitoringCoordinatorStartResult.Started -> {
                         debugLog("Coordinator startup result: Started")
                         if (!commandSequencer.isCurrent(token)) return@launch
-                        if (!container.setupAccessRepository.refreshAndGet().isSetupComplete) {
+                        if (!setupAccessRepository.refreshAndGet().isSetupComplete) {
                             commandSequencer.supersede()
                             failStart(MonitoringFailure.SETUP_REQUIRED, startId)
                             return@launch
                         }
                         try {
-                            container.appPreferencesRepository.setMonitoringPaused(false)
-                            container.appPreferencesRepository.setMonitoringEnabled(true)
+                            appPreferencesRepository.setMonitoringPaused(false)
+                            appPreferencesRepository.setMonitoringEnabled(true)
                         } catch (error: Exception) {
                             if (error is CancellationException) throw error
                             MonitoringLog.failure(this@FlipMonitoringService, "Saving monitoring preference failed", error)
@@ -210,7 +242,7 @@ class FlipMonitoringService : Service() {
                         if (!commandSequencer.isCurrent(token)) return@launch
                         publishMonitoringState(MonitoringRuntimeState.Active)
                         debugLog("Runtime state changed to Active")
-                        container.interruptionAlertController.clearStoppedAlert()
+                        interruptionAlertController.clearStoppedAlert()
                         logEvent(
                             AnalyticsEvents.SERVICE_STATE_CHANGED,
                             AnalyticsEvents.PARAM_STATE to AnalyticsEvents.STATE_ON,
@@ -269,7 +301,7 @@ class FlipMonitoringService : Service() {
 
     private fun stopMonitoring(startId: Int) {
         // The user turned it off, so an earlier "stopped" alert no longer applies
-        container.interruptionAlertController.clearStoppedAlert()
+        interruptionAlertController.clearStoppedAlert()
         logEvent(
             AnalyticsEvents.SERVICE_STATE_CHANGED,
             AnalyticsEvents.PARAM_STATE to AnalyticsEvents.STATE_OFF,
@@ -286,15 +318,15 @@ class FlipMonitoringService : Service() {
     private fun requestAccessRevalidation() {
         if (accessRevalidationJob?.isActive == true) return
         accessRevalidationJob = serviceScope.launch {
-            val runtime = container.monitoringStateRepository.state.value
+            val runtime = monitoringStateRepository.state.value
             if (!shouldShutdownForAccessLoss(runtime, setupComplete = false)) return@launch
             val accessComplete = try {
-                container.setupAccessRepository.refreshAndGet().isSetupComplete
+                setupAccessRepository.refreshAndGet().isSetupComplete
             } catch (error: RuntimeException) {
                 MonitoringLog.failure(this@FlipMonitoringService, "Refreshing setup access failed", error)
                 false
             }
-            if (!shouldShutdownForAccessLoss(container.monitoringStateRepository.state.value, accessComplete)) {
+            if (!shouldShutdownForAccessLoss(monitoringStateRepository.state.value, accessComplete)) {
                 return@launch
             }
             commandSequencer.supersede()
@@ -312,7 +344,7 @@ class FlipMonitoringService : Service() {
     }
 
     private fun pauseMonitoring(startId: Int) {
-        val runtime = container.monitoringStateRepository.state.value
+        val runtime = monitoringStateRepository.state.value
         if (runtime is MonitoringRuntimeState.Paused || runtime is MonitoringRuntimeState.Pausing) return
         commandSequencer.supersede()
         commandJob?.cancel()
@@ -405,7 +437,7 @@ class FlipMonitoringService : Service() {
             InterruptionDecision.KEEP_ON_AND_ALERT -> {
                 // Keep the user's "on" choice: the app restarts it on the next open, health check or tap on the alert
                 finishStopped(writePreference = false, preserveError = true, failure = reason, startId = startId)
-                container.interruptionAlertController.showStoppedAlert()
+                interruptionAlertController.showStoppedAlert()
             }
         }
     }
@@ -422,8 +454,8 @@ class FlipMonitoringService : Service() {
         var persistenceFailed = false
         if (writePreference) {
             try {
-                container.appPreferencesRepository.setMonitoringEnabled(false)
-                container.appPreferencesRepository.setMonitoringPaused(false)
+                appPreferencesRepository.setMonitoringEnabled(false)
+                appPreferencesRepository.setMonitoringPaused(false)
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 MonitoringLog.failure(this, "Clearing monitoring preference failed", error)
@@ -457,7 +489,7 @@ class FlipMonitoringService : Service() {
         }
         coordinator = null
         commandJob?.cancel()
-        val runtime = container.monitoringStateRepository.state.value
+        val runtime = monitoringStateRepository.state.value
         if (runtime !is MonitoringRuntimeState.Error && runtime !is MonitoringRuntimeState.Paused) {
             publishMonitoringState(MonitoringRuntimeState.Stopped)
         }
@@ -496,7 +528,7 @@ class FlipMonitoringService : Service() {
             AnalyticsEvents.PARAM_POCKET_PROTECTION to event.pocketProtection.toString(),
         )
         try {
-            container.funnel.flipApplied()
+            funnel.flipApplied()
         } catch (error: RuntimeException) {
             MonitoringLog.failure(this, "Funnel update failed", error)
         }
@@ -505,20 +537,20 @@ class FlipMonitoringService : Service() {
     /** Analytics must never stop the service from working. */
     private fun logEvent(event: String, vararg params: Pair<String, String>) {
         try {
-            container.analyticsLogger.log(event, params.toMap())
+            analyticsLogger.log(event, params.toMap())
         } catch (error: RuntimeException) {
             MonitoringLog.failure(this, "Analytics event failed", error)
         }
     }
 
     private fun publishMonitoringState(state: MonitoringRuntimeState) {
-        container.monitoringStateRepository.updateState(state)
-        container.quickSettingsTileUpdateRequester.requestUpdate()
+        monitoringStateRepository.updateState(state)
+        quickSettingsTileUpdateRequester.requestUpdate()
     }
 
     private suspend fun persistPausedIntentOrFallbackOff(): Boolean = try {
-        container.appPreferencesRepository.setMonitoringEnabled(true)
-        container.appPreferencesRepository.setMonitoringPaused(true)
+        appPreferencesRepository.setMonitoringEnabled(true)
+        appPreferencesRepository.setMonitoringPaused(true)
         true
     } catch (error: Exception) {
         if (error is CancellationException) throw error
@@ -529,8 +561,8 @@ class FlipMonitoringService : Service() {
 
     private suspend fun tryPersistOffAgain() {
         try {
-            container.appPreferencesRepository.setMonitoringEnabled(false)
-            container.appPreferencesRepository.setMonitoringPaused(false)
+            appPreferencesRepository.setMonitoringEnabled(false)
+            appPreferencesRepository.setMonitoringPaused(false)
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             MonitoringLog.failure(this, "Repairing stopped monitoring preference failed", error)

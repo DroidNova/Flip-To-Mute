@@ -1,4 +1,4 @@
-package com.droidnova.fliptomute.util
+package com.droidnova.fliptomute.utils
 
 import android.content.Context
 import android.content.pm.ApplicationInfo

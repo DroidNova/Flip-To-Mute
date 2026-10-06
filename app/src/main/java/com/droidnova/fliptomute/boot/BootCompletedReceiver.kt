@@ -3,8 +3,8 @@ package com.droidnova.fliptomute.boot
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.droidnova.fliptomute.app.FlipToMuteApplication
-import com.droidnova.fliptomute.util.MonitoringLog
+import com.droidnova.fliptomute.di.backgroundEntryPoint
+import com.droidnova.fliptomute.utils.MonitoringLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,8 +18,7 @@ class BootCompletedReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val application = applicationContext as FlipToMuteApplication
-                val result = application.container.bootMonitoringCoordinator.handleBootCompleted()
+                val result = applicationContext.backgroundEntryPoint().bootMonitoringCoordinator().handleBootCompleted()
                 MonitoringLog.d(applicationContext, "Boot action finished: ${result.javaClass.simpleName}")
             } catch (error: IllegalStateException) {
                 MonitoringLog.failure(applicationContext, "Boot handling failed", error)

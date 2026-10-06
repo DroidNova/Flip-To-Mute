@@ -12,7 +12,7 @@ import com.droidnova.fliptomute.service.MonitoringFailure
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.AppRecoveryManager
 import com.droidnova.fliptomute.service.AppRecoveryResult
-import com.droidnova.fliptomute.util.MainDispatcherRule
+import com.droidnova.fliptomute.utils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch

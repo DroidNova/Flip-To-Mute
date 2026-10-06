@@ -11,7 +11,7 @@ import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessState
 import com.droidnova.fliptomute.data.setup.SetupAccessStatus
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
-import com.droidnova.fliptomute.util.MainDispatcherRule
+import com.droidnova.fliptomute.utils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch

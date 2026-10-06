@@ -2,7 +2,7 @@ package com.droidnova.fliptomute.service
 
 import android.content.Context
 import androidx.core.content.ContextCompat
-import com.droidnova.fliptomute.util.MonitoringLog
+import com.droidnova.fliptomute.utils.MonitoringLog
 
 interface MonitoringServiceController {
     fun startMonitoring(source: MonitoringStartSource = MonitoringStartSource.USER): MonitoringCommandResult

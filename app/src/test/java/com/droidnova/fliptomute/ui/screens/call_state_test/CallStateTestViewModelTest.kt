@@ -7,7 +7,7 @@ import com.droidnova.fliptomute.telephony.CellularCallMonitorError
 import com.droidnova.fliptomute.telephony.CellularCallMonitorState
 import com.droidnova.fliptomute.telephony.CellularCallState
 import com.droidnova.fliptomute.telephony.FakeCellularCallMonitor
-import com.droidnova.fliptomute.util.MainDispatcherRule
+import com.droidnova.fliptomute.utils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
