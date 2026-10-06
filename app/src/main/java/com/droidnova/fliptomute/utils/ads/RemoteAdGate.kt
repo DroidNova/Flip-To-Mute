@@ -13,6 +13,8 @@ object RemoteAdGate {
     private const val KEY_LATEST_PLAY_STORE_VERSION_CODE = "latest_play_store_version_code"
     private const val KEY_REWARDED_THEME = "ad_rewarded_theme_enabled"
     private const val KEY_NATIVE_ACTIVITY = "ad_native_activity_enabled"
+    private const val KEY_INTERSTITIAL = "ad_interstitial_enabled"
+    private const val KEY_INTERSTITIAL_COOLDOWN_HOURS = "ad_interstitial_cooldown_hours"
 
     private val remoteConfig: FirebaseRemoteConfig by lazy { FirebaseRemoteConfig.getInstance() }
 
@@ -42,7 +44,9 @@ object RemoteAdGate {
             BannerPlacement.entries.associate { it.remoteKey to true } +
                 (KEY_LATEST_PLAY_STORE_VERSION_CODE to -1L) +
                 (KEY_REWARDED_THEME to true) +
-                (KEY_NATIVE_ACTIVITY to true),
+                (KEY_NATIVE_ACTIVITY to true) +
+                (KEY_INTERSTITIAL to true) +
+                (KEY_INTERSTITIAL_COOLDOWN_HOURS to InterstitialPolicy.DEFAULT_COOLDOWN_HOURS),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener { finish() }
     }
@@ -57,6 +61,12 @@ object RemoteAdGate {
     /** False until the first fetch finishes, as in Secret Calculator, so a switched-off banner never flashes. */
     fun isBannerEnabled(placement: BannerPlacement): Boolean =
         initialized && remoteConfig.getBoolean(placement.remoteKey)
+
+    /** The interstitial at a natural break, and how long to wait between two of them. */
+    fun isInterstitialEnabled(): Boolean = initialized && remoteConfig.getBoolean(KEY_INTERSTITIAL)
+
+    fun interstitialCooldownHours(): Long =
+        remoteConfig.getLong(KEY_INTERSTITIAL_COOLDOWN_HOURS).takeIf { it > 0L } ?: InterstitialPolicy.DEFAULT_COOLDOWN_HOURS
 
     /** The native ad on the activity screen (future features F32). */
     fun isNativeActivityEnabled(): Boolean = initialized && remoteConfig.getBoolean(KEY_NATIVE_ACTIVITY)

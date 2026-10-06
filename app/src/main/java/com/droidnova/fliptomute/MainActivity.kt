@@ -66,6 +66,8 @@ import com.droidnova.fliptomute.utils.about_utils.IntentUtil
 import com.droidnova.fliptomute.utils.ads.AdConfig
 import com.droidnova.fliptomute.utils.ads.AdConsent
 import com.droidnova.fliptomute.utils.ads.BannerPlacement
+import com.droidnova.fliptomute.utils.ads.InterstitialAds
+import com.droidnova.fliptomute.utils.ads.InterstitialPolicy
 import com.droidnova.fliptomute.utils.ads.NativeAdCard
 import com.droidnova.fliptomute.utils.ads.RemoteAdGate
 import com.droidnova.fliptomute.utils.ads.shouldLoadNativeAd
@@ -145,6 +147,9 @@ class MainActivity : AppCompatActivity(), PremiumController {
     private var activityNativeAd by mutableStateOf<NativeAd?>(null)
     private var nativeAdRequested = false
 
+    /** The interstitial for natural breaks (docs/AD_OPPORTUNITIES.md). A review prompt keeps away after it. */
+    private val interstitialAds by lazy { InterstitialAds(this, onClosed = { reviewStore.recordAdClosed() }) }
+
     /** A flexible in-app update finished downloading; ask for the restart (M7-09). */
     private var updateReady by mutableStateOf(false)
 
@@ -198,7 +203,9 @@ class MainActivity : AppCompatActivity(), PremiumController {
                         val navController = rememberNavController()
                         DisposableEffect(navController) {
                             val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+                                val previousRoute = currentRoute
                                 currentRoute = destination.route
+                                onRouteChanged(previousRoute, destination.route)
                             }
                             navController.addOnDestinationChangedListener(listener)
                             onDispose { navController.removeOnDestinationChangedListener(listener) }
@@ -241,7 +248,12 @@ class MainActivity : AppCompatActivity(), PremiumController {
                             modifier = Modifier.weight(1f),
                         )
                         if (remoteReady && !premium.isPremium &&
-                            shouldShowBanner(adsReady, BannerPlacement.forRoute(currentRoute), RemoteAdGate::isBannerEnabled)
+                            shouldShowBanner(
+                                adsReady = adsReady,
+                                placement = BannerPlacement.forRoute(currentRoute),
+                                nativeAdShowing = currentRoute == Routes.ACTIVITY && nativeAd != null,
+                                isEnabled = RemoteAdGate::isBannerEnabled,
+                            )
                         ) {
                             AndroidView(
                                 factory = { bannerAd().also { (it.parent as? ViewGroup)?.removeView(it) } },
@@ -404,6 +416,21 @@ class MainActivity : AppCompatActivity(), PremiumController {
         // Collapsible, as in 1.x
         val extras = Bundle().apply { putString("collapsible", "bottom") }
         adView.loadAd(AdRequest.Builder().addNetworkExtrasBundle(AdMobAdapter::class.java, extras).build())
+    }
+
+    /** Full-screen ads only at a natural break, and only within the limits of [InterstitialPolicy]. */
+    private fun onRouteChanged(fromRoute: String?, toRoute: String?) {
+        val allowed = adsReady && remoteConfigReady && InterstitialPolicy.mayShow(
+            enabled = RemoteAdGate.isInterstitialEnabled(),
+            adsRemoved = isPremiumPurchased(),
+            launchCount = reviewStore.state().launchCount,
+            lastShownAt = interstitialAds.lastShownAt,
+            now = System.currentTimeMillis(),
+            cooldownHours = RemoteAdGate.interstitialCooldownHours(),
+        )
+        if (!allowed) return
+        if (InterstitialPolicy.shouldPreloadOn(toRoute)) interstitialAds.preload()
+        if (InterstitialPolicy.isNaturalBreak(fromRoute, toRoute)) interstitialAds.show(this)
     }
 
     /** One native ad for the activity screen, kept until the activity ends. A failed load may be tried again on the next visit. */
