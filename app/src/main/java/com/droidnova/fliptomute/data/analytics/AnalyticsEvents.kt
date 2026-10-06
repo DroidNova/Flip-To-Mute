@@ -23,4 +23,5 @@ object AnalyticsEvents {
     const val STATE_OFF = "off"
     const val STATE_PAUSED = "paused"
     const val SOURCE_USER = "user"
+    const val PARAM_TIMED = "timed"
 }

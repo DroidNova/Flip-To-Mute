@@ -37,6 +37,11 @@ fun Context.openNotificationPolicySettings(): SettingsLaunchResult = settingsLau
     launchSettingsIntent(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)),
 ) { openAppDetailsSettings() }
 
+/** The system list of apps and their battery optimisation, no permission needed (audit R4). */
+fun Context.openBatteryOptimizationSettings(): SettingsLaunchResult = settingsLaunchResult(
+    launchSettingsIntent(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)),
+) { openAppDetailsSettings() }
+
 internal inline fun settingsLaunchResult(
     primaryOpened: Boolean,
     fallback: () -> SettingsLaunchResult,

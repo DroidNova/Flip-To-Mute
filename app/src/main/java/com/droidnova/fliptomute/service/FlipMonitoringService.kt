@@ -12,6 +12,7 @@ import com.droidnova.fliptomute.audio.IncomingCallVibrationControllerFactory
 import com.droidnova.fliptomute.audio.RingerModeControllerFactory
 import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
 import com.droidnova.fliptomute.data.analytics.Funnel
+import com.droidnova.fliptomute.data.stats.FlipStatsStore
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
@@ -39,6 +40,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -51,6 +53,7 @@ class FlipMonitoringService : Service() {
     @Inject lateinit var deviceOrientationMonitorFactory: DeviceOrientationMonitorFactory
     @Inject lateinit var flipFeedback: FlipFeedback
     @Inject lateinit var funnel: Funnel
+    @Inject lateinit var flipStatsStore: FlipStatsStore
     @Inject lateinit var incomingCallVibrationControllerFactory: IncomingCallVibrationControllerFactory
     @Inject lateinit var interruptionAlertController: InterruptionAlertController
     @Inject lateinit var monitoringStateRepository: MonitoringStateRepository
@@ -68,6 +71,8 @@ class FlipMonitoringService : Service() {
     private var accessRevalidationJob: Job? = null
     /** Who started the current session; decides what a later failure may change (InterruptionPolicy). */
     private var sessionSource = MonitoringStartSource.USER
+    /** Ends a timed pause; null when none is running. */
+    private var timedPauseJob: Job? = null
     private val accessObserver by lazy { AndroidSetupAccessObserver(this, ::requestAccessRevalidation) }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -82,20 +87,34 @@ class FlipMonitoringService : Service() {
         commandSequencer.record(startId)
         return when (MonitoringServiceCommandClassifier.classify(intent != null, intent?.action)) {
             MonitoringServiceCommand.START -> {
-                startMonitoring(
-                    isRestart = false,
-                    isResume = monitoringStateRepository.state.value is MonitoringRuntimeState.Paused,
-                    startId = startId,
-                    source = MonitoringStartSource.fromName(intent?.getStringExtra(EXTRA_START_SOURCE)),
-                )
+                if (isTimedPauseActive()) {
+                    endTimedPause()
+                } else {
+                    startMonitoring(
+                        isRestart = false,
+                        isResume = monitoringStateRepository.state.value is MonitoringRuntimeState.Paused,
+                        startId = startId,
+                        source = MonitoringStartSource.fromName(intent?.getStringExtra(EXTRA_START_SOURCE)),
+                    )
+                }
                 START_STICKY
             }
             MonitoringServiceCommand.PAUSE -> {
+                // An open-ended pause replaces a timed one
+                if (isTimedPauseActive()) endTimedPause()
                 pauseMonitoring(startId)
                 START_NOT_STICKY
             }
+            MonitoringServiceCommand.PAUSE_UNTIL -> {
+                timedPause(intent?.getLongExtra(EXTRA_PAUSE_UNTIL, 0L) ?: 0L)
+                START_STICKY
+            }
             MonitoringServiceCommand.RESUME -> {
-                startMonitoring(isRestart = false, isResume = true, startId = startId)
+                if (isTimedPauseActive()) {
+                    endTimedPause()
+                } else {
+                    startMonitoring(isRestart = false, isResume = true, startId = startId)
+                }
                 START_STICKY
             }
             MonitoringServiceCommand.STOP -> {
@@ -243,6 +262,7 @@ class FlipMonitoringService : Service() {
                         publishMonitoringState(MonitoringRuntimeState.Active)
                         debugLog("Runtime state changed to Active")
                         interruptionAlertController.clearStoppedAlert()
+                        flipStatsStore.recordOn()
                         logEvent(
                             AnalyticsEvents.SERVICE_STATE_CHANGED,
                             AnalyticsEvents.PARAM_STATE to AnalyticsEvents.STATE_ON,
@@ -254,6 +274,15 @@ class FlipMonitoringService : Service() {
                                 AnalyticsEvents.PARAM_SOURCE to source.analyticsName,
                                 AnalyticsEvents.PARAM_SUCCESS to "true",
                             )
+                        }
+                        // A timed pause that was running when the process died continues until its end
+                        val savedPauseEnd = appPreferencesRepository.preferences.first().pauseUntilEpochMs
+                        if (savedPauseEnd != null) {
+                            if (savedPauseEnd > System.currentTimeMillis()) {
+                                enterTimedPause(savedPauseEnd, persist = false)
+                            } else {
+                                appPreferencesRepository.setPauseUntil(null)
+                            }
                         }
                     }
                     is MonitoringCoordinatorStartResult.Failed -> {
@@ -343,6 +372,61 @@ class FlipMonitoringService : Service() {
         }
     }
 
+    // --- Timed pause (M5-06) ---
+    // The service stays in the foreground and the coordinator keeps listening, but ringing calls are
+    // ignored until the end time. No background start is needed to come back, and a call after the
+    // end time is handled even if the timer below runs late.
+
+    private fun isTimedPauseActive(): Boolean =
+        monitoringStateRepository.pausedUntil.value != null && coordinator != null && foregroundStarted
+
+    private fun timedPause(untilEpochMs: Long) {
+        if (monitoringStateRepository.state.value !is MonitoringRuntimeState.Active || coordinator == null) return
+        if (untilEpochMs <= System.currentTimeMillis()) return
+        enterTimedPause(untilEpochMs, persist = true)
+        logEvent(
+            AnalyticsEvents.SERVICE_STATE_CHANGED,
+            AnalyticsEvents.PARAM_STATE to AnalyticsEvents.STATE_PAUSED,
+            AnalyticsEvents.PARAM_SOURCE to AnalyticsEvents.SOURCE_USER,
+            AnalyticsEvents.PARAM_TIMED to "true",
+        )
+    }
+
+    private fun enterTimedPause(untilEpochMs: Long, persist: Boolean) {
+        coordinator?.ignoreCallsUntil(untilEpochMs)
+        monitoringStateRepository.updatePausedUntil(untilEpochMs)
+        publishMonitoringState(MonitoringRuntimeState.Paused)
+        notificationHelper.updateForegroundNotification(pausedUntilEpochMs = untilEpochMs)
+        if (persist) serviceScope.launch { appPreferencesRepository.setPauseUntil(untilEpochMs) }
+        timedPauseJob?.cancel()
+        timedPauseJob = serviceScope.launch {
+            delay((untilEpochMs - System.currentTimeMillis()).coerceAtLeast(0L))
+            timedPauseJob = null
+            endTimedPause()
+        }
+        debugLog("Timed pause until $untilEpochMs")
+    }
+
+    private fun endTimedPause() {
+        timedPauseJob?.cancel()
+        timedPauseJob = null
+        coordinator?.ignoreCallsUntil(null)
+        monitoringStateRepository.updatePausedUntil(null)
+        if (monitoringStateRepository.state.value is MonitoringRuntimeState.Paused) {
+            publishMonitoringState(MonitoringRuntimeState.Active)
+        }
+        notificationHelper.updateForegroundNotification(pausedUntilEpochMs = null)
+        serviceScope.launch { appPreferencesRepository.setPauseUntil(null) }
+        debugLog("Timed pause ended")
+    }
+
+    /** The service is stopping or pausing for good: forget any timed pause in memory. */
+    private fun clearTimedPauseInMemory() {
+        timedPauseJob?.cancel()
+        timedPauseJob = null
+        monitoringStateRepository.updatePausedUntil(null)
+    }
+
     private fun pauseMonitoring(startId: Int) {
         val runtime = monitoringStateRepository.state.value
         if (runtime is MonitoringRuntimeState.Paused || runtime is MonitoringRuntimeState.Pausing) return
@@ -359,6 +443,13 @@ class FlipMonitoringService : Service() {
     }
 
     private suspend fun finishPaused(startId: Int = commandSequencer.latestStartId) {
+        clearTimedPauseInMemory()
+        try {
+            appPreferencesRepository.setPauseUntil(null)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            MonitoringLog.failure(this, "Clearing timed pause failed", error)
+        }
         val restoration = coordinator?.stop()
         coordinator = null
         val pausedPersisted = persistPausedIntentOrFallbackOff()
@@ -449,6 +540,7 @@ class FlipMonitoringService : Service() {
         startId: Int = commandSequencer.latestStartId,
     ) {
         debugLog("Service cleanup started")
+        clearTimedPauseInMemory()
         val restoration = coordinator?.stop()
         coordinator = null
         var persistenceFailed = false
@@ -456,6 +548,7 @@ class FlipMonitoringService : Service() {
             try {
                 appPreferencesRepository.setMonitoringEnabled(false)
                 appPreferencesRepository.setMonitoringPaused(false)
+                appPreferencesRepository.setPauseUntil(null)
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 MonitoringLog.failure(this, "Clearing monitoring preference failed", error)
@@ -508,6 +601,12 @@ class FlipMonitoringService : Service() {
             .putExtra(EXTRA_START_SOURCE, source.name)
         fun createStopIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
             .setAction(MonitoringServiceCommandClassifier.STOP_ACTION)
+        internal const val EXTRA_PAUSE_UNTIL = "com.droidnova.fliptomute.extra.PAUSE_UNTIL"
+
+        fun createPauseUntilIntent(context: Context, untilEpochMs: Long) = Intent(context, FlipMonitoringService::class.java)
+            .setAction(MonitoringServiceCommandClassifier.PAUSE_UNTIL_ACTION)
+            .putExtra(EXTRA_PAUSE_UNTIL, untilEpochMs)
+
         fun createPauseIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
             .setAction(MonitoringServiceCommandClassifier.PAUSE_ACTION)
         fun createResumeIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
@@ -528,6 +627,7 @@ class FlipMonitoringService : Service() {
             AnalyticsEvents.PARAM_POCKET_PROTECTION to event.pocketProtection.toString(),
         )
         try {
+            flipStatsStore.recordFlip()
             funnel.flipApplied()
         } catch (error: RuntimeException) {
             MonitoringLog.failure(this, "Funnel update failed", error)

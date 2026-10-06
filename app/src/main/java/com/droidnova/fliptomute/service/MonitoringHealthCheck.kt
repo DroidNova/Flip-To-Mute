@@ -37,7 +37,12 @@ class MonitoringHealthCheck(
     suspend fun run(): HealthCheckResult {
         val preferences = preferencesRepository.preferences.first()
         if (!preferences.monitoringEnabled || preferences.monitoringPaused) return HealthCheckResult.NOTHING_TO_DO
-        if (monitoringStateRepository.state.value.isRunningOrChanging()) return HealthCheckResult.HEALTHY
+        val runtime = monitoringStateRepository.state.value
+        if (runtime.isRunningOrChanging()) return HealthCheckResult.HEALTHY
+        // A timed pause keeps the service running: nothing to restart (M5-06)
+        if (runtime is MonitoringRuntimeState.Paused && monitoringStateRepository.pausedUntil.value != null) {
+            return HealthCheckResult.HEALTHY
+        }
         if (!setupAccessRepository.refreshAndGet().isSetupComplete) return HealthCheckResult.SETUP_INCOMPLETE
         return when (val result = serviceController.startMonitoring(MonitoringStartSource.HEALTH_CHECK)) {
             MonitoringCommandResult.Accepted -> HealthCheckResult.START_REQUESTED

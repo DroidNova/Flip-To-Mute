@@ -56,6 +56,10 @@ class FakeAppPreferencesRepository(
         mutablePreferences.update { it.copy(flipToLockEnabled = enabled) }
     }
 
+    override suspend fun setPauseUntil(epochMs: Long?) {
+        mutablePreferences.update { it.copy(pauseUntilEpochMs = epochMs) }
+    }
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         mutablePreferences.update { it.copy(onboardingCompleted = completed) }
     }

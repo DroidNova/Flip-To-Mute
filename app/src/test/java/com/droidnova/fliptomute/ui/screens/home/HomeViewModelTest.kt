@@ -23,8 +23,18 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import androidx.test.core.app.ApplicationProvider
+import com.droidnova.fliptomute.data.stats.FlipStatsStore
+import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
+import com.droidnova.fliptomute.deviceadmin.FakeDeviceAdminCapabilityRepository
+import com.droidnova.fliptomute.ui.common.HintStore
+import com.droidnova.fliptomute.utils.AppVersion
+import com.droidnova.fliptomute.utils.UpdateAvailability
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class HomeViewModelTest {
     @get:Rule val dispatcherRule = MainDispatcherRule()
 
@@ -229,6 +239,12 @@ class HomeViewModelTest {
                 controller,
                 FakeAppRecoveryManager(),
                 savedStateHandle,
+                FlipStatsStore(ApplicationProvider.getApplicationContext()),
+                HintStore(ApplicationProvider.getApplicationContext()),
+                { true },
+                FakeDeviceAdminCapabilityRepository(DeviceAdminAvailability.INACTIVE),
+                AppVersion { 9L },
+                UpdateAvailability { false },
             ),
             runtime,
             controller,

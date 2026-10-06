@@ -1,11 +1,12 @@
 package com.droidnova.fliptomute.service
 
-internal enum class MonitoringServiceCommand { START, PAUSE, RESUME, STOP, REVALIDATE_ACCESS, RESTART, UNKNOWN }
+internal enum class MonitoringServiceCommand { START, PAUSE, PAUSE_UNTIL, RESUME, STOP, REVALIDATE_ACCESS, RESTART, UNKNOWN }
 
 internal object MonitoringServiceCommandClassifier {
     const val START_ACTION = "com.droidnova.fliptomute.action.START_MONITORING"
     const val STOP_ACTION = "com.droidnova.fliptomute.action.STOP_MONITORING"
     const val PAUSE_ACTION = "com.droidnova.fliptomute.action.PAUSE_MONITORING"
+    const val PAUSE_UNTIL_ACTION = "com.droidnova.fliptomute.action.PAUSE_MONITORING_UNTIL"
     const val RESUME_ACTION = "com.droidnova.fliptomute.action.RESUME_MONITORING"
     const val REVALIDATE_ACCESS_ACTION = "com.droidnova.fliptomute.action.REVALIDATE_ACCESS"
 
@@ -13,6 +14,7 @@ internal object MonitoringServiceCommandClassifier {
         !hasIntent -> MonitoringServiceCommand.RESTART
         action == START_ACTION -> MonitoringServiceCommand.START
         action == PAUSE_ACTION -> MonitoringServiceCommand.PAUSE
+        action == PAUSE_UNTIL_ACTION -> MonitoringServiceCommand.PAUSE_UNTIL
         action == RESUME_ACTION -> MonitoringServiceCommand.RESUME
         action == STOP_ACTION -> MonitoringServiceCommand.STOP
         action == REVALIDATE_ACCESS_ACTION -> MonitoringServiceCommand.REVALIDATE_ACCESS

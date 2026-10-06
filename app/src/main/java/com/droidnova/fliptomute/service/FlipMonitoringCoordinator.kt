@@ -56,6 +56,8 @@ class FlipMonitoringCoordinator(
     private val monitoringStateRepository: MonitoringStateRepository = InMemoryMonitoringStateRepository(),
     private val flipFeedback: FlipFeedback? = null,
     private val onFlipApplied: (FlipAppliedEvent) -> Unit = {},
+    /** Wall clock in epoch ms; a parameter so tests can control timed pauses. */
+    private val now: () -> Long = System::currentTimeMillis,
 ) {
     constructor(
         preferencesRepository: AppPreferencesRepository,
@@ -94,6 +96,7 @@ class FlipMonitoringCoordinator(
     private var screenStateJob: Job? = null
     private var runtimeStateJob: Job? = null
     private var startupResult = CompletableDeferred<MonitoringCoordinatorStartResult>()
+    @Volatile private var callsIgnoredUntil: Long? = null
 
     suspend fun startAndAwaitReady(): MonitoringCoordinatorStartResult {
         if (started) {
@@ -157,6 +160,17 @@ class FlipMonitoringCoordinator(
         return result
     }
 
+    /**
+     * Ignores ringing calls until [epochMs] (a timed pause), or stops ignoring them (null). Calls are
+     * compared with the clock when they ring, so a call after the end time is handled even if the
+     * service's resume timer runs late.
+     */
+    fun ignoreCallsUntil(epochMs: Long?) {
+        callsIgnoredUntil = epochMs
+    }
+
+    private fun isIgnoringCalls(): Boolean = callsIgnoredUntil?.let { now() < it } ?: false
+
     fun beginStopping() {
         if (stopping && !started) return
         stopping = true
@@ -198,7 +212,10 @@ class FlipMonitoringCoordinator(
                 }
                 if (state.callState == CellularCallState.RINGING) {
                     if (ringingSession == null) {
-                        if (!orientationMonitor.isSensorAvailable) {
+                        if (isIgnoringCalls()) {
+                            // Timed pause: this call rings normally (M5-06)
+                            debugLog("Call ignored: timed pause")
+                        } else if (!orientationMonitor.isSensorAvailable) {
                             fail(MonitoringFailure.SENSOR_UNAVAILABLE)
                         } else {
                             flatSurfaceFlipGate.reset()

@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.text.format.DateFormat
+import java.util.Date
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
@@ -40,40 +42,53 @@ class MonitoringNotificationManager(context: Context) : PausedNotificationContro
         notificationManager?.createNotificationChannel(channel)
     }
 
-    fun buildNotification(): Notification {
+    /**
+     * The ongoing notification. During a timed pause it says until when and offers Resume instead
+     * of Pause (M5-06); otherwise "Flip to Mute is on" with Pause and Turn off.
+     */
+    fun buildNotification(pausedUntilEpochMs: Long? = null): Notification {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        val contentIntent = PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, MainActivity::class.java),
-            flags,
-        )
-        val stopIntent = PendingIntent.getService(
-            context,
-            1,
-            FlipMonitoringService.createStopIntent(context),
-            flags,
-        )
-        val pauseIntent = PendingIntent.getService(
-            context,
-            PAUSE_REQUEST_CODE,
-            FlipMonitoringService.createPauseIntent(context),
-            flags,
-        )
-        return NotificationCompat.Builder(context, CHANNEL_ID)
+        val contentIntent = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), flags)
+        val stopIntent = PendingIntent.getService(context, 1, FlipMonitoringService.createStopIntent(context), flags)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_flip)
-            .setContentTitle(context.getString(R.string.monitoring_notification_title))
-            .setContentText(context.getString(R.string.monitoring_notification_text))
             .setContentIntent(contentIntent)
-            .addAction(0, context.getString(R.string.pause_monitoring), pauseIntent)
-            .addAction(0, context.getString(R.string.turn_off), stopIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)
-            .build()
+        if (pausedUntilEpochMs != null) {
+            val resumeIntent = PendingIntent.getService(
+                context, TIMED_RESUME_REQUEST_CODE, FlipMonitoringService.createResumeIntent(context), flags,
+            )
+            builder
+                .setContentTitle(context.getString(R.string.paused_until_title, formatTime(pausedUntilEpochMs)))
+                .setContentText(context.getString(R.string.paused_until_text))
+                .addAction(0, context.getString(R.string.resume_monitoring), resumeIntent)
+        } else {
+            val pauseIntent = PendingIntent.getService(
+                context, PAUSE_REQUEST_CODE, FlipMonitoringService.createPauseIntent(context), flags,
+            )
+            builder
+                .setContentTitle(context.getString(R.string.monitoring_notification_title))
+                .setContentText(context.getString(R.string.monitoring_notification_text))
+                .addAction(0, context.getString(R.string.pause_monitoring), pauseIntent)
+        }
+        return builder.addAction(0, context.getString(R.string.turn_off), stopIntent).build()
     }
+
+    /** Replaces the running foreground notification, for entering or leaving a timed pause. */
+    fun updateForegroundNotification(pausedUntilEpochMs: Long?) {
+        try {
+            notificationManager?.notify(NOTIFICATION_ID, buildNotification(pausedUntilEpochMs))
+        } catch (_: SecurityException) {
+            // Notifications were blocked; the service keeps running
+        }
+    }
+
+    /** "3:30 PM" or "15:30", following the phone setting. */
+    fun formatTime(epochMs: Long): String = DateFormat.getTimeFormat(context).format(Date(epochMs))
 
     override fun showPausedNotification() {
         createChannel()
@@ -170,6 +185,7 @@ class MonitoringNotificationManager(context: Context) : PausedNotificationContro
         const val ALERT_CHANNEL_ID = "flip_alerts"
         const val STOPPED_ALERT_NOTIFICATION_ID = 1003
         private const val ALERT_CONTENT_REQUEST_CODE = 6
+        private const val TIMED_RESUME_REQUEST_CODE = 7
         private const val ALERT_PREFS = "interruption_alert"
         private const val KEY_ALERT_SHOWN = "shown"
     }

@@ -28,4 +28,7 @@ interface AppPreferencesRepository {
     suspend fun setFlipToLockEnabled(enabled: Boolean)
 
     suspend fun setOnboardingCompleted(completed: Boolean)
+
+    /** Starts (a time) or ends (null) a timed pause. */
+    suspend fun setPauseUntil(epochMs: Long?)
 }

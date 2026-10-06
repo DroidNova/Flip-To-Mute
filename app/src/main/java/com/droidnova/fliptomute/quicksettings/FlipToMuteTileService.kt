@@ -8,6 +8,7 @@ import android.service.quicksettings.TileService
 import com.droidnova.fliptomute.MainActivity
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.ui.common.HintStore
 import com.droidnova.fliptomute.service.AppRecoveryManager
 import com.droidnova.fliptomute.service.MonitoringServiceController
 import com.droidnova.fliptomute.service.MonitoringStateRepository
@@ -33,6 +34,7 @@ class FlipToMuteTileService : TileService() {
     @Inject lateinit var monitoringStateRepository: MonitoringStateRepository
     @Inject lateinit var quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester
     @Inject lateinit var setupAccessRepository: SetupAccessRepository
+    @Inject lateinit var hintStore: HintStore
     private val stateResolver = QuickSettingsTileStateResolver()
     private val clickResolver = QuickSettingsTileClickResolver()
     private var listeningJob: Job? = null
@@ -40,6 +42,7 @@ class FlipToMuteTileService : TileService() {
 
     override fun onTileAdded() {
         super.onTileAdded()
+        hintStore.tileAdded = true
         setupAccessRepository.refresh()
         refreshTile()
     }
@@ -60,6 +63,7 @@ class FlipToMuteTileService : TileService() {
     }
     override fun onStopListening() { listeningJob?.cancel(); listeningJob = null; super.onStopListening() }
     override fun onTileRemoved() {
+        hintStore.tileAdded = false
         listeningJob?.cancel()
         listeningJob = null
         super.onTileRemoved()
@@ -135,7 +139,16 @@ class FlipToMuteTileService : TileService() {
 
     private fun updateTile(status: QuickSettingsTileStatus) {
         val tile = qsTile ?: return
-        val subtitle = getString(status.subtitleResource())
+        val pausedUntil = monitoringStateRepository.pausedUntil.value
+        val subtitle = if (status == QuickSettingsTileStatus.PAUSED && pausedUntil != null) {
+            // Timed pause (M5-06): show until when
+            getString(
+                R.string.quick_settings_tile_paused_until,
+                android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(pausedUntil)),
+            )
+        } else {
+            getString(status.subtitleResource())
+        }
         tile.label = getString(R.string.quick_settings_tile_label)
         tile.icon = Icon.createWithResource(this, R.drawable.ic_qs_flip_to_mute)
         tile.state = when (status) {

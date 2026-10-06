@@ -76,6 +76,7 @@ fun SettingsRoute(
     onCallStateTest: () -> Unit,
     onSensorTest: () -> Unit,
     onSoundControlTest: () -> Unit,
+    onAbout: () -> Unit = {},
 ) {
     val viewModel: SettingsViewModel = hiltViewModel()
     RefreshOnResume {
@@ -125,6 +126,7 @@ fun SettingsRoute(
         onCallStateTest = onCallStateTest,
         onSensorTest = onSensorTest,
         onSoundControlTest = onSoundControlTest,
+        onAbout = onAbout,
         onFlipActionSelected = viewModel::onFlipActionSelected,
         onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
         onRequireFlatSurfaceBeforeFlipChanged = viewModel::onRequireFlatSurfaceBeforeFlipChanged,
@@ -159,6 +161,7 @@ fun SettingsScreen(
     onCallStateTest: () -> Unit,
     onSensorTest: () -> Unit,
     onSoundControlTest: () -> Unit,
+    onAbout: () -> Unit = {},
     onFlipActionSelected: (FlipAction) -> Unit,
     onDetectionFeedbackChanged: (Boolean) -> Unit,
     onRequireFlatSurfaceBeforeFlipChanged: (Boolean) -> Unit,
@@ -471,9 +474,11 @@ fun SettingsScreen(
                         stringResource(R.string.app_version_value),
                     )
                     SettingsGroupDivider()
+                    // About moved here from the removed Home overflow menu (M5); Settings is rebuilt in M6
                     SettingsItem(
                         stringResource(R.string.about_app),
                         stringResource(R.string.about_app_description),
+                        modifier = Modifier.clickable(onClick = onAbout),
                     )
                 }
             }

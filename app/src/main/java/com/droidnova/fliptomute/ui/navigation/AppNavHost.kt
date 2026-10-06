@@ -63,8 +63,9 @@ fun AppNavHost(
         composable(Routes.HOME) {
             HomeRoute(
                 onSettingsClick = { navController.go(Routes.SETTINGS) },
-                onAboutClick = { navController.go(Routes.ABOUT) },
-                onPermissionsClick = onOpenAccess,
+                onOpenAccess = onOpenAccess,
+                // The guided "Check my setup" arrives in M6; the sensor test is the closest step until then
+                onCheckSetup = { navController.go(Routes.SENSOR_TEST) },
                 externalMonitoringRequest = externalMonitoringRequest,
                 onExternalMonitoringRequestConsumed = onExternalMonitoringRequestConsumed,
             )
@@ -79,6 +80,7 @@ fun AppNavHost(
                 onCallStateTest = { navController.go(Routes.CALL_STATE_TEST) },
                 onSensorTest = { navController.go(Routes.SENSOR_TEST) },
                 onSoundControlTest = { navController.go(Routes.SOUND_CONTROL_TEST) },
+                onAbout = { navController.go(Routes.ABOUT) },
             )
         }
         composable(Routes.SENSOR_TEST) { entry ->

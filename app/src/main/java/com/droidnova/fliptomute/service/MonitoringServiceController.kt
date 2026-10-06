@@ -7,6 +7,8 @@ import com.droidnova.fliptomute.utils.MonitoringLog
 interface MonitoringServiceController {
     fun startMonitoring(source: MonitoringStartSource = MonitoringStartSource.USER): MonitoringCommandResult
     fun pauseMonitoring(): MonitoringCommandResult
+    /** Timed pause: the service stays on and ignores calls until [epochMs] (M5-06). */
+    fun pauseMonitoringUntil(epochMs: Long): MonitoringCommandResult
     fun resumeMonitoring(): MonitoringCommandResult
     fun stopMonitoring(): MonitoringCommandResult
     fun revalidateAccess(): MonitoringCommandResult
@@ -38,6 +40,10 @@ class AndroidMonitoringServiceController(context: Context) : MonitoringServiceCo
 
     override fun pauseMonitoring(): MonitoringCommandResult = sendServiceCommand(
         FlipMonitoringService.createPauseIntent(context),
+    )
+
+    override fun pauseMonitoringUntil(epochMs: Long): MonitoringCommandResult = sendServiceCommand(
+        FlipMonitoringService.createPauseUntilIntent(context, epochMs),
     )
 
     override fun stopMonitoring(): MonitoringCommandResult = sendServiceCommand(

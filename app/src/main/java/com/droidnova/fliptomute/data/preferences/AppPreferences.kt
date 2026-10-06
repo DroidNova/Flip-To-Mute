@@ -14,6 +14,8 @@ data class AppPreferences(
     val pocketProtectionEnabled: Boolean = true,
     val flipToLockEnabled: Boolean = false,
     val onboardingCompleted: Boolean = false,
+    /** End of a timed pause (epoch ms), or null. The service stays on and ignores calls until then (M5-06). */
+    val pauseUntilEpochMs: Long? = null,
 )
 
 data class CallActionSelection(

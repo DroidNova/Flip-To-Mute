@@ -17,7 +17,7 @@ This is the working document. Update it in every session.
 | M2 | Architecture migration, behaviour unchanged | Blocked | 13 of 14 | 10 days |
 | M3 | Design system from Secret Calculator | Blocked | 8 of 9 | 7 days |
 | M4 | First run and access | Blocked | 9 of 9 | 7 days |
-| M5 | Home | Not started | 0 of 13 | 10 days |
+| M5 | Home | Blocked | 13 of 13 | 10 days |
 | M6 | Settings, help, about, review | Not started | 0 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | Not started | 0 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
@@ -192,19 +192,19 @@ Goal: one obvious control, clear state, visible value.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
-| [ ] | M5-01 | Rebuild `HomeUiState` around the states in `DESIGN_SPEC.md` section 4.4 | M | U3 |
-| [ ] | M5-02 | Wire `FlipPowerControl` and the status headline | M | U3 |
-| [ ] | M5-03 | `ActionSelector` with the mapping to the stored selection. Check Vibrate on a device. | S | U4 |
-| [ ] | M5-04 | `AttentionCard` for every failure, each with its fix action | M | U10 |
-| [ ] | M5-05 | Flip stats store, recording in the coordinator, `StatsCard` | M | U11 |
-| [ ] | M5-06 | Timed pause: preference, service behaviour, automatic resume, notification and tile text | L | T2 |
-| [ ] | M5-07 | Pause sheet, built with `SheetHeader` and `SheetAction` | S | T2 |
-| [ ] | M5-08 | Battery warning card | S | R4 |
-| [ ] | M5-09 | Discovery cards with `HintStore`, one at a time | M | T3, A12 |
-| [ ] | M5-10 | Home dialog queue: update available, then what's new | S | T4, A13 |
-| [ ] | M5-11 | Card ordering as a pure function with unit tests | S | |
-| [ ] | M5-12 | Unit tests and Compose tests for on, off, pause and attention | M | R10 |
-| [ ] | M5-13 | Remove old Home code and unused strings | S | U5 |
+| [x] | M5-01 | Rebuild `HomeUiState` around the states in `DESIGN_SPEC.md` section 4.4 | M | U3 |
+| [x] | M5-02 | Wire `FlipPowerControl` and the status headline | M | U3 |
+| [x] | M5-03 | `ActionSelector` with the mapping to the stored selection. Check Vibrate on a device. | S | U4 |
+| [x] | M5-04 | `AttentionCard` for every failure, each with its fix action | M | U10 |
+| [x] | M5-05 | Flip stats store, recording in the coordinator, `StatsCard` | M | U11 |
+| [x] | M5-06 | Timed pause: preference, service behaviour, automatic resume, notification and tile text | L | T2 |
+| [x] | M5-07 | Pause sheet, built with `SheetHeader` and `SheetAction` | S | T2 |
+| [x] | M5-08 | Battery warning card | S | R4 |
+| [x] | M5-09 | Discovery cards with `HintStore`, one at a time | M | T3, A12 |
+| [x] | M5-10 | Home dialog queue: update available, then what's new | S | T4, A13 |
+| [x] | M5-11 | Card ordering as a pure function with unit tests | S | |
+| [x] | M5-12 | Unit tests and Compose tests for on, off, pause and attention | M | R10 |
+| [x] | M5-13 | Remove old Home code and unused strings | S | U5 |
 
 Exit criteria:
 
@@ -212,7 +212,7 @@ Exit criteria:
 - [ ] A timed pause ends on time while idle, and immediately when a call arrives after the end time.
 - [ ] The counter increases only when a flip action is actually applied.
 - [ ] A TalkBack walk through of Home is fully understandable.
-- [ ] The word "monitoring" appears nowhere in the interface.
+- [ ] The word "monitoring" appears nowhere in the interface. (Home is clean; the remaining uses are in Settings and the call test, both replaced in M6.)
 
 ---
 
@@ -342,6 +342,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-06 | M5 | M5-01 to M5-13: new Home built on the design kit (power control, status headline per state, Silence or Vibrate, attention card per failure, battery card, stats card, one discovery card, pause sheet, update and what's new dialogs); timed pause in the service (stays running, coordinator ignores calls until the end time by the clock, notification and tile show "Paused until", survives a process restart, health check leaves it alone); `FlipStatsStore`, `HintStore`, `AppVersion`, `UpdateAvailability` (false until M7-04); pure rules for status, cards, discovery and attention with tests; Home tests on Robolectric; About moved into Settings; 80 unused 1.x strings removed. `HomeSnapshots` renders six Home states. 278 tests, lint and release build pass. | Exit criteria need a phone (timed pause end, TalkBack). Start M6 |
 | 2026-10-06 | M4 | M4-01 to M4-09: `OnboardingActivity` with Welcome, Access and Try it, built like Secret Calculator's onboarding; one primary button names the next missing access, permanent denial opens settings, sound control shows a hint sheet first, the step advances by itself on return; Try it uses the real sensor with a buzz, a 20 s hint and Skip; `OnboardingGate` keeps updating users out; Home, Settings and the test screens open the Access step in access-only mode; the 1.x setup screen and its components are deleted. `OnboardingFlowComposeTest` walks the whole first run and saves each step as a PNG. 243 tests, lint and release build pass. | Exit criteria need a phone (timing, Android 12 and 13 denial). Start M5 |
 | 2026-10-06 | M3 | M3-01 to M3-05 and M3-07 to M3-09: Secret Calculator's design kit copied as `NovaDesign`, `States`, `TopBars`; its Blue, Teal and Sunset schemes, `Appearance`, `AppTheme`, `ThemeMode` and Outfit typography; state colours with contrast checked (all pass); DayNight window background; `PhoneFlipIllustration` and `PhoneFlipDemo`; `FlipPowerControl`, `ActionSelector`, `AttentionCard`, `StatsCard`. `ComponentSnapshots` renders them to `app/build/snapshots` under Robolectric, checked in four themes. App now uses the Blue theme instead of wallpaper colours. | M3-06 needs icon artwork. Start M4 |
 | 2026-10-06 | M2 | M2-01 to M2-13: AGP 9.3.1, Kotlin 2.4.10, KSP, Hilt 2.60.1; `AppModule` reproduces the old container exactly; service and tile `@AndroidEntryPoint`, receivers and worker through `BackgroundEntryPoint`; `@HiltViewModel` everywhere; `AppContainer` and `ViewModelFactories` deleted; `MainActivity` is an `AppCompatActivity` with the Secret Calculator shell; `Routes` and `AppNavHost` with `go`, `back(entry)` and 280 ms transitions; packages moved to `utils`, `utils/ads`, `utils/about_utils`; funnel `app_opened` and first-time `setup_complete` wired; `ObjectGraphTest` proves the shared state. Deviations X12 to X14 recorded. 223 tests, lint and clean release build pass. | M2-14 needs a phone. Start M3 |

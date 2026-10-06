@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import java.io.IOException
@@ -88,6 +89,12 @@ class DataStoreAppPreferencesRepository(
         dataStore.edit { preferences -> preferences[Keys.ONBOARDING_COMPLETED] = completed }
     }
 
+    override suspend fun setPauseUntil(epochMs: Long?) {
+        dataStore.edit { preferences ->
+            if (epochMs == null) preferences.remove(Keys.PAUSE_UNTIL_EPOCH_MS) else preferences[Keys.PAUSE_UNTIL_EPOCH_MS] = epochMs
+        }
+    }
+
     private fun mapPreferences(preferences: Preferences): AppPreferences {
         val selectedAction = preferences[Keys.SELECTED_FLIP_ACTION]
             ?.let { storedValue -> FlipAction.entries.firstOrNull { it.name == storedValue } }
@@ -116,6 +123,7 @@ class DataStoreAppPreferencesRepository(
             pocketProtectionEnabled = preferences[Keys.POCKET_PROTECTION_ENABLED] ?: true,
             flipToLockEnabled = preferences[Keys.FLIP_TO_LOCK_ENABLED] ?: false,
             onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
+            pauseUntilEpochMs = preferences[Keys.PAUSE_UNTIL_EPOCH_MS]?.takeIf { it > 0 },
         )
     }
 
@@ -137,5 +145,6 @@ class DataStoreAppPreferencesRepository(
         val MONITORING_PAUSED = booleanPreferencesKey("monitoring_paused")
         val START_AFTER_PHONE_RESTART = booleanPreferencesKey("start_after_phone_restart")
         val FLIP_TO_LOCK_ENABLED = booleanPreferencesKey("flip_to_lock_enabled")
+        val PAUSE_UNTIL_EPOCH_MS = longPreferencesKey("pause_until_epoch_ms")
     }
 }

@@ -15,6 +15,11 @@ class FakeMonitoringServiceController(
         return startResult
     }
     override fun pauseMonitoring(): MonitoringCommandResult { pauseCount++; return MonitoringCommandResult.Accepted }
+    val pauseUntilRequests = mutableListOf<Long>()
+    override fun pauseMonitoringUntil(epochMs: Long): MonitoringCommandResult {
+        pauseUntilRequests += epochMs
+        return MonitoringCommandResult.Accepted
+    }
     override fun resumeMonitoring(): MonitoringCommandResult { resumeCount++; return MonitoringCommandResult.Accepted }
     override fun stopMonitoring(): MonitoringCommandResult { stopCount++; return MonitoringCommandResult.Accepted }
     override fun revalidateAccess(): MonitoringCommandResult { revalidateCount++; return MonitoringCommandResult.Accepted }

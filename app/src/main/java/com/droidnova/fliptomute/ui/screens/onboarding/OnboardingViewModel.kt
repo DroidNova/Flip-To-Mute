@@ -14,6 +14,8 @@ import com.droidnova.fliptomute.data.setup.SetupAccessStatus
 import com.droidnova.fliptomute.sensor.DeviceOrientation
 import com.droidnova.fliptomute.sensor.DeviceOrientationMonitor
 import com.droidnova.fliptomute.sensor.FaceDownDetectionState
+import com.droidnova.fliptomute.ui.common.HintStore
+import com.droidnova.fliptomute.utils.AppVersion
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -89,6 +91,9 @@ class OnboardingViewModel @Inject constructor(
     private val flipFeedback: FlipFeedback,
     /** Null in plain JVM tests; Hilt always provides it. */
     private val funnel: Funnel? = null,
+    /** Null in plain JVM tests; Hilt always provides it. */
+    private val hintStore: HintStore? = null,
+    private val appVersion: AppVersion = AppVersion { 0L },
 ) : ViewModel() {
 
     private val accessOnly: Boolean = savedStateHandle[EXTRA_ACCESS_ONLY] ?: false
@@ -155,6 +160,7 @@ class OnboardingViewModel @Inject constructor(
         }
         viewModelScope.launch {
             preferencesRepository.setOnboardingCompleted(true)
+            markWhatsNewSeen()
             mutableExit.value = OnboardingExit.OpenHome(enableMonitoring = false)
         }
     }
@@ -251,6 +257,7 @@ class OnboardingViewModel @Inject constructor(
     private fun complete() {
         viewModelScope.launch {
             preferencesRepository.setOnboardingCompleted(true)
+            markWhatsNewSeen()
             funnel?.onboardingComplete(triedFlip = tryState.value.flipped)
             mutableExit.value = OnboardingExit.OpenHome(
                 enableMonitoring = setupAccessRepository.accessState.value.isSetupComplete,
@@ -295,6 +302,11 @@ class OnboardingViewModel @Inject constructor(
     }
 
     // --- Helpers ---
+
+    /** A fresh install has nothing "new": only people who update see that dialog (M5-10). */
+    private fun markWhatsNewSeen() {
+        hintStore?.whatsNewSeenVersion = appVersion.code()
+    }
 
     private fun currentStep() = OnboardingStep.valueOf(step.value)
 

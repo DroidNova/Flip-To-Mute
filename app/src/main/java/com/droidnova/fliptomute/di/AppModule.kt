@@ -55,6 +55,9 @@ import com.droidnova.fliptomute.telephony.AndroidCellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
 import com.droidnova.fliptomute.utils.MonitoringLog
+import com.droidnova.fliptomute.utils.AppVersion
+import com.droidnova.fliptomute.utils.UpdateAvailability
+import com.droidnova.fliptomute.utils.androidAppVersion
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -219,6 +222,15 @@ object AppModule {
         alerts: InterruptionAlertController,
         analytics: AnalyticsLogger,
     ) = MonitoringHealthCheck(preferences, setup, state, controller, alerts, analytics)
+
+    // --- App info ---
+
+    @Provides @Singleton
+    fun provideAppVersion(@ApplicationContext context: Context): AppVersion = androidAppVersion(context)
+
+    /** No update check until the Remote Config switch in M7-04. */
+    @Provides @Singleton
+    fun provideUpdateAvailability(): UpdateAvailability = UpdateAvailability { false }
 
     // --- Analytics ---
 
