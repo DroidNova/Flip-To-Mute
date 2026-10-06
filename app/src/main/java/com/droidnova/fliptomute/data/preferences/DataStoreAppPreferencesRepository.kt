@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.droidnova.fliptomute.sensor.FlipSensitivity
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
@@ -117,6 +118,18 @@ class DataStoreAppPreferencesRepository(
         }
     }
 
+    override suspend fun setSensitivity(sensitivity: FlipSensitivity) {
+        dataStore.edit { preferences -> preferences[Keys.SENSITIVITY] = sensitivity.value }
+    }
+
+    override suspend fun setRingAgainWhenFaceUp(enabled: Boolean) {
+        updateBoolean(Keys.RING_AGAIN_WHEN_FACE_UP, enabled)
+    }
+
+    override suspend fun setFlipToPauseMediaEnabled(enabled: Boolean) {
+        updateBoolean(Keys.FLIP_TO_PAUSE_MEDIA_ENABLED, enabled)
+    }
+
     private fun mapPreferences(preferences: Preferences): AppPreferences {
         val selectedAction = preferences[Keys.SELECTED_FLIP_ACTION]
             ?.let { storedValue -> FlipAction.entries.firstOrNull { it.name == storedValue } }
@@ -149,6 +162,9 @@ class DataStoreAppPreferencesRepository(
             flipNotificationEnabled = preferences[Keys.FLIP_NOTIFICATION_ENABLED] ?: true,
             weeklyRecapEnabled = preferences[Keys.WEEKLY_RECAP_ENABLED] ?: true,
             callbackReminderEnabled = preferences[Keys.CALLBACK_REMINDER_ENABLED] ?: true,
+            sensitivity = FlipSensitivity.fromValue(preferences[Keys.SENSITIVITY]),
+            ringAgainWhenFaceUp = preferences[Keys.RING_AGAIN_WHEN_FACE_UP] ?: false,
+            flipToPauseMediaEnabled = preferences[Keys.FLIP_TO_PAUSE_MEDIA_ENABLED] ?: false,
             schedule = FlipSchedule(
                 enabled = preferences[Keys.SCHEDULE_ENABLED] ?: false,
                 days = FlipSchedule.decodeDays(preferences[Keys.SCHEDULE_DAYS]),
@@ -180,6 +196,9 @@ class DataStoreAppPreferencesRepository(
         val FLIP_NOTIFICATION_ENABLED = booleanPreferencesKey("flip_notification_enabled")
         val WEEKLY_RECAP_ENABLED = booleanPreferencesKey("weekly_recap_enabled")
         val CALLBACK_REMINDER_ENABLED = booleanPreferencesKey("callback_reminder_enabled")
+        val SENSITIVITY = stringPreferencesKey("sensitivity")
+        val RING_AGAIN_WHEN_FACE_UP = booleanPreferencesKey("ring_again_when_face_up")
+        val FLIP_TO_PAUSE_MEDIA_ENABLED = booleanPreferencesKey("flip_to_pause_media_enabled")
         val SCHEDULE_ENABLED = booleanPreferencesKey("schedule_enabled")
         val SCHEDULE_DAYS = stringPreferencesKey("schedule_days")
         val SCHEDULE_START_MINUTE = intPreferencesKey("schedule_start_minute")

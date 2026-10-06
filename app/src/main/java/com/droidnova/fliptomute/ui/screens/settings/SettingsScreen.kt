@@ -27,9 +27,11 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PhoneCallback
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sensors
@@ -63,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddRequester
+import com.droidnova.fliptomute.sensor.FlipSensitivity
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddResult
 import com.droidnova.fliptomute.ui.components.ActionSelector
 import com.droidnova.fliptomute.ui.components.ChoicePill
@@ -102,6 +105,9 @@ interface SettingsActions {
     fun setFlipNotification(enabled: Boolean)
     fun setWeeklyRecap(enabled: Boolean)
     fun setCallbackReminder(enabled: Boolean)
+    fun selectSensitivity(sensitivity: FlipSensitivity)
+    fun setRingAgain(enabled: Boolean)
+    fun setFlipToPause(enabled: Boolean)
     fun setScheduleEnabled(enabled: Boolean)
     fun toggleScheduleDay(day: DayOfWeek)
     fun setScheduleStart(minute: Int)
@@ -182,6 +188,9 @@ fun SettingsRoute(
             override fun setFlipNotification(enabled: Boolean) = viewModel.onFlipNotificationChanged(enabled)
             override fun setWeeklyRecap(enabled: Boolean) = viewModel.onWeeklyRecapChanged(enabled)
             override fun setCallbackReminder(enabled: Boolean) = viewModel.onCallbackReminderChanged(enabled)
+            override fun selectSensitivity(sensitivity: FlipSensitivity) = viewModel.onSensitivitySelected(sensitivity)
+            override fun setRingAgain(enabled: Boolean) = viewModel.onRingAgainWhenFaceUpChanged(enabled)
+            override fun setFlipToPause(enabled: Boolean) = viewModel.onFlipToPauseMediaChanged(enabled)
             override fun setScheduleEnabled(enabled: Boolean) = viewModel.onScheduleEnabledChanged(enabled)
             override fun toggleScheduleDay(day: DayOfWeek) = viewModel.onScheduleDayToggled(day)
             override fun setScheduleStart(minute: Int) = viewModel.onScheduleStartChanged(minute)
@@ -296,9 +305,7 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions, snackbarHos
         ) {
             item(key = "flip") { FlipBehaviourGroup(state, actions) }
             item(key = "schedule") { ScheduleGroup(state, actions) }
-            if (state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED) {
-                item(key = "gestures") { GesturesGroup(state, actions) }
-            }
+            item(key = "gestures") { GesturesGroup(state, actions) }
             item(key = "keep") { KeepRunningGroup(state, actions) }
             item(key = "notifications") { NotificationsGroup(state, actions) }
             item(key = "appearance") { AppearanceGroup(state, actions) }
@@ -344,6 +351,34 @@ private fun FlipBehaviourGroup(state: SettingsUiState, actions: SettingsActions)
             state.detectionFeedbackEnabled,
             actions::setFeedback,
             summary = stringResource(R.string.detection_feedback_description),
+        )
+        SwitchRow(
+            Icons.Filled.Replay,
+            stringResource(R.string.ring_again_setting),
+            state.ringAgainWhenFaceUp,
+            actions::setRingAgain,
+            summary = stringResource(R.string.ring_again_setting_description),
+        )
+        Text(
+            stringResource(R.string.sensitivity_label),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+        )
+        FlowRow(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlipSensitivity.entries.forEach { sensitivity ->
+                ChoicePill(
+                    label = stringResource(sensitivity.labelRes()),
+                    selected = state.sensitivity == sensitivity,
+                    onClick = { actions.selectSensitivity(sensitivity) },
+                )
+            }
+        }
+        Text(
+            stringResource(state.sensitivity.descriptionRes()),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 6.dp),
         )
     }
 }
@@ -432,12 +467,22 @@ private fun formatMinuteOfDay(minute: Int): String {
 private fun GesturesGroup(state: SettingsUiState, actions: SettingsActions) {
     SettingsGroup(stringResource(R.string.extra_gestures_section), Modifier.widthIn(max = 560.dp)) {
         SwitchRow(
-            Icons.Filled.Lock,
-            stringResource(R.string.flip_to_lock_title),
-            state.flipToLockEnabled,
-            actions::setFlipToLock,
-            summary = stringResource(R.string.flip_to_lock_supporting_text),
+            Icons.Filled.PauseCircle,
+            stringResource(R.string.flip_to_pause_title),
+            state.flipToPauseMediaEnabled,
+            actions::setFlipToPause,
+            summary = stringResource(R.string.flip_to_pause_description),
         )
+        // Screen locking needs device admin support, which a few phones lack
+        if (state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED) {
+            SwitchRow(
+                Icons.Filled.Lock,
+                stringResource(R.string.flip_to_lock_title),
+                state.flipToLockEnabled,
+                actions::setFlipToLock,
+                summary = stringResource(R.string.flip_to_lock_supporting_text),
+            )
+        }
         if (state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE) {
             SettingsRow(
                 Icons.Filled.LockReset,
@@ -565,6 +610,18 @@ private fun HelpGroup(state: SettingsUiState, actions: SettingsActions) {
     }
 }
 
+private fun FlipSensitivity.labelRes(): Int = when (this) {
+    FlipSensitivity.QUICK -> R.string.sensitivity_quick
+    FlipSensitivity.NORMAL -> R.string.sensitivity_normal
+    FlipSensitivity.CAREFUL -> R.string.sensitivity_careful
+}
+
+private fun FlipSensitivity.descriptionRes(): Int = when (this) {
+    FlipSensitivity.QUICK -> R.string.sensitivity_quick_description
+    FlipSensitivity.NORMAL -> R.string.sensitivity_normal_description
+    FlipSensitivity.CAREFUL -> R.string.sensitivity_careful_description
+}
+
 private fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.SYSTEM -> R.string.theme_system
     ThemeMode.LIGHT -> R.string.theme_light
@@ -608,6 +665,9 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun setFlipNotification(enabled: Boolean) = Unit
     override fun setWeeklyRecap(enabled: Boolean) = Unit
     override fun setCallbackReminder(enabled: Boolean) = Unit
+    override fun selectSensitivity(sensitivity: FlipSensitivity) = Unit
+    override fun setRingAgain(enabled: Boolean) = Unit
+    override fun setFlipToPause(enabled: Boolean) = Unit
     override fun setScheduleEnabled(enabled: Boolean) = Unit
     override fun toggleScheduleDay(day: DayOfWeek) = Unit
     override fun setScheduleStart(minute: Int) = Unit

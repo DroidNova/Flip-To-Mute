@@ -346,4 +346,15 @@
     <string name="schedule_from">From</string>
     <string name="schedule_until">Until</string>
     <string name="home_on_resting_body">Outside your schedule. Active again %1$s.</string>
+    <string name="sensitivity_label">Sensitivity</string>
+    <string name="sensitivity_quick">Quick</string>
+    <string name="sensitivity_normal">Normal</string>
+    <string name="sensitivity_careful">Careful</string>
+    <string name="sensitivity_quick_description">Reacts sooner. It may react when you did not mean it.</string>
+    <string name="sensitivity_normal_description">A short pause before it reacts.</string>
+    <string name="sensitivity_careful_description">Waits until your phone is clearly face down.</string>
+    <string name="ring_again_setting">Ring again when turned face up</string>
+    <string name="ring_again_setting_description">Flipped by mistake? Turn your phone back over and it rings again.</string>
+    <string name="flip_to_pause_title">Flip to pause music or video</string>
+    <string name="flip_to_pause_description">Place your phone face down on a flat surface while the screen is on.</string>
 </resources>

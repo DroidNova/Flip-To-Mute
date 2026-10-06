@@ -7,6 +7,9 @@ interface DeviceOrientationMonitor {
     val isSensorAvailable: Boolean
     fun start()
     fun stop()
+
+    /** Changes how readily a flip is accepted (future features F7). Monitors that cannot, keep their own. */
+    fun configure(configuration: FaceDownDetectionConfiguration) = Unit
 }
 
 fun interface DeviceOrientationMonitorFactory {

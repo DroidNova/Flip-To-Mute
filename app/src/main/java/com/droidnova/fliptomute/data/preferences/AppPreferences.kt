@@ -1,5 +1,6 @@
 package com.droidnova.fliptomute.data.preferences
 
+import com.droidnova.fliptomute.sensor.FlipSensitivity
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 
 data class AppPreferences(
@@ -24,6 +25,12 @@ data class AppPreferences(
     val callbackReminderEnabled: Boolean = true,
     /** Active hours and days; off means always active (future features F9). */
     val schedule: FlipSchedule = FlipSchedule(),
+    /** How readily a flip is accepted (future features F7). */
+    val sensitivity: FlipSensitivity = FlipSensitivity.NORMAL,
+    /** Turned face up again while it still rings: the ringtone comes back (future features F4). */
+    val ringAgainWhenFaceUp: Boolean = false,
+    /** Face down on a flat surface pauses music or video while the screen is on (future features F3). */
+    val flipToPauseMediaEnabled: Boolean = false,
 )
 
 data class CallActionSelection(

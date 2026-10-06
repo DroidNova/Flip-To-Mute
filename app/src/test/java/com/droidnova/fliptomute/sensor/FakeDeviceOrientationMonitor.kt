@@ -32,6 +32,14 @@ class FakeDeviceOrientationMonitor(
         )
     }
 
+    /** The last configuration the coordinator asked for. */
+    var configuration: FaceDownDetectionConfiguration? = null
+        private set
+
+    override fun configure(configuration: FaceDownDetectionConfiguration) {
+        this.configuration = configuration
+    }
+
     override fun stop() {
         stopCount++
         activeRegistrations = 0

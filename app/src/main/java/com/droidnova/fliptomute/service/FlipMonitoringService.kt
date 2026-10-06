@@ -15,6 +15,7 @@ import com.droidnova.fliptomute.data.analytics.Funnel
 import com.droidnova.fliptomute.data.review.ReviewStore
 import com.droidnova.fliptomute.data.stats.FlipHistoryStore
 import com.droidnova.fliptomute.data.stats.FlipStatsStore
+import com.droidnova.fliptomute.media.MediaPlaybackController
 import com.droidnova.fliptomute.data.stats.Milestones
 import com.droidnova.fliptomute.data.stats.countOnDayOf
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
@@ -59,6 +60,7 @@ class FlipMonitoringService : Service() {
     @Inject lateinit var funnel: Funnel
     @Inject lateinit var flipStatsStore: FlipStatsStore
     @Inject lateinit var flipHistoryStore: FlipHistoryStore
+    @Inject lateinit var mediaPlaybackController: MediaPlaybackController
     @Inject lateinit var incomingCallVibrationControllerFactory: IncomingCallVibrationControllerFactory
     @Inject lateinit var interruptionAlertController: InterruptionAlertController
     @Inject lateinit var monitoringStateRepository: MonitoringStateRepository
@@ -247,6 +249,7 @@ class FlipMonitoringService : Service() {
                     flipFeedback = flipFeedback,
                     onFlipApplied = ::onFlipApplied,
                     onFlippedCallMissed = ::onFlippedCallMissed,
+                    mediaPlayback = mediaPlaybackController,
                 )
                 debugLog("Starting cellular call monitor")
                 when (val result = coordinator?.startAndAwaitReady()) {

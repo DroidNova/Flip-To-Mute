@@ -1,5 +1,6 @@
 package com.droidnova.fliptomute.data.preferences
 
+import com.droidnova.fliptomute.sensor.FlipSensitivity
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -74,6 +75,18 @@ class FakeAppPreferencesRepository(
 
     override suspend fun setSchedule(schedule: FlipSchedule) {
         mutablePreferences.update { it.copy(schedule = schedule) }
+    }
+
+    override suspend fun setSensitivity(sensitivity: FlipSensitivity) {
+        mutablePreferences.update { it.copy(sensitivity = sensitivity) }
+    }
+
+    override suspend fun setRingAgainWhenFaceUp(enabled: Boolean) {
+        mutablePreferences.update { it.copy(ringAgainWhenFaceUp = enabled) }
+    }
+
+    override suspend fun setFlipToPauseMediaEnabled(enabled: Boolean) {
+        mutablePreferences.update { it.copy(flipToPauseMediaEnabled = enabled) }
     }
 
     override suspend fun setOnboardingCompleted(completed: Boolean) {

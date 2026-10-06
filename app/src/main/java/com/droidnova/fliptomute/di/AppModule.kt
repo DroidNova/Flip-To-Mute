@@ -28,6 +28,8 @@ import com.droidnova.fliptomute.data.setup.AndroidSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import com.droidnova.fliptomute.deviceadmin.AndroidDeviceAdminCapabilityRepository
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
+import com.droidnova.fliptomute.media.AndroidMediaPlaybackController
+import com.droidnova.fliptomute.media.MediaPlaybackController
 import com.droidnova.fliptomute.notification.FlipActivityNotifier
 import com.droidnova.fliptomute.notification.InterruptionAlertController
 import com.droidnova.fliptomute.notification.MonitoringNotificationManager
@@ -121,6 +123,10 @@ object AppModule {
 
     @Provides @Singleton
     fun provideFlipFeedback(@ApplicationContext context: Context): FlipFeedback = AndroidFlipFeedback(context)
+
+    @Provides @Singleton
+    fun provideMediaPlaybackController(@ApplicationContext context: Context): MediaPlaybackController =
+        AndroidMediaPlaybackController(context)
 
     // --- Factories: every create() returns a new instance, as before ---
 

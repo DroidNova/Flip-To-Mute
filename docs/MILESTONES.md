@@ -21,7 +21,7 @@ This is the working document. Update it in every session.
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | In progress | 8 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
-| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 12 of 22 | 6 days, plus the Flip to Focus spike |
+| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 15 of 22 | 6 days, plus the Flip to Focus spike |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
 then migration with behaviour unchanged, then redesign, then features. Keeping
@@ -324,9 +324,9 @@ without it. The owner decides whether it merges into v2.0 or ships as v2.1.
 | [x] | M9-14 | Two more Home tips: "No flips yet?" after a week without a flip (opens Check my setup), and "Flipping by accident?" (turns on Only when lying flat) | S | F18 |
 | [x] | M9-15 | Three earned colour themes: Forest at 10 calls, Rose at 25, Midnight (true black in dark mode) at 50. A locked theme explains how to earn it and, on debug builds, offers a rewarded ad that opens it for 7 days. **Release builds offer the ad only after the owner supplies a rewarded ad unit ID** (`AdConfig.PROD_REWARDED_THEME`); remote switch `ad_rewarded_theme_enabled`. | M | F21, F34, F36 |
 | [x] | M9-16 | Schedule: "Only at set times" in Settings with days, From and Until (overnight periods allowed). Outside it the service keeps running and calls ring normally, as in a timed pause, so no alarm is needed. Home says "Outside your schedule. Active again Mon, 9:00 AM." The notification and tile do not show the schedule. | M | F9 |
-| [ ] | M9-17 | Flip to pause music or video | M | F3 |
-| [ ] | M9-18 | Flip back to ring again | S | F4 |
-| [ ] | M9-19 | Sensitivity: Quick, Normal, Careful | S | F7 |
+| [x] | M9-17 | Flip to pause music or video: off by default. Uses the Flip to lock gesture (face up and still, then face down on a flat surface), only while something plays and the screen is on and unlocked. Sends the media pause key; no new access. **Untested on a phone: which apps obey the key, and the battery cost of the sensor while media plays.** | M | F3 |
+| [x] | M9-18 | "Ring again when turned face up": off by default, because lifting the phone flat to see who calls would also ring again. The sensor stays on after the flip only when this is on. | S | F4 |
+| [x] | M9-19 | Sensitivity: Quick, Normal, Careful. Normal is exactly the 1.x and 2.0 detection. **Quick and Careful values are first guesses and need tuning on phones.** | S | F7 |
 | [ ] | M9-20 | App shortcuts on the launcher icon | S | F12 |
 | [ ] | M9-21 | Share card from the activity screen | S | F38 |
 | [ ] | M9-22 | Remove ads purchase (needs an in-app product in Play Console from the owner) | M | F19 |

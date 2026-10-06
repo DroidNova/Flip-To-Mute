@@ -12,7 +12,7 @@ import kotlin.math.sqrt
 
 class AndroidDeviceOrientationMonitor(
     context: Context,
-    private val configuration: FaceDownDetectionConfiguration = FaceDownDetectionConfiguration(),
+    configuration: FaceDownDetectionConfiguration = FaceDownDetectionConfiguration(),
 ) : DeviceOrientationMonitor, SensorEventListener {
     private val sensorManager = context.applicationContext.getSystemService(SensorManager::class.java)
     private val gravitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GRAVITY)
@@ -23,7 +23,8 @@ class AndroidDeviceOrientationMonitor(
         Sensor.TYPE_ACCELEROMETER -> OrientationSensorSource.ACCELEROMETER
         else -> null
     }
-    private val classifier = DeviceOrientationClassifier(configuration)
+    private var configuration = configuration
+    private var classifier = DeviceOrientationClassifier(configuration)
     private val accelerometerFilter = AccelerometerGravityFilter(configuration.accelerometerFilterAlpha)
     private val mutableState = MutableStateFlow(initialState())
     override val state: StateFlow<FaceDownDetectionState> = mutableState.asStateFlow()
@@ -47,6 +48,13 @@ class AndroidDeviceOrientationMonitor(
         } else {
             FaceDownDetectionState.Error
         }
+    }
+
+    override fun configure(configuration: FaceDownDetectionConfiguration) {
+        if (configuration == this.configuration) return
+        this.configuration = configuration
+        classifier = DeviceOrientationClassifier(configuration)
+        resetProcessing()
     }
 
     override fun stop() {

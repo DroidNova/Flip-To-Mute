@@ -11,6 +11,7 @@ import com.droidnova.fliptomute.data.stats.FlipStatsStore
 import com.droidnova.fliptomute.data.themes.ThemeUnlockStore
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
+import com.droidnova.fliptomute.sensor.FlipSensitivity
 import com.droidnova.fliptomute.sensor.ProximitySensorCapability
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -72,6 +73,9 @@ class SettingsViewModel @Inject constructor(
             weeklyRecapEnabled = preferences.weeklyRecapEnabled,
             callbackReminderEnabled = preferences.callbackReminderEnabled,
             schedule = preferences.schedule,
+            sensitivity = preferences.sensitivity,
+            ringAgainWhenFaceUp = preferences.ringAgainWhenFaceUp,
+            flipToPauseMediaEnabled = preferences.flipToPauseMediaEnabled,
             deviceAdminAvailability = adminAvailability,
             accessState = accessState,
             batteryRestricted = d.batteryRestricted,
@@ -114,6 +118,18 @@ class SettingsViewModel @Inject constructor(
 
     fun onCallbackReminderChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setCallbackReminderEnabled(enabled) }
+    }
+
+    fun onSensitivitySelected(sensitivity: FlipSensitivity) {
+        viewModelScope.launch { preferencesRepository.setSensitivity(sensitivity) }
+    }
+
+    fun onRingAgainWhenFaceUpChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setRingAgainWhenFaceUp(enabled) }
+    }
+
+    fun onFlipToPauseMediaChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setFlipToPauseMediaEnabled(enabled) }
     }
 
     // --- Schedule (future features F9) ---

@@ -24,6 +24,7 @@ import com.droidnova.fliptomute.telephony.CellularCallMonitorState
 import com.droidnova.fliptomute.telephony.CellularCallState
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
+import com.droidnova.fliptomute.media.MediaPlaybackController
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
 import com.droidnova.fliptomute.screenlock.FlipToLockGestureGate
 import com.droidnova.fliptomute.screenlock.FlipToLockGestureResult
@@ -58,6 +59,8 @@ class FlipMonitoringCoordinator(
     private val onFlipApplied: (FlipAppliedEvent) -> Unit = {},
     /** A call that was silenced or vibrated by a flip stopped ringing without being answered. */
     private val onFlippedCallMissed: () -> Unit = {},
+    /** Music or video playback, for Flip to pause (future features F3). */
+    private val mediaPlayback: MediaPlaybackController? = null,
     /** Wall clock in epoch ms; a parameter so tests can control timed pauses. */
     private val now: () -> Long = System::currentTimeMillis,
 ) {
@@ -97,6 +100,7 @@ class FlipMonitoringCoordinator(
     private var pocketTimeoutJob: Job? = null
     private var deviceAdminJob: Job? = null
     private var screenStateJob: Job? = null
+    private var mediaJob: Job? = null
     private var runtimeStateJob: Job? = null
     private var startupResult = CompletableDeferred<MonitoringCoordinatorStartResult>()
     @Volatile private var callsIgnoredUntil: Long? = null
@@ -115,7 +119,9 @@ class FlipMonitoringCoordinator(
                         resetFlipToLockGesture()
                         if (preferences.flipToLockEnabled) deviceAdminRepository?.refresh() else debugLog("FlipToLock Disabled")
                     }
+                    if (preferences.flipToPauseMediaEnabled != latestPreferences.flipToPauseMediaEnabled) resetFlipToLockGesture()
                     latestPreferences = preferences
+                    orientationMonitor.configure(preferences.sensitivity.detectionConfiguration())
                     updateOrientationMonitoring()
                 }
             }
@@ -134,6 +140,14 @@ class FlipMonitoringCoordinator(
         }
         screenStateJob = scope.launch {
             screenStateRepository?.isInteractiveAndUnlocked?.collectLatest {
+                mutex.withLock {
+                    resetFlipToLockGesture()
+                    updateOrientationMonitoring()
+                }
+            }
+        }
+        mediaJob = scope.launch {
+            mediaPlayback?.isPlaying?.collectLatest {
                 mutex.withLock {
                     resetFlipToLockGesture()
                     updateOrientationMonitoring()
@@ -191,6 +205,7 @@ class FlipMonitoringCoordinator(
         proximityJob?.cancel()
         deviceAdminJob?.cancel()
         screenStateJob?.cancel()
+        mediaJob?.cancel()
         runtimeStateJob?.cancel()
         readyReported = false
     }
@@ -273,7 +288,10 @@ class FlipMonitoringCoordinator(
                     handleFlipToLockSample(state)
                     return@withLock
                 }
-                if (session.actionHandled) return@withLock
+                if (session.actionHandled) {
+                    restoreRingIfTurnedFaceUp(session, state)
+                    return@withLock
+                }
                 var currentSession = session
                 if (session.pocketDecision == PocketProtectionDecision.WAITING) {
                     val decision = pocketProtectionGate.onOrientationSample(
@@ -335,6 +353,21 @@ class FlipMonitoringCoordinator(
             }
             is FaceDownDetectionState.Idle -> Unit
         }
+    }
+
+    /**
+     * Flipped by mistake (future features F4): turned face up while it still rings, the ringtone
+     * comes back and a second flip silences it again. Only for people who switched this on.
+     */
+    private suspend fun restoreRingIfTurnedFaceUp(session: RingingSession, state: FaceDownDetectionState.Detecting) {
+        if (!latestPreferences.ringAgainWhenFaceUp || !flipAppliedThisCall) return
+        if (state.orientation != DeviceOrientation.FACE_UP) return
+        vibrationController.stop()
+        if (ringerModeController.restorePreviousMode() !is RingerModeResult.Success) return
+        debugLog("Ring restored: turned face up")
+        ringingSession = session.copy(actionHandled = false)
+        flipAppliedThisCall = false
+        flatSurfaceFlipGate.reset()
     }
 
     private fun reportFlippedCallMissed() {
@@ -401,7 +434,7 @@ class FlipMonitoringCoordinator(
     }
 
     private fun handleFlipToLockSample(state: FaceDownDetectionState.Detecting) {
-        if (!isFlipToLockEligible(refreshScreenState = true)) {
+        if (!isFlipToLockEligible(refreshScreenState = true) && !isFlipToPauseEligible(refreshScreenState = true)) {
             flipToLockGestureGate.reset()
             updateOrientationMonitoring()
             return
@@ -418,6 +451,15 @@ class FlipMonitoringCoordinator(
             FlipToLockGestureResult.Waiting -> Unit
         }
         if (result != FlipToLockGestureResult.LockRequested) return
+        // The same flip onto a flat surface pauses what is playing (future features F3), then locks
+        if (isFlipToPauseEligible(refreshScreenState = true)) {
+            val paused = try {
+                mediaPlayback?.pause() == true
+            } catch (_: RuntimeException) {
+                false
+            }
+            debugLog(if (paused) "FlipToPause Paused" else "FlipToPause Failed")
+        }
         if (!isFlipToLockEligible(refreshScreenState = true)) {
             flipToLockGestureGate.reset()
             updateOrientationMonitoring()
@@ -451,6 +493,17 @@ class FlipMonitoringCoordinator(
             screenEligible && currentCallState == CellularCallState.IDLE && ringingSession == null
     }
 
+    private fun isFlipToPauseEligible(refreshScreenState: Boolean = false): Boolean {
+        if (!latestPreferences.flipToPauseMediaEnabled || mediaPlayback?.isPlaying?.value != true) return false
+        val screenEligible = if (refreshScreenState) {
+            screenStateRepository?.refresh() == true
+        } else {
+            screenStateRepository?.isInteractiveAndUnlocked?.value == true
+        }
+        return started && !stopping && latestRuntimeState == MonitoringRuntimeState.Active &&
+            screenEligible && currentCallState == CellularCallState.IDLE && ringingSession == null
+    }
+
     private fun resetFlipToLockGesture() {
         flipToLockGestureGate.reset()
         debugLog("FlipToLock Reset")
@@ -458,9 +511,11 @@ class FlipMonitoringCoordinator(
 
     private fun updateOrientationMonitoring() {
         val incomingCallNeedsOrientation = ringingSession?.let { session ->
-            !session.actionHandled && session.pocketDecision != PocketProtectionDecision.BLOCKED
+            val waitingForFlip = !session.actionHandled && session.pocketDecision != PocketProtectionDecision.BLOCKED
+            // After a flip the sensor is only needed to notice the phone being turned back (F4)
+            waitingForFlip || (session.actionHandled && latestPreferences.ringAgainWhenFaceUp)
         } == true
-        if (incomingCallNeedsOrientation || isFlipToLockEligible()) {
+        if (incomingCallNeedsOrientation || isFlipToLockEligible() || isFlipToPauseEligible()) {
             orientationMonitor.start()
         } else {
             orientationMonitor.stop()

@@ -1,5 +1,6 @@
 package com.droidnova.fliptomute.data.preferences
 
+import com.droidnova.fliptomute.sensor.FlipSensitivity
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import kotlinx.coroutines.flow.Flow
 
@@ -39,4 +40,10 @@ interface AppPreferencesRepository {
     suspend fun setCallbackReminderEnabled(enabled: Boolean)
 
     suspend fun setSchedule(schedule: FlipSchedule)
+
+    suspend fun setSensitivity(sensitivity: FlipSensitivity)
+
+    suspend fun setRingAgainWhenFaceUp(enabled: Boolean)
+
+    suspend fun setFlipToPauseMediaEnabled(enabled: Boolean)
 }
