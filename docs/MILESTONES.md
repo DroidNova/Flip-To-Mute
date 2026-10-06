@@ -19,7 +19,7 @@ This is the working document. Update it in every session.
 | M4 | First run and access | Blocked | 9 of 9 | 7 days |
 | M5 | Home | Blocked | 13 of 13 | 10 days |
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
-| M7 | Ads, consent, remote switches, polish | In progress | 8 of 11 | 7 days, plus 2 for stretch items |
+| M7 | Ads, consent, remote switches, polish | In progress | 9 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
@@ -251,7 +251,7 @@ Goal: compliant ads, and a product that is fast and accessible.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
-| Blocked | M7-01 | Replace the sample AdMob App ID with the production ID. The manifest still has Google's sample App ID (the one with "~"). The banner unit ID is already the production one. Release ads cannot serve until the owner supplies the App ID (D2). | S | R9, D2 |
+| [x] | M7-01 | Replace the sample AdMob App ID with the production ID. Done 2026-10-07 with the App ID the owner supplied (D2): `ca-app-pub-4788231589271799~1589969712`. Debug builds still load Google's sample ad units, so testers never click real ads. | S | R9, D2 |
 | [x] | M7-02 | Consent with the User Messaging Platform. Ads initialised off the main thread after consent. "Privacy options" row in Settings. | M | R9, X5, X10 |
 | [x] | M7-03 | `AdConfig` and an activity-owned banner with three retries, hidden on the routes chosen in D4. D4 decided: banner at the bottom of every screen, each one switchable remotely. | M | U9, A17, D4 |
 | [x] | M7-04 | `RemoteAdGate` style switches: banner per placement, latest version code for the update dialog | M | A16, D10 |

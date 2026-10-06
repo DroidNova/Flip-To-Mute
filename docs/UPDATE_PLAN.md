@@ -323,7 +323,7 @@ every deviation from Secret Calculator.
 | # | Decision | Default if no answer | Blocks |
 |---|----------|----------------------|--------|
 | D1 | Rating: keep "Rate us" unchanged and add Secret Calculator's in-app review policy, or bring back the old star card | "Rate us" unchanged plus the review policy (section 8) | M6-07 |
-| D2 | Production AdMob App ID | Release is blocked | M7-01 |
+| D2 | Production AdMob App ID | **Answered 2026-10-07 by the owner: `ca-app-pub-4788231589271799~1589969712`** | M7-01 |
 | D3 | Add Crashlytics and update Data safety | Add it, as in Secret Calculator | M0-07 |
 | D4 | Reduced ad placement in section 9 | **Decided 2026-10-06 by the owner: banner at the bottom of every screen** | M7-03 |
 | D5 | Start after restart on by default | On by default | M1-02 |
