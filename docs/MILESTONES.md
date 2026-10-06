@@ -2,6 +2,9 @@
 
 This is the working document. Update it in every session.
 
+Since 2026-10-07 `master` is the only branch, tagged `release10` at the 2.0 checkpoint. Branch
+names in the tables and the log below (`release/v2.0`, `feature/v2.1-engagement`) are history.
+
 - Plan and reasoning: `UPDATE_PLAN.md`
 - Target architecture, taken from Secret Calculator: `ARCHITECTURE.md` (pattern IDs A1 to A26, deviations X1 to X11)
 - Screen designs: `DESIGN_SPEC.md`
@@ -21,7 +24,7 @@ This is the working document. Update it in every session.
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | In progress | 10 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
-| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 22 of 25 | 6 days, plus the Flip to Focus spike |
+| M9 | v2.1: reasons to come back (shipped inside 2.0) | In progress | 22 of 25 | 6 days, plus the Flip to Focus spike |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
 then migration with behaviour unchanged, then redesign, then features. Keeping
@@ -303,8 +306,8 @@ Exit criteria:
 
 Goal: people open Flip to Mute more often, so the app is remembered and its ads
 are seen. Feature IDs are from `FUTURE_FEATURES.md` section 1.1. Built on the
-branch `feature/v2.1-engagement`, cut from `release/v2.0`, so v2.0 can ship
-without it. The owner decides whether it merges into v2.0 or ships as v2.1.
+branch `feature/v2.1-engagement`, cut from `release/v2.0`. On 2026-10-07 the owner had it
+merged into 2.0; both branches were then deleted, and `master` is the only branch.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
@@ -350,7 +353,6 @@ Device testing for all of M9 happens in one pass at the end (owner decision, 202
 | What | Where it goes | Until then |
 |------|---------------|------------|
 | To switch Premium on: in-app product `one_time_remove_ads` in Play Console, and the app's licence key | `AppConstants.PLAY_STORE_LICENSE_KEY`, then `PREMIUM_ENABLED = true` | Premium stays hidden |
-| Decision: M9 inside v2.0, or as v2.1 | Merge `feature/v2.1-engagement` into `release/v2.0`, or keep it apart | The work stays on its branch |
 
 Done by the owner on 2026-10-07: AdMob App ID, and the rewarded, native and interstitial ad unit IDs.
 

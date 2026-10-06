@@ -39,7 +39,7 @@ the current order, and the headings of sections 2 to 4 still show the old number
 
 ## 1.1 v2.1: reasons to come back
 
-Work happens on the branch `feature/v2.1-engagement`, tracked as M9 in `MILESTONES.md`.
+Tracked as M9 in `MILESTONES.md`. Built on 2026-10-07 and shipped inside 2.0; `master` is the only branch since then.
 
 | ID | Feature | Description | Value | Effort | New access | Status |
 |----|---------|-------------|-------|--------|------------|--------|

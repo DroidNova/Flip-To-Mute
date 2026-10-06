@@ -23,7 +23,7 @@ already released and tested.
 
 1. Pick the next unchecked task in `MILESTONES.md`. Tasks are ordered so each one builds on the last.
 2. Before building anything structural, open the matching Secret Calculator file named in `ARCHITECTURE.md` and follow it.
-3. Do the task on the `release/v2.0` branch. Reference the task ID in the commit message, for example `M1-03: resume monitoring after app update`.
+3. Do the task on `master`, or on a short branch cut from it (the old `release/v2.0` branch was merged and deleted on 2026-10-07). Reference the task ID in the commit message, for example `M1-03: resume monitoring after app update`.
 4. Tick the task, and add one line to the progress log at the bottom of `MILESTONES.md`.
 5. A milestone is done only when every exit criterion is met, not when every box is ticked.
 6. Anything out of scope that comes up goes into `FUTURE_FEATURES.md`, not into v2.0.

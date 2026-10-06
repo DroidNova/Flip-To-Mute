@@ -98,7 +98,7 @@ uninstalled.
 |-----------|-------|----------|
 | Green unit tests on Windows and Linux | R10 | Fix the five DataStore tests by giving each test its own file and closing the scope before the file is reopened. |
 | Test tooling | R10, A21 | Robolectric, Turbine, `androidx.test:core` and `TrackedViewModels`, as in Secret Calculator. |
-| Continuous integration | R10 | GitHub Actions on every pull request to `release/v2.0`: unit tests, lint, `assembleRelease`. |
+| Continuous integration | R10 | GitHub Actions on every pull request to `master` and every push to it: unit tests, lint, `assembleRelease`. |
 | Tester builds | A23 | Firebase App Distribution for debug builds, as in Secret Calculator. |
 | UI tests for the critical flow | R10 | Compose tests for first run, turning on, pausing and the review policy. |
 | Device matrix | R3, R4 | Manual test script on at least one phone each from Samsung, Xiaomi and one of Oppo, Vivo or Realme, plus a Pixel or emulator for Android 16. |
@@ -310,7 +310,7 @@ every deviation from Secret Calculator.
 |-------|------|
 | Order | As in Secret Calculator: reliability fixes on today's code (M1, can ship as 1.8), then migration with behaviour unchanged (M2), then redesign and features (M3 to M7). |
 | Version | versionName `2.0.0`, versionCode `9`. A 1.8 release would use versionCode 9 and v2.0 would move to 10. |
-| Branch | `release/v2.0`, cut from `master` at `a39167c`. Pull requests target this branch. It merges to `master` at release and is tagged `v2.0.0`. |
+| Branch | Was `release/v2.0`, cut from `master` at `a39167c`. Merged to `master` and deleted on 2026-10-07; the checkpoint is tagged `release10` (the owner's naming: release plus the version code). The rest of this row is the original plan: it merges to `master` at release and is tagged `v2.0.0`. |
 | Testers | Every milestone from M1 onward goes to the App Distribution tester group and the internal track. |
 | Closed beta | At the end of M7, for at least one week. The WhatsApp and Instagram community is the natural tester pool. |
 | Production | Staged: 5%, 20%, 50%, 100%. Hold at least two days per stage. |

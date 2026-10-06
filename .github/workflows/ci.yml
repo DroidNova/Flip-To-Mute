@@ -1,13 +1,13 @@
-# Runs on every pull request to the v2.0 branch and to master.
+# Runs on every pull request to master, and on every push to it.
 # Same checks as a local pre-merge run: unit tests, lint, and a minified release build.
 # The release build catches R8 problems, such as the 1.x crash fixed in commit 3a05227.
 name: CI
 
 on:
   pull_request:
-    branches: [ "release/v2.0", "master" ]
+    branches: [ "master" ]
   push:
-    branches: [ "release/v2.0" ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 concurrency:
