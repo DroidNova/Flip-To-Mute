@@ -267,4 +267,36 @@
         <item quantity="one">%d call silenced this month</item>
         <item quantity="other">%d calls silenced this month</item>
     </plurals>
+    <string name="activity_title">Your flips</string>
+    <string name="activity_last_7_days">Last 7 days</string>
+    <string name="activity_recent">Recent flips</string>
+    <string name="activity_empty_title">No flips yet</string>
+    <string name="activity_empty_body">Place your phone face down when it rings. Your flips will show up here.</string>
+    <string name="activity_privacy_note">Only the time of each flip is kept, and only on this phone. Flip to Mute never sees who called.</string>
+    <string name="flip_notification_title_silenced">Call silenced</string>
+    <string name="flip_notification_title_vibrate">Call set to vibrate</string>
+    <string name="weekly_recap_title">Your week with Flip to Mute</string>
+    <string name="activity_channel_name">Activity</string>
+    <string name="activity_channel_description">A quiet note after each flip, and a weekly summary.</string>
+    <string name="settings_group_notifications">Notifications</string>
+    <string name="flip_notification_setting">Tell me after a flip</string>
+    <string name="flip_notification_setting_description">A quiet notification when a call is silenced.</string>
+    <string name="weekly_recap_setting">Weekly summary</string>
+    <string name="weekly_recap_setting_description">Once a week, how many calls you silenced.</string>
+    <plurals name="activity_total">
+        <item quantity="one">%d flip in total</item>
+        <item quantity="other">%d flips in total</item>
+    </plurals>
+    <plurals name="activity_day_description">
+        <item quantity="one">%2$s: %1$d flip</item>
+        <item quantity="other">%2$s: %1$d flips</item>
+    </plurals>
+    <plurals name="flip_notification_text">
+        <item quantity="one">%2$s · %1$d flip today</item>
+        <item quantity="other">%2$s · %1$d flips today</item>
+    </plurals>
+    <plurals name="weekly_recap_text">
+        <item quantity="one">You silenced %d call this week. Tap to see your flips.</item>
+        <item quantity="other">You silenced %d calls this week. Tap to see your flips.</item>
+    </plurals>
 </resources>

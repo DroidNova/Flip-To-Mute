@@ -61,6 +61,8 @@ class SettingsViewModel @Inject constructor(
             monitoringEnabled = preferences.monitoringEnabled,
             startAfterPhoneRestart = preferences.startAfterPhoneRestart,
             flipToLockEnabled = preferences.flipToLockEnabled && adminAvailability != DeviceAdminAvailability.UNSUPPORTED,
+            flipNotificationEnabled = preferences.flipNotificationEnabled,
+            weeklyRecapEnabled = preferences.weeklyRecapEnabled,
             deviceAdminAvailability = adminAvailability,
             accessState = accessState,
             batteryRestricted = d.batteryRestricted,
@@ -89,6 +91,14 @@ class SettingsViewModel @Inject constructor(
 
     fun onStartAfterPhoneRestartChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setStartAfterPhoneRestart(enabled) }
+    }
+
+    fun onFlipNotificationChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setFlipNotificationEnabled(enabled) }
+    }
+
+    fun onWeeklyRecapChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setWeeklyRecapEnabled(enabled) }
     }
 
     fun onFlipToLockChanged(enabled: Boolean) {

@@ -19,4 +19,15 @@ class MainActivityLaunchRequestParserTest {
             MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.OPEN_SETUP_AND_RESUME_ACTION),
         )
     }
+
+    @Test fun flipAndRecapNotificationsOpenTheActivityScreenWithTheirSource() {
+        assertEquals(
+            MainActivityLaunchRequest.OpenActivity("flip_notification"),
+            MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_FLIP_ACTION),
+        )
+        assertEquals(
+            MainActivityLaunchRequest.OpenActivity("weekly_recap"),
+            MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_RECAP_ACTION),
+        )
+    }
 }

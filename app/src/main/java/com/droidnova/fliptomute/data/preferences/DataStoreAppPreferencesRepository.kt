@@ -95,6 +95,14 @@ class DataStoreAppPreferencesRepository(
         }
     }
 
+    override suspend fun setFlipNotificationEnabled(enabled: Boolean) {
+        updateBoolean(Keys.FLIP_NOTIFICATION_ENABLED, enabled)
+    }
+
+    override suspend fun setWeeklyRecapEnabled(enabled: Boolean) {
+        updateBoolean(Keys.WEEKLY_RECAP_ENABLED, enabled)
+    }
+
     private fun mapPreferences(preferences: Preferences): AppPreferences {
         val selectedAction = preferences[Keys.SELECTED_FLIP_ACTION]
             ?.let { storedValue -> FlipAction.entries.firstOrNull { it.name == storedValue } }
@@ -124,6 +132,8 @@ class DataStoreAppPreferencesRepository(
             flipToLockEnabled = preferences[Keys.FLIP_TO_LOCK_ENABLED] ?: false,
             onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
             pauseUntilEpochMs = preferences[Keys.PAUSE_UNTIL_EPOCH_MS]?.takeIf { it > 0 },
+            flipNotificationEnabled = preferences[Keys.FLIP_NOTIFICATION_ENABLED] ?: true,
+            weeklyRecapEnabled = preferences[Keys.WEEKLY_RECAP_ENABLED] ?: true,
         )
     }
 
@@ -146,5 +156,7 @@ class DataStoreAppPreferencesRepository(
         val START_AFTER_PHONE_RESTART = booleanPreferencesKey("start_after_phone_restart")
         val FLIP_TO_LOCK_ENABLED = booleanPreferencesKey("flip_to_lock_enabled")
         val PAUSE_UNTIL_EPOCH_MS = longPreferencesKey("pause_until_epoch_ms")
+        val FLIP_NOTIFICATION_ENABLED = booleanPreferencesKey("flip_notification_enabled")
+        val WEEKLY_RECAP_ENABLED = booleanPreferencesKey("weekly_recap_enabled")
     }
 }

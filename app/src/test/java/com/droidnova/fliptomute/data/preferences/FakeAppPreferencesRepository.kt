@@ -60,6 +60,14 @@ class FakeAppPreferencesRepository(
         mutablePreferences.update { it.copy(pauseUntilEpochMs = epochMs) }
     }
 
+    override suspend fun setFlipNotificationEnabled(enabled: Boolean) {
+        mutablePreferences.update { it.copy(flipNotificationEnabled = enabled) }
+    }
+
+    override suspend fun setWeeklyRecapEnabled(enabled: Boolean) {
+        mutablePreferences.update { it.copy(weeklyRecapEnabled = enabled) }
+    }
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         mutablePreferences.update { it.copy(onboardingCompleted = completed) }
     }

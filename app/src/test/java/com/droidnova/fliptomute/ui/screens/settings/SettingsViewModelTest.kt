@@ -58,6 +58,22 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun flipNotificationAndWeeklySummaryAreOnUntilTurnedOff() = runTest {
+        val repository = FakeAppPreferencesRepository()
+        val viewModel = SettingsViewModel(repository, FakeSetupAccessRepository())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        assertTrue(viewModel.uiState.value.flipNotificationEnabled)
+        assertTrue(viewModel.uiState.value.weeklyRecapEnabled)
+
+        viewModel.onFlipNotificationChanged(false)
+        assertFalse(viewModel.uiState.value.flipNotificationEnabled)
+        assertTrue(viewModel.uiState.value.weeklyRecapEnabled)
+
+        viewModel.onWeeklyRecapChanged(false)
+        assertFalse(repository.current.weeklyRecapEnabled)
+    }
+
+    @Test
     fun changingDetectionFeedbackUpdatesState() = runTest {
         val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }

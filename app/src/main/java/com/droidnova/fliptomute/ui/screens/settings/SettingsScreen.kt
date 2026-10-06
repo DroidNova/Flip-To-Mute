@@ -19,10 +19,12 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockReset
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -82,6 +84,8 @@ interface SettingsActions {
     fun setFlipToLock(enabled: Boolean)
     fun removeScreenLockAccess()
     fun setStartAfterRestart(enabled: Boolean)
+    fun setFlipNotification(enabled: Boolean)
+    fun setWeeklyRecap(enabled: Boolean)
     fun openKeepRunning()
     fun addTile()
     fun selectThemeMode(mode: ThemeMode)
@@ -150,6 +154,8 @@ fun SettingsRoute(
             override fun setFlipToLock(enabled: Boolean) = viewModel.onFlipToLockChanged(enabled)
             override fun removeScreenLockAccess() { showRemoveAdminConfirmation = true }
             override fun setStartAfterRestart(enabled: Boolean) = viewModel.onStartAfterPhoneRestartChanged(enabled)
+            override fun setFlipNotification(enabled: Boolean) = viewModel.onFlipNotificationChanged(enabled)
+            override fun setWeeklyRecap(enabled: Boolean) = viewModel.onWeeklyRecapChanged(enabled)
             override fun openKeepRunning() = onOpenKeepRunning()
             override fun addTile() {
                 addRequester.request { result ->
@@ -229,6 +235,7 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions, snackbarHos
                 item(key = "gestures") { GesturesGroup(state, actions) }
             }
             item(key = "keep") { KeepRunningGroup(state, actions) }
+            item(key = "notifications") { NotificationsGroup(state, actions) }
             item(key = "appearance") { AppearanceGroup(state, actions) }
             item(key = "help") { HelpGroup(state, actions) }
         }
@@ -325,6 +332,27 @@ private fun KeepRunningGroup(state: SettingsUiState, actions: SettingsActions) {
             onClick = if (state.tileAdded) null else actions::addTile,
             summary = stringResource(if (state.tileAdded) R.string.tile_added else R.string.quick_settings_tile_description),
             trailing = if (state.tileAdded) null else ({ TextButton(onClick = actions::addTile) { Text(stringResource(R.string.add_tile)) } }),
+        )
+    }
+}
+
+/** What Flip to Mute tells the user about its own work (future features F10, F31). */
+@Composable
+private fun NotificationsGroup(state: SettingsUiState, actions: SettingsActions) {
+    SettingsGroup(stringResource(R.string.settings_group_notifications), Modifier.widthIn(max = 560.dp)) {
+        SwitchRow(
+            Icons.Filled.NotificationsActive,
+            stringResource(R.string.flip_notification_setting),
+            state.flipNotificationEnabled,
+            actions::setFlipNotification,
+            summary = stringResource(R.string.flip_notification_setting_description),
+        )
+        SwitchRow(
+            Icons.Filled.Insights,
+            stringResource(R.string.weekly_recap_setting),
+            state.weeklyRecapEnabled,
+            actions::setWeeklyRecap,
+            summary = stringResource(R.string.weekly_recap_setting_description),
         )
     }
 }
@@ -427,6 +455,8 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun setFlipToLock(enabled: Boolean) = Unit
     override fun removeScreenLockAccess() = Unit
     override fun setStartAfterRestart(enabled: Boolean) = Unit
+    override fun setFlipNotification(enabled: Boolean) = Unit
+    override fun setWeeklyRecap(enabled: Boolean) = Unit
     override fun openKeepRunning() = Unit
     override fun addTile() = Unit
     override fun selectThemeMode(mode: ThemeMode) = Unit

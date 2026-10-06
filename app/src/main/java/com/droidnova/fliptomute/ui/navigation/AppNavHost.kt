@@ -13,8 +13,11 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.droidnova.fliptomute.data.analytics.AnalyticsEvents
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
+import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
 import com.droidnova.fliptomute.ui.screens.about.AboutRoute
+import com.droidnova.fliptomute.ui.screens.activity.ActivityRoute
 import com.droidnova.fliptomute.ui.screens.check_setup.CheckSetupRoute
 import com.droidnova.fliptomute.ui.screens.home.HomeRoute
 import com.droidnova.fliptomute.ui.screens.keep_running.KeepRunningRoute
@@ -44,6 +47,8 @@ fun AppNavHost(
     /** Home is calm: the activity may show the review prompt (M6-07). */
     onHomeCalm: () -> Unit,
     onStartUpdate: () -> Unit,
+    /** The activity screen was opened; the label says from where (analytics). */
+    onActivityOpened: (source: String) -> Unit,
     /** Consent requires a way to change the ad choice (M7-02). */
     privacyOptionsRequired: Boolean,
     onOpenPrivacyOptions: () -> Unit,
@@ -56,6 +61,13 @@ fun AppNavHost(
                 popUpTo(Routes.HOME) { inclusive = false }
                 launchSingleTop = true
             }
+        }
+        // A flip or recap notification: the activity screen, with Home underneath for Back
+        val request = externalMonitoringRequest.request
+        if (request is MainActivityLaunchRequest.OpenActivity) {
+            onActivityOpened(request.source)
+            navController.go(Routes.ACTIVITY)
+            onExternalMonitoringRequestConsumed()
         }
     }
 
@@ -74,6 +86,10 @@ fun AppNavHost(
                 onSettingsClick = { navController.go(Routes.SETTINGS) },
                 onOpenAccess = onOpenAccess,
                 onCheckSetup = { navController.go(Routes.CHECK_SETUP) },
+                onOpenActivity = {
+                    onActivityOpened(AnalyticsEvents.SOURCE_HOME)
+                    navController.go(Routes.ACTIVITY)
+                },
                 onCalm = onHomeCalm,
                 onStartUpdate = onStartUpdate,
                 externalMonitoringRequest = externalMonitoringRequest,
@@ -98,6 +114,9 @@ fun AppNavHost(
                 privacyOptionsRequired = privacyOptionsRequired,
                 onOpenPrivacyOptions = onOpenPrivacyOptions,
             )
+        }
+        composable(Routes.ACTIVITY) { entry ->
+            ActivityRoute(onBack = { navController.back(entry) })
         }
         composable(Routes.KEEP_RUNNING) { entry ->
             KeepRunningRoute(onBack = { navController.back(entry) })

@@ -21,6 +21,7 @@ This is the working document. Update it in every session.
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | In progress | 8 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
+| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 6 of 10 | 6 days, plus the Flip to Focus spike |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
 then migration with behaviour unchanged, then redesign, then features. Keeping
@@ -298,6 +299,35 @@ Exit criteria:
 
 ---
 
+## M9: v2.1, reasons to come back
+
+Goal: people open Flip to Mute more often, so the app is remembered and its ads
+are seen. Feature IDs are from `FUTURE_FEATURES.md` section 1.1. Built on the
+branch `feature/v2.1-engagement`, cut from `release/v2.0`, so v2.0 can ship
+without it. The owner decides whether it merges into v2.0 or ships as v2.1.
+
+| Done | ID | Task | Size | Refs |
+|------|----|------|------|------|
+| [x] | M9-01 | `FlipHistoryStore`: the last 200 flips, time and action only, with day counts for the chart | S | F13 |
+| [x] | M9-02 | "Call silenced" notification after each flip, silent, on its own Activity channel, opens the activity screen | S | F31 |
+| [x] | M9-03 | Activity screen "Your flips": 7-day chart, total, recent flips, privacy note, empty state. The Home stats card opens it. | M | F13 |
+| [x] | M9-04 | Weekly recap, checked from `HealthCheckWorker`: every 7 days, daytime, only with at least one flip | S | F10 |
+| [x] | M9-05 | Settings group "Notifications" with a switch for each notification, both on by default | S | F10, F31 |
+| [x] | M9-06 | Banner placement and Remote Config switch for the activity screen; `activity_opened` and `weekly_recap_shown` events | S | A16, A17 |
+| [ ] | M9-07 | Device test: flip a real call, then check the notification, the tap, the chart and the count | S | |
+| [ ] | M9-08 | Native ad on the activity screen. **Blocked: needs a native ad unit ID from the owner.** | S | F32 |
+| [ ] | M9-09 | Spike S1: face down and pick-up detection with the screen off, battery cost over 24 hours | M | F30, F1 |
+| [ ] | M9-10 | Flip to Focus: session, Do Not Disturb, summary screen with streak. After M9-09. | L | F30 |
+
+Exit criteria:
+
+- [ ] A flipped call posts the notification, and a tap lands on the activity screen with that flip listed.
+- [ ] With both switches off, no notification is posted.
+- [ ] The weekly recap appears once in a week with flips and never in a week without.
+- [ ] `activity_opened` arrives in Analytics with the right source.
+
+---
+
 ## Device matrix
 
 Fill in during M1-14, again after M2-14, and during M8-01. Write Pass, Fail or
@@ -342,6 +372,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-07 | M9 | Owner direction: retention and ad views first. Branch `feature/v2.1-engagement`. M9-01 to M9-06: flip history store, silent "Call silenced" notification, "Your flips" activity screen opened from the Home stats card and both notifications, weekly recap run from the health check worker, two switches in Settings, banner placement for the new screen. `FUTURE_FEATURES.md` section 1.1 added (F30 to F34). 341 tests, lint and release build pass. | M9-07 on a phone. Native ad unit ID from the owner. Spike S1 for Flip to Focus |
 | 2026-10-06 | M1 | M1-14 started on a Samsung Galaxy A21s (Android 12): first run completes, the service returns after a process death (about 4 s) and after `adb install -r` (about 10 s). 1.7 built from `master` in `../FlipToMute-v17` for the cold start and upgrade tests. | Reboot result, force stop, cold start against 1.7, upgrade from 1.7 |
 | 2026-10-06 | M6, M7 | Owner answers: privacy URL set (M6-06 done), banner on every screen (D4). M7-09: Play in-app update from the Home update dialog with a restart prompt. | App ID (D2) still needed |
 | 2026-10-06 | M7 | M7-10: compile and target SDK 37.1 as its own commit; 313 tests, lint and release build pass. Release APK 3.68 MB, 0.86 MB above 1.7. | Device matrix, cold start, pre-launch report and M8 need a phone or the owner |

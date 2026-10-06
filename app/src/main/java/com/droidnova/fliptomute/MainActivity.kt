@@ -168,6 +168,9 @@ class MainActivity : AppCompatActivity() {
                                     onFallback = { IntentUtil.openPlayStore(this@MainActivity, packageName) },
                                 )
                             },
+                            onActivityOpened = { source ->
+                                analytics.log(AnalyticsEvents.ACTIVITY_OPENED, mapOf(AnalyticsEvents.PARAM_SOURCE to source))
+                            },
                             privacyOptionsRequired = privacyOptionsRequired,
                             onOpenPrivacyOptions = {
                                 AdConsent.showPrivacyOptions(this@MainActivity) { privacyOptionsRequired = AdConsent.isPrivacyOptionsRequired(this@MainActivity) }

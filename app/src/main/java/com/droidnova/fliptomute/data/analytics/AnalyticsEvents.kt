@@ -11,6 +11,8 @@ object AnalyticsEvents {
     const val FLIP_APPLIED = "flip_applied"
     const val BATTERY_GUIDANCE = "battery_guidance"
     const val RATE_US_TAPPED = "rate_us_tapped"
+    const val ACTIVITY_OPENED = "activity_opened"
+    const val WEEKLY_RECAP_SHOWN = "weekly_recap_shown"
 
     const val PARAM_STATE = "state"
     const val PARAM_SOURCE = "source"
@@ -25,5 +27,8 @@ object AnalyticsEvents {
     const val STATE_OFF = "off"
     const val STATE_PAUSED = "paused"
     const val SOURCE_USER = "user"
+    const val SOURCE_HOME = "home"
+    const val SOURCE_FLIP_NOTIFICATION = "flip_notification"
+    const val SOURCE_WEEKLY_RECAP = "weekly_recap"
     const val PARAM_TIMED = "timed"
 }

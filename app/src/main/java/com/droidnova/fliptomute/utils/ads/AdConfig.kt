@@ -30,6 +30,7 @@ enum class BannerPlacement(val route: String, val remoteKey: String) {
     ABOUT(Routes.ABOUT, "ad_banner_about_enabled"),
     KEEP_RUNNING(Routes.KEEP_RUNNING, "ad_banner_keep_running_enabled"),
     CHECK_SETUP(Routes.CHECK_SETUP, "ad_banner_check_setup_enabled"),
+    ACTIVITY(Routes.ACTIVITY, "ad_banner_activity_enabled"),
     ;
 
     companion object {

@@ -14,6 +14,7 @@ import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
 import com.droidnova.fliptomute.MainActivity
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.service.FlipMonitoringService
+import com.droidnova.fliptomute.ui.screens.home.FlipAction
 
 /** The "Flip to Mute stopped" alert for automatic interruptions (v2.0 plan section 4.1). */
 interface InterruptionAlertController {
@@ -29,7 +30,16 @@ interface PausedNotificationController {
     fun cancelPausedNotification()
 }
 
-class MonitoringNotificationManager(context: Context) : PausedNotificationController, InterruptionAlertController {
+/** Notifications that lead back to the activity screen: one after each flip, one a week (future features F10, F31). */
+interface FlipActivityNotifier {
+    /** A call was just silenced or vibrated by a flip. Silent: the phone is face down and ringing. */
+    fun showFlipNotification(action: FlipAction, at: Long, flipsToday: Int)
+
+    fun showWeeklyRecap(flipsThisWeek: Int)
+}
+
+class MonitoringNotificationManager(context: Context) :
+    PausedNotificationController, InterruptionAlertController, FlipActivityNotifier {
     private val context = context.applicationContext
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
 
@@ -163,6 +173,62 @@ class MonitoringNotificationManager(context: Context) : PausedNotificationContro
         if (alertPrefs.getBoolean(KEY_ALERT_SHOWN, false)) alertPrefs.edit { putBoolean(KEY_ALERT_SHOWN, false) }
     }
 
+    override fun showFlipNotification(action: FlipAction, at: Long, flipsToday: Int) {
+        val title = if (action == FlipAction.VIBRATE) R.string.flip_notification_title_vibrate else R.string.flip_notification_title_silenced
+        postActivityNotification(
+            FLIP_NOTIFICATION_ID, FLIP_CONTENT_REQUEST_CODE, MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_FLIP_ACTION,
+            context.getString(title),
+            context.resources.getQuantityString(R.plurals.flip_notification_text, flipsToday, flipsToday, formatTime(at)),
+        )
+    }
+
+    override fun showWeeklyRecap(flipsThisWeek: Int) {
+        postActivityNotification(
+            RECAP_NOTIFICATION_ID, RECAP_CONTENT_REQUEST_CODE, MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_RECAP_ACTION,
+            context.getString(R.string.weekly_recap_title),
+            context.resources.getQuantityString(R.plurals.weekly_recap_text, flipsThisWeek, flipsThisWeek),
+        )
+    }
+
+    /** Both open the activity screen, and neither makes a sound. */
+    private fun postActivityNotification(id: Int, requestCode: Int, action: String, title: String, text: String) {
+        createActivityChannel()
+        val intent = Intent(context, MainActivity::class.java)
+            .setAction(action)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val contentIntent = PendingIntent.getActivity(
+            context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, ACTIVITY_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_flip)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setContentIntent(contentIntent)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setSilent(true)
+            .build()
+        try {
+            notificationManager?.notify(id, notification)
+        } catch (_: SecurityException) {
+            // Notifications are blocked; the activity screen still has everything
+        }
+    }
+
+    private fun createActivityChannel() {
+        val channel = NotificationChannel(
+            ACTIVITY_CHANNEL_ID,
+            context.getString(R.string.activity_channel_name),
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply {
+            description = context.getString(R.string.activity_channel_description)
+            setSound(null, null)
+            enableVibration(false)
+        }
+        notificationManager?.createNotificationChannel(channel)
+    }
+
     private val alertPrefs get() = context.getSharedPreferences(ALERT_PREFS, Context.MODE_PRIVATE)
 
     private fun createAlertChannel() {
@@ -186,7 +252,12 @@ class MonitoringNotificationManager(context: Context) : PausedNotificationContro
         const val STOPPED_ALERT_NOTIFICATION_ID = 1003
         private const val ALERT_CONTENT_REQUEST_CODE = 6
         private const val TIMED_RESUME_REQUEST_CODE = 7
-        private const val ALERT_PREFS = "interruption_alert"
+        const val ACTIVITY_CHANNEL_ID = "flip_activity"
+        const val FLIP_NOTIFICATION_ID = 1004
+        const val RECAP_NOTIFICATION_ID = 1005
+        private const val FLIP_CONTENT_REQUEST_CODE = 8
+        private const val RECAP_CONTENT_REQUEST_CODE = 9
+        private const val ALERT_PREFS ="interruption_alert"
         private const val KEY_ALERT_SHOWN = "shown"
     }
 }

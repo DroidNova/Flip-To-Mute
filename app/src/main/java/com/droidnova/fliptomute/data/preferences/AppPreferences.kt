@@ -16,6 +16,10 @@ data class AppPreferences(
     val onboardingCompleted: Boolean = false,
     /** End of a timed pause (epoch ms), or null. The service stays on and ignores calls until then (M5-06). */
     val pauseUntilEpochMs: Long? = null,
+    /** A quiet "Call silenced" notification after each flip (future features F31). */
+    val flipNotificationEnabled: Boolean = true,
+    /** "You silenced 9 calls this week", only in weeks with a flip (future features F10). */
+    val weeklyRecapEnabled: Boolean = true,
 )
 
 data class CallActionSelection(

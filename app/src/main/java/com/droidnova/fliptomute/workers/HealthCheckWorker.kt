@@ -13,7 +13,8 @@ import kotlinx.coroutines.CancellationException
 
 /**
  * Runs [com.droidnova.fliptomute.service.MonitoringHealthCheck] about every six hours. Built like
- * Secret Calculator's TrashCleanupWorker: its dependencies come from a Hilt entry point.
+ * Secret Calculator's TrashCleanupWorker: its dependencies come from a Hilt entry point. The weekly
+ * recap (future features F10) is checked on the same run.
  */
 class HealthCheckWorker(
     appContext: Context,
@@ -21,6 +22,7 @@ class HealthCheckWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
+        runWeeklyRecap()
         return try {
             val result = applicationContext.backgroundEntryPoint().monitoringHealthCheck().run()
             MonitoringLog.d(applicationContext, "Health check: ${result.name}")
@@ -31,6 +33,18 @@ class HealthCheckWorker(
             // A failed check is not worth retrying sooner; the next period runs anyway
             MonitoringLog.failure(applicationContext, "Health check failed", error)
             Result.success()
+        }
+    }
+
+    /** The recap rides on this schedule; whatever happens to it, the health check still runs. */
+    private suspend fun runWeeklyRecap() {
+        try {
+            val decision = applicationContext.backgroundEntryPoint().weeklyRecap().run()
+            MonitoringLog.d(applicationContext, "Weekly recap: ${decision.name}")
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            MonitoringLog.failure(applicationContext, "Weekly recap failed", error)
         }
     }
 

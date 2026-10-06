@@ -15,6 +15,8 @@ data class SettingsUiState(
     val monitoringEnabled: Boolean = false,
     val startAfterPhoneRestart: Boolean = true,
     val flipToLockEnabled: Boolean = false,
+    val flipNotificationEnabled: Boolean = true,
+    val weeklyRecapEnabled: Boolean = true,
     val deviceAdminAvailability: DeviceAdminAvailability = DeviceAdminAvailability.INACTIVE,
     val accessState: SetupAccessState = SetupAccessState(),
     /** True when Android may stop Flip to Mute to save battery; null when the phone cannot tell. */

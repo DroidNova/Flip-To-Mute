@@ -3,6 +3,7 @@ package com.droidnova.fliptomute.di
 import android.content.Context
 import com.droidnova.fliptomute.boot.BootMonitoringCoordinator
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.stats.WeeklyRecap
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
 import com.droidnova.fliptomute.service.MonitoringHealthCheck
@@ -21,6 +22,7 @@ import dagger.hilt.components.SingletonComponent
 interface BackgroundEntryPoint {
     fun bootMonitoringCoordinator(): BootMonitoringCoordinator
     fun monitoringHealthCheck(): MonitoringHealthCheck
+    fun weeklyRecap(): WeeklyRecap
     fun deviceAdminCapabilityRepository(): DeviceAdminCapabilityRepository
     fun appPreferencesRepository(): AppPreferencesRepository
     fun quickSettingsTileUpdateRequester(): QuickSettingsTileUpdateRequester

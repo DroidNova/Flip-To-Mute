@@ -13,7 +13,9 @@ import com.droidnova.fliptomute.audio.RingerModeControllerFactory
 import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
 import com.droidnova.fliptomute.data.analytics.Funnel
 import com.droidnova.fliptomute.data.review.ReviewStore
+import com.droidnova.fliptomute.data.stats.FlipHistoryStore
 import com.droidnova.fliptomute.data.stats.FlipStatsStore
+import com.droidnova.fliptomute.data.stats.countOnDayOf
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminCapabilityRepository
@@ -55,6 +57,7 @@ class FlipMonitoringService : Service() {
     @Inject lateinit var flipFeedback: FlipFeedback
     @Inject lateinit var funnel: Funnel
     @Inject lateinit var flipStatsStore: FlipStatsStore
+    @Inject lateinit var flipHistoryStore: FlipHistoryStore
     @Inject lateinit var incomingCallVibrationControllerFactory: IncomingCallVibrationControllerFactory
     @Inject lateinit var interruptionAlertController: InterruptionAlertController
     @Inject lateinit var monitoringStateRepository: MonitoringStateRepository
@@ -630,11 +633,24 @@ class FlipMonitoringService : Service() {
         )
         try {
             flipStatsStore.recordFlip()
+            flipHistoryStore.record(event.action)
+            showFlipNotification(event.action)
             funnel.flipApplied()
             // A call silenced or vibrated by a flip: the moment the review policy counts (M6-07)
             reviewStore.recordValueMoment()
         } catch (error: RuntimeException) {
             MonitoringLog.failure(this, "Funnel update failed", error)
+        }
+    }
+
+    /** The quiet "Call silenced" notification that leads back to the activity screen (future features F31). */
+    private fun showFlipNotification(action: FlipAction) {
+        val at = System.currentTimeMillis()
+        val flipsToday = flipHistoryStore.records.value.countOnDayOf(at)
+        serviceScope.launch {
+            if (appPreferencesRepository.preferences.first().flipNotificationEnabled) {
+                notificationHelper.showFlipNotification(action, at, flipsToday)
+            }
         }
     }
 

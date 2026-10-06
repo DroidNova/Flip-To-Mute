@@ -7,4 +7,5 @@ object Routes {
     const val ABOUT = "about"
     const val KEEP_RUNNING = "keep_running"
     const val CHECK_SETUP = "check_setup"
+    const val ACTIVITY = "activity"
 }

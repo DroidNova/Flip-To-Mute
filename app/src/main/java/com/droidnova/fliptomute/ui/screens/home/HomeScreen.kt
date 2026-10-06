@@ -99,6 +99,7 @@ interface HomeActions {
     fun permissionsSheetContinue()
     fun permissionsSheetDismissed()
     fun openSettings()
+    fun openActivity()
     fun messageShown()
 }
 
@@ -107,6 +108,8 @@ fun HomeRoute(
     onSettingsClick: () -> Unit,
     onOpenAccess: () -> Unit,
     onCheckSetup: () -> Unit,
+    /** The stats card leads to the activity screen (future features F13). */
+    onOpenActivity: () -> Unit = {},
     /** Home is on with nothing to fix and no dialog: a good moment for the review prompt (M6-07). */
     onCalm: () -> Unit = {},
     /** The Update button: Play's in-app update, or the store page where that is not possible (M7-09). */
@@ -122,11 +125,10 @@ fun HomeRoute(
         when (externalMonitoringRequest.request) {
             MainActivityLaunchRequest.OpenSetupAndEnableMonitoring -> viewModel.onMonitoringChanged(true)
             MainActivityLaunchRequest.OpenSetupAndResumeMonitoring -> viewModel.onResumeMonitoring()
-            MainActivityLaunchRequest.None -> Unit
+            // The nav host shows the activity screen itself
+            is MainActivityLaunchRequest.OpenActivity, MainActivityLaunchRequest.None -> return@LaunchedEffect
         }
-        if (externalMonitoringRequest.request != MainActivityLaunchRequest.None) {
-            onExternalMonitoringRequestConsumed()
-        }
+        onExternalMonitoringRequestConsumed()
     }
     val calm = state.status == HomeStatus.ON && state.dialog == null && state.cards.none { it is HomeCard.NeedsAttention }
     LaunchedEffect(calm) {
@@ -165,6 +167,7 @@ fun HomeRoute(
             override fun permissionsSheetContinue() = viewModel.onPermissionsSheetContinue()
             override fun permissionsSheetDismissed() = viewModel.dismissPermissionsSheet()
             override fun openSettings() = onSettingsClick()
+            override fun openActivity() = onOpenActivity()
             override fun messageShown() = viewModel.onMessageShown()
         },
     )
@@ -334,6 +337,7 @@ private fun HomeCardView(card: HomeCard, actions: HomeActions) {
         is HomeCard.Stats -> StatsCard(
             silencedThisMonth = card.stats.thisMonth,
             lastFlip = card.stats.lastFlipAt?.let { lastFlipText(it) },
+            onClick = actions::openActivity,
         )
         is HomeCard.Discovery -> {
             val (icon, title, body, accept) = when (card.hint) {
@@ -470,6 +474,7 @@ internal object PreviewHomeActions : HomeActions {
     override fun permissionsSheetContinue() = Unit
     override fun permissionsSheetDismissed() = Unit
     override fun openSettings() = Unit
+    override fun openActivity() = Unit
     override fun messageShown() = Unit
 }
 

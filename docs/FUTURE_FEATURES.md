@@ -22,13 +22,43 @@ written acceptance test and, where marked, a finished research spike.
 
 | Release | Theme | Main goal | Headline features |
 |---------|-------|-----------|-------------------|
-| v2.1 | More ways to flip | Used more often | F1 Flip to Shhh, F2 internet calls, F4 flip back to ring, F7 sensitivity |
-| v2.2 | Smart and automatic | Retention | F9 schedule, F11 widget, F12 app shortcuts, F10 weekly recap, F13 history |
-| v2.3 | Yours | Revenue and reach | F19 remove ads, F21 themes, F23 more languages, F16 settings backup |
+| v2.1 | Reasons to come back | Opened more often, so ads are seen | F31 flip notification, F13 activity screen, F10 weekly recap, F30 Flip to Focus, F32 native ad |
+| v2.2 | More ways to flip | Used more often | F1 Flip to Shhh, F2 internet calls, F4 flip back to ring, F7 sensitivity |
+| v2.3 | Smart and automatic | Retention | F9 schedule, F11 widget, F12 app shortcuts |
+| v2.4 | Yours | Revenue and reach | F19 remove ads, F21 themes, F23 more languages, F16 settings backup |
 | Later | Experiments | Learn | F8 fold to mute, F24 automation, F25 watch |
 
 The order follows one rule: first make people use the gesture every day, then
 make the app manage itself, then ask for money.
+
+**Owner direction, 2026-10-07:** retention and ad views come first. Flip to Mute
+is set once and then forgotten, so the banner inside the app is rarely seen. v2.1
+therefore gives people a reason to open the app, and section 1.1 was added ahead
+of the older themes. Each older theme moved one release later: the table above is
+the current order, and the headings of sections 2 to 4 still show the old numbers.
+
+## 1.1 v2.1: reasons to come back
+
+Work happens on the branch `feature/v2.1-engagement`, tracked as M9 in `MILESTONES.md`.
+
+| ID | Feature | Description | Value | Effort | New access | Status |
+|----|---------|-------------|-------|--------|------------|--------|
+| F31 | **"Call silenced" notification** | A quiet notification after each flip: "Call silenced", the time and the count for today. A tap opens the activity screen. A switch in Settings turns it off. Never caller details. | High, a reason to open after every flip | S | None | Built 2026-10-07 |
+| F13 | **Activity screen** | "Your flips": the last 7 days as a bar chart, the total, and the recent flips with time and action. Reached from the Home stats card and from both notifications. Carries the bottom banner (`ad_banner_activity_enabled`). | High, the page the notifications lead to | S | None | Built 2026-10-07 |
+| F10 | **Weekly recap** | Moved to v2.1 and built. See section 1.1. | | | | |
+| F30 | **Flip to Focus** | Phone face down starts a focus session with Do Not Disturb. On pick-up a summary screen shows the time focused and the streak. The one idea here that can make the app a daily habit. Builds on F1 and needs the same spike (S1). | High, daily use | L | None. Reuses Sound control access. | Needs research |
+| F32 | **Native ad on the activity screen** | One native ad between the week card and the recent flips. Earns more than a banner. Needs a native ad unit ID from the owner, and a Remote Config switch. | Medium, revenue | S | None | Waiting for the ad unit ID |
+| F33 | **Interstitial at a natural end** | Only after closing a Flip to Focus summary, at most once a day, limit set by Remote Config. Never on app open: app-open ads stay out, as in v2.0. | Medium, revenue | S | None | After F30 |
+| F34 | **Rewarded theme** | Watch one ad to unlock a premium colour theme for 7 days. The user chooses to watch, and has a reason to return. Depends on F21. | Low to medium | M | None | After F21 |
+
+Rules for this theme:
+
+- Every notification must carry real content. No "come back" reminders.
+- No ads in notifications or on the lock screen: Play policy forbids both.
+- The widget (F11), app shortcuts (F12) and the tile keep the app installed but reduce opens. They stay in v2.3.
+
+Measure with `activity_opened` (source: `home`, `flip_notification`, `weekly_recap`),
+`weekly_recap_shown`, and the existing `return_d1` and `return_d7`.
 
 ## 2. v2.1: more ways to flip
 
@@ -63,7 +93,7 @@ The app should need less attention, and should remind people that it is useful.
 | F10 | **Weekly recap** | An optional weekly notification: "You silenced 9 calls this week." Off by default. | Medium, reminds users of value | S | None | Good |
 | F11 | **Home screen widget** | A small widget with on, off and "pause 1 hour". | Medium, visibility on the home screen | M | None | Good |
 | F12 | **App shortcuts** | Long press the app icon: Pause 1 hour, Turn off, Turn on. | Medium | S | None | Good |
-| F13 | **Flip history** | A simple list of recent flips: time and action only. Never caller details. | Low to medium | S | None | Good |
+| F13 | **Flip history** | Moved to v2.1 and built as the activity screen. See section 1.1. | | | | |
 | F14 | **Headset aware** | Pause automatically while a Bluetooth headset or car is connected. | Low | M | Nearby devices | Fair |
 | F15 | **Meeting mode** | Turn on stricter behaviour during calendar events. | Medium | L | Calendar | Fair. The permission is heavy. |
 | F16 | **Settings backup** | Keep settings when moving to a new phone. Needs the settings and the runtime state split into two files. v2.0 turns backup off, as Secret Calculator does. Secret Calculator's own backup and restore code is the starting point. | Medium | M | None | Good |
@@ -88,7 +118,7 @@ The app should need less attention, and should remind people that it is useful.
 
 ## 5. Suggested order
 
-If nothing in the v2.0 data changes the picture, build in this order:
+After the v2.1 work in section 1.1, and if nothing in the v2.0 data changes the picture, build in this order:
 
 1. F4 Flip back to ring again. Small, and it removes a real annoyance.
 2. F7 Sensitivity. Small, and it answers "too slow" and "too sensitive" reviews.
@@ -133,4 +163,4 @@ sections above when the next release is planned.
 
 | Date | Idea | From |
 |------|------|------|
-| | | |
+| 2026-10-07 | Flip to Focus, flip notification, native, interstitial and rewarded ads. Sorted into section 1.1 as F30 to F34. | Owner, retention discussion |

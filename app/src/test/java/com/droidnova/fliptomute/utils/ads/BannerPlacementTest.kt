@@ -9,7 +9,7 @@ import org.junit.Test
 
 class BannerPlacementTest {
     @Test fun everyScreenHasItsOwnPlacement() {
-        val routes = listOf(Routes.HOME, Routes.SETTINGS, Routes.ABOUT, Routes.KEEP_RUNNING, Routes.CHECK_SETUP)
+        val routes = listOf(Routes.HOME, Routes.SETTINGS, Routes.ABOUT, Routes.KEEP_RUNNING, Routes.CHECK_SETUP, Routes.ACTIVITY)
         assertEquals(routes, routes.map { BannerPlacement.forRoute(it)?.route })
         assertEquals(BannerPlacement.entries.size, BannerPlacement.entries.map { it.remoteKey }.toSet().size)
     }

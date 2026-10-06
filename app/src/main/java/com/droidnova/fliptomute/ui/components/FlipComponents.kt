@@ -22,12 +22,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -197,8 +199,8 @@ fun AttentionCard(
 
 /** Visible proof that Flip to Mute works (audit U11). [lastFlip] is already formatted, e.g. "today, 2:10 PM". */
 @Composable
-fun StatsCard(silencedThisMonth: Int, lastFlip: String?, modifier: Modifier = Modifier) {
-    NovaCard(modifier = modifier) {
+fun StatsCard(silencedThisMonth: Int, lastFlip: String?, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    NovaCard(modifier = modifier, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(Icons.Filled.Insights)
             Spacer(Modifier.width(12.dp))
@@ -216,6 +218,14 @@ fun StatsCard(silencedThisMonth: Int, lastFlip: String?, modifier: Modifier = Mo
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+            // A chevron only where the card leads somewhere
+            if (onClick != null) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

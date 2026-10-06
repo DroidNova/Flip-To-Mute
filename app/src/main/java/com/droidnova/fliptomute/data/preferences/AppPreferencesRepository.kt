@@ -31,4 +31,8 @@ interface AppPreferencesRepository {
 
     /** Starts (a time) or ends (null) a timed pause. */
     suspend fun setPauseUntil(epochMs: Long?)
+
+    suspend fun setFlipNotificationEnabled(enabled: Boolean)
+
+    suspend fun setWeeklyRecapEnabled(enabled: Boolean)
 }
