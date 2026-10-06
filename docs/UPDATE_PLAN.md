@@ -325,10 +325,10 @@ every deviation from Secret Calculator.
 | D1 | Rating: keep "Rate us" unchanged and add Secret Calculator's in-app review policy, or bring back the old star card | "Rate us" unchanged plus the review policy (section 8) | M6-07 |
 | D2 | Production AdMob App ID | Release is blocked | M7-01 |
 | D3 | Add Crashlytics and update Data safety | Add it, as in Secret Calculator | M0-07 |
-| D4 | Reduced ad placement in section 9 | Keep the banner on all screens | M7-03 |
+| D4 | Reduced ad placement in section 9 | **Decided 2026-10-06 by the owner: banner at the bottom of every screen** | M7-03 |
 | D5 | Start after restart on by default | On by default | M1-02 |
 | D6 | Play Console baseline numbers for section 2 | Targets stay as proposals | M0-11 |
-| D7 | Privacy policy URL | Release is blocked | M6-06 |
+| D7 | Privacy policy URL | **Decided 2026-10-06: https://sites.google.com/view/fliptomute/home** | M6-06 |
 | D8 | Hindi translation in v2.0 | Not included | M7-08 |
 | D9 | Build on Secret Calculator's architecture | **Decided 2026-10-06 by the owner: yes** | |
 | D10 | Bring back Firebase Remote Config for ad switches and the update dialog, as in Secret Calculator. 1.x removed it in commit `fcf4f3a`. | Bring it back | M7-04 |

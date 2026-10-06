@@ -13,14 +13,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -33,6 +37,7 @@ import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.review.InAppReview
 import com.droidnova.fliptomute.data.review.ReviewStore
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.data.update.InAppUpdate
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
@@ -78,6 +83,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var analytics: AnalyticsLogger
     @Inject lateinit var funnel: Funnel
     @Inject lateinit var inAppReview: InAppReview
+    @Inject lateinit var inAppUpdate: InAppUpdate
     @Inject lateinit var reviewStore: ReviewStore
     @Inject lateinit var preferencesRepository: AppPreferencesRepository
     @Inject lateinit var setupAccessRepository: SetupAccessRepository
@@ -93,6 +99,9 @@ class MainActivity : AppCompatActivity() {
     private var privacyOptionsRequired by mutableStateOf(false)
     private val adsStarted = AtomicBoolean(false)
     private var bannerView: AdView? = null
+
+    /** A flexible in-app update finished downloading; ask for the restart (M7-09). */
+    private var updateReady by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,6 +161,13 @@ class MainActivity : AppCompatActivity() {
                             onOpenPrivacyPolicy = { IntentUtil.openUrl(this@MainActivity, AppConstants.PRIVACY_POLICY_URL) },
                             onRateUsTapped = { analytics.log(AnalyticsEvents.RATE_US_TAPPED, emptyMap()) },
                             onHomeCalm = { inAppReview.maybeAsk(this@MainActivity) },
+                            onStartUpdate = {
+                                inAppUpdate.start(
+                                    this@MainActivity,
+                                    onDownloaded = { updateReady = true },
+                                    onFallback = { IntentUtil.openPlayStore(this@MainActivity, packageName) },
+                                )
+                            },
                             privacyOptionsRequired = privacyOptionsRequired,
                             onOpenPrivacyOptions = {
                                 AdConsent.showPrivacyOptions(this@MainActivity) { privacyOptionsRequired = AdConsent.isPrivacyOptionsRequired(this@MainActivity) }
@@ -167,9 +183,23 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                     }
+                    if (updateReady) {
+                        AlertDialog(
+                            onDismissRequest = { updateReady = false },
+                            title = { Text(stringResource(R.string.update_ready_title)) },
+                            text = { Text(stringResource(R.string.update_ready_body)) },
+                            confirmButton = { TextButton(onClick = { updateReady = false; inAppUpdate.completeUpdate() }) { Text(stringResource(R.string.update_restart)) } },
+                            dismissButton = { TextButton(onClick = { updateReady = false }) { Text(stringResource(R.string.update_later)) } },
+                        )
+                    }
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        inAppUpdate.checkDownloaded { updateReady = true }
     }
 
     override fun onDestroy() {

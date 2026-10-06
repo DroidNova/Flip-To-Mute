@@ -6,5 +6,5 @@ object AppConstants {
     const val WHATSAPP_COMMUNITY_GROUP_URL = "https://chat.whatsapp.com/Lx6lcBXpN3L9EzibKGg1Zp"
     const val INSTAGRAM_COMMUNITY_URL = "https://www.instagram.com/droid_nova?igsh=MWdjMGtsZGNmMm45dg=="
     /** Flip to Mute's privacy policy. Empty until the owner provides it (decision D7); Settings hides the row meanwhile. */
-    const val PRIVACY_POLICY_URL = ""
+    const val PRIVACY_POLICY_URL = "https://sites.google.com/view/fliptomute/home"
 }

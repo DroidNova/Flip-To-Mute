@@ -43,6 +43,7 @@ fun AppNavHost(
     onRateUsTapped: () -> Unit,
     /** Home is calm: the activity may show the review prompt (M6-07). */
     onHomeCalm: () -> Unit,
+    onStartUpdate: () -> Unit,
     /** Consent requires a way to change the ad choice (M7-02). */
     privacyOptionsRequired: Boolean,
     onOpenPrivacyOptions: () -> Unit,
@@ -74,6 +75,7 @@ fun AppNavHost(
                 onOpenAccess = onOpenAccess,
                 onCheckSetup = { navController.go(Routes.CHECK_SETUP) },
                 onCalm = onHomeCalm,
+                onStartUpdate = onStartUpdate,
                 externalMonitoringRequest = externalMonitoringRequest,
                 onExternalMonitoringRequestConsumed = onExternalMonitoringRequestConsumed,
             )

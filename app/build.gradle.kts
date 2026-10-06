@@ -114,6 +114,8 @@ dependencies {
     implementation(libs.androidx.appcompat)
     // Play In-App Review, as in Secret Calculator (M6-07)
     implementation(libs.play.review.ktx)
+    // Play in-app update, flexible flow (M7-09)
+    implementation(libs.play.app.update)
     // The Lite SDK provides the same client API while loading the ads runtime
     // from Google Play services instead of packaging native runtime binaries.
     implementation(libs.google.mobile.ads.lite)

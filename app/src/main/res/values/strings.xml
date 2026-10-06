@@ -193,6 +193,10 @@
     <string name="update_available_title">Update available</string>
     <string name="update_available_body">A newer version of Flip to Mute is ready.</string>
     <string name="update_available_action">Update</string>
+    <string name="update_ready_title">Update ready</string>
+    <string name="update_ready_body">Restart Flip to Mute to finish updating.</string>
+    <string name="update_restart">Restart</string>
+    <string name="update_later">Later</string>
     <string name="settings_group_flip">Flip behaviour</string>
     <string name="settings_group_keep_running">Keep it running</string>
     <string name="settings_section_appearance">Appearance</string>

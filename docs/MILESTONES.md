@@ -18,8 +18,8 @@ This is the working document. Update it in every session.
 | M3 | Design system from Secret Calculator | Blocked | 8 of 9 | 7 days |
 | M4 | First run and access | Blocked | 9 of 9 | 7 days |
 | M5 | Home | Blocked | 13 of 13 | 10 days |
-| M6 | Settings, help, about, review | Done except M6-06 (blocked on D7) | 11 of 12 | 10 days |
-| M7 | Ads, consent, remote switches, polish | In progress | 7 of 11 | 7 days, plus 2 for stretch items |
+| M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
+| M7 | Ads, consent, remote switches, polish | In progress | 8 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
@@ -227,7 +227,7 @@ Goal: every remaining screen in the new design, and the rating flow.
 | [x] | M6-03 | Check my setup guided flow, reusing the three test view models | L | U8 |
 | [x] | M6-04 | Report a problem: support email with an automatic summary, through `IntentUtil.sendSupportMail` | S | U10 |
 | [x] | M6-05 | About screen in the Secret Calculator layout: header, action tiles, community, other apps | M | U7 |
-| Blocked | M6-06 | Privacy policy link. The row and `IntentUtil.openUrl` are in place; both stay hidden until `AppConstants.PRIVACY_POLICY_URL` is set (decision D7). | S | R14, D7 |
+| [x] | M6-06 | Privacy policy link, in Settings and About (D7) | S | R14, D7 |
 | [x] | M6-07 | Rating: keep "Rate us" in About unchanged. Add `InAppReview` and `ReviewPolicy` from Secret Calculator, with Flip to Mute value moments. | M | T4, A18, D1 |
 | [x] | M6-08 | Appearance group: theme mode and colour theme pills | S | A8 |
 | [x] | M6-09 | Flip to lock: explain dialog first, switch turns on only after device admin is granted | S | T3, A11 |
@@ -251,15 +251,15 @@ Goal: compliant ads, and a product that is fast and accessible.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
-| Blocked | M7-01 | Replace the sample AdMob App ID with the production ID. The manifest still has Google's sample App ID, so release ads cannot serve until the owner supplies it (D2). | S | R9, D2 |
+| Blocked | M7-01 | Replace the sample AdMob App ID with the production ID. The manifest still has Google's sample App ID (the one with "~"). The banner unit ID is already the production one. Release ads cannot serve until the owner supplies the App ID (D2). | S | R9, D2 |
 | [x] | M7-02 | Consent with the User Messaging Platform. Ads initialised off the main thread after consent. "Privacy options" row in Settings. | M | R9, X5, X10 |
-| [x] | M7-03 | `AdConfig` and an activity-owned banner with three retries, hidden on the routes chosen in D4. D4 has no answer, so its default applies: banner on every screen, each one switchable remotely. | M | U9, A17, D4 |
+| [x] | M7-03 | `AdConfig` and an activity-owned banner with three retries, hidden on the routes chosen in D4. D4 decided: banner at the bottom of every screen, each one switchable remotely. | M | U9, A17, D4 |
 | [x] | M7-04 | `RemoteAdGate` style switches: banner per placement, latest version code for the update dialog | M | A16, D10 |
 | [x] | M7-05 | Accessibility pass against `DESIGN_SPEC.md` section 7. Automated: 200% font, 48 dp targets, switch semantics. The TalkBack walk needs a phone. | M | |
 | [x] | M7-06 | Layout pass: tablet, landscape, 320 dp wide phone | S | U14 |
 | [ ] | M7-07 | Performance: cold start, release build check, download size compared with 1.7. Size done: release APK 3.68 MB against 2.83 MB for 1.7, so 0.86 MB larger. Cold start needs a phone. | M | |
 | [x] | M7-08 | Translation readiness. Stretch: Hindi translation, not included by the D8 default. | M | U13, D8 |
-| [ ] | M7-09 | Stretch: in-app update prompt | M | T4 |
+| [x] | M7-09 | Stretch: in-app update prompt. Play's flexible update from the Home update dialog, restart prompt when downloaded, store page as fallback. | M | T4 |
 | [x] | M7-10 | Target SDK 37 as its own change, then rerun the device matrix. Compile and target SDK 37.1, as Secret Calculator. The device matrix rerun waits for a phone. | M | X11 |
 | [ ] | M7-11 | Upload to the internal track and fix everything in the Play pre-launch report | S | R10 |
 
@@ -342,6 +342,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-06 | M6, M7 | Owner answers: privacy URL set (M6-06 done), banner on every screen (D4). M7-09: Play in-app update from the Home update dialog with a restart prompt. | App ID (D2) still needed |
 | 2026-10-06 | M7 | M7-10: compile and target SDK 37.1 as its own commit; 313 tests, lint and release build pass. Release APK 3.68 MB, 0.86 MB above 1.7. | Device matrix, cold start, pre-launch report and M8 need a phone or the owner |
 | 2026-10-06 | M7 | M7-02 to M7-06 and M7-08: consent through the User Messaging Platform before any ad request, with "Privacy options" in Settings where required; ads initialised off the main thread after consent; one activity-owned banner with three load attempts and Google's sample unit on debug builds; `RemoteAdGate` brought back with a switch per banner placement and the latest version code, which now drives the Home update dialog; text wraps at 200% font, pills have 48 dp touch areas, Settings centres on tablets; `AdaptiveSnapshots` checks 200% font, touch targets, 320 dp, landscape and tablet; six dead 1.x components removed. 313 tests, lint and release build pass. | M7-01 waits for the App ID (D2). Then M7-10 |
 | 2026-10-06 | M6 | M6-01 to M6-05 and M6-07 to M6-12: Settings rebuilt in groups (flip, gestures, keep it running, appearance, help and about) with theme and colour pills and the explain-first flip to lock; Keep it running screen with brand steps and battery status; Check my setup guided flow reusing the sensor, sound and call view models, with a report summary sent in the support email; About in the Secret Calculator layout with "Rate us" unchanged; `ReviewStore` and `InAppReview` with `ReviewPolicy`, counting launches, applied flips and clean setup checks, asked only when Home is on with nothing to fix; old test screens deleted; other apps and support email text moved to resources; 108 unused strings removed. `M6Snapshots` renders the new screens. 302 tests, lint and release build pass. | M6-06 waits for the privacy URL (D7); device checks for Rate us and the review sheet. Start M7 |

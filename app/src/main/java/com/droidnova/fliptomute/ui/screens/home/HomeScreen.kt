@@ -76,7 +76,6 @@ import com.droidnova.fliptomute.ui.components.SheetHeader
 import com.droidnova.fliptomute.ui.components.StatsCard
 import com.droidnova.fliptomute.ui.components.appearIn
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
-import com.droidnova.fliptomute.utils.about_utils.IntentUtil
 import com.droidnova.fliptomute.utils.findActivity
 import com.droidnova.fliptomute.utils.openBatteryOptimizationSettings
 import java.util.Date
@@ -110,6 +109,8 @@ fun HomeRoute(
     onCheckSetup: () -> Unit,
     /** Home is on with nothing to fix and no dialog: a good moment for the review prompt (M6-07). */
     onCalm: () -> Unit = {},
+    /** The Update button: Play's in-app update, or the store page where that is not possible (M7-09). */
+    onStartUpdate: () -> Unit = {},
     externalMonitoringRequest: MainActivityLaunchEvent = MainActivityLaunchEvent(),
     onExternalMonitoringRequestConsumed: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
@@ -139,7 +140,7 @@ fun HomeRoute(
             HomeEvent.OPEN_SETTINGS -> onSettingsClick()
             HomeEvent.OPEN_BATTERY_SETTINGS -> context.openBatteryOptimizationSettings()
             HomeEvent.REQUEST_TILE -> context.findActivity()?.let { QuickSettingsTileAddRequester(it).request { } }
-            HomeEvent.OPEN_STORE -> IntentUtil.openPlayStore(context, context.packageName)
+            HomeEvent.OPEN_STORE -> onStartUpdate()
             null -> return@LaunchedEffect
         }
         viewModel.onEventHandled()
