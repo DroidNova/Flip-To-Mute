@@ -11,8 +11,10 @@ import com.droidnova.fliptomute.app.FlipToMuteApplication
 import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
 import com.droidnova.fliptomute.audio.RingerModeFailure
 import com.droidnova.fliptomute.audio.RingerModeResult
+import com.droidnova.fliptomute.data.analytics.AnalyticsEvents
 import com.droidnova.fliptomute.data.setup.AndroidSetupAccessObserver
 import com.droidnova.fliptomute.notification.MonitoringNotificationManager
+import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.util.MonitoringLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +34,8 @@ class FlipMonitoringService : Service() {
     private var foregroundStarted = false
     private val commandSequencer = MonitoringCommandSequencer()
     private var accessRevalidationJob: Job? = null
+    /** Who started the current session; decides what a later failure may change (InterruptionPolicy). */
+    private var sessionSource = MonitoringStartSource.USER
     private val accessObserver by lazy { AndroidSetupAccessObserver(this, ::requestAccessRevalidation) }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -50,6 +54,7 @@ class FlipMonitoringService : Service() {
                     isRestart = false,
                     isResume = container.monitoringStateRepository.state.value is MonitoringRuntimeState.Paused,
                     startId = startId,
+                    source = MonitoringStartSource.fromName(intent?.getStringExtra(EXTRA_START_SOURCE)),
                 )
                 START_STICKY
             }
@@ -70,7 +75,12 @@ class FlipMonitoringService : Service() {
                 START_STICKY
             }
             MonitoringServiceCommand.RESTART -> {
-                startMonitoring(isRestart = true, isResume = false, startId = startId)
+                startMonitoring(
+                    isRestart = true,
+                    isResume = false,
+                    startId = startId,
+                    source = MonitoringStartSource.SYSTEM_RESTART,
+                )
                 START_STICKY
             }
             MonitoringServiceCommand.UNKNOWN -> {
@@ -80,12 +90,18 @@ class FlipMonitoringService : Service() {
         }
     }
 
-    private fun startMonitoring(isRestart: Boolean, isResume: Boolean, startId: Int) {
-        debugLog("Start command received")
+    private fun startMonitoring(
+        isRestart: Boolean,
+        isResume: Boolean,
+        startId: Int,
+        source: MonitoringStartSource = MonitoringStartSource.USER,
+    ) {
+        debugLog("Start command received from ${source.name}")
         val runtime = container.monitoringStateRepository.state.value
         if (runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Resuming ||
             runtime is MonitoringRuntimeState.Active
         ) return
+        sessionSource = source
         val token = commandSequencer.supersede()
         notificationHelper.cancelPausedNotification()
         publishMonitoringState(if (isResume) MonitoringRuntimeState.Resuming else MonitoringRuntimeState.Starting)
@@ -156,7 +172,11 @@ class FlipMonitoringService : Service() {
                             if (!commandSequencer.isCurrent(token)) return@launch
                             if (reason == MonitoringFailure.SETUP_REQUIRED) {
                                 requestAccessRevalidation()
-                            } else if (isResume) failResume(reason) else failStart(reason)
+                            } else if (isResume) {
+                                failResume(reason)
+                            } else {
+                                failStart(reason, phase = FailurePhase.RUNNING)
+                            }
                         }
                     },
                     proximityMonitor = container.proximityMonitorFactory.create(),
@@ -165,6 +185,8 @@ class FlipMonitoringService : Service() {
                     screenLockController = container.screenLockController,
                     screenStateRepository = container.screenStateRepository,
                     monitoringStateRepository = container.monitoringStateRepository,
+                    flipFeedback = container.flipFeedback,
+                    onFlipApplied = ::onFlipApplied,
                 )
                 debugLog("Starting cellular call monitor")
                 when (val result = coordinator?.startAndAwaitReady()) {
@@ -188,6 +210,19 @@ class FlipMonitoringService : Service() {
                         if (!commandSequencer.isCurrent(token)) return@launch
                         publishMonitoringState(MonitoringRuntimeState.Active)
                         debugLog("Runtime state changed to Active")
+                        container.interruptionAlertController.clearStoppedAlert()
+                        logEvent(
+                            AnalyticsEvents.SERVICE_STATE_CHANGED,
+                            AnalyticsEvents.PARAM_STATE to AnalyticsEvents.STATE_ON,
+                            AnalyticsEvents.PARAM_SOURCE to source.analyticsName,
+                        )
+                        if (source != MonitoringStartSource.USER) {
+                            logEvent(
+                                AnalyticsEvents.AUTO_RESUME,
+                                AnalyticsEvents.PARAM_SOURCE to source.analyticsName,
+                                AnalyticsEvents.PARAM_SUCCESS to "true",
+                            )
+                        }
                     }
                     is MonitoringCoordinatorStartResult.Failed -> {
                         debugLog("Coordinator startup result: Failed(${result.reason.name})")
@@ -233,6 +268,13 @@ class FlipMonitoringService : Service() {
     }
 
     private fun stopMonitoring(startId: Int) {
+        // The user turned it off, so an earlier "stopped" alert no longer applies
+        container.interruptionAlertController.clearStoppedAlert()
+        logEvent(
+            AnalyticsEvents.SERVICE_STATE_CHANGED,
+            AnalyticsEvents.PARAM_STATE to AnalyticsEvents.STATE_OFF,
+            AnalyticsEvents.PARAM_SOURCE to AnalyticsEvents.SOURCE_USER,
+        )
         commandSequencer.supersede()
         commandJob?.cancel()
         coordinator?.beginStopping()
@@ -275,6 +317,11 @@ class FlipMonitoringService : Service() {
         commandSequencer.supersede()
         commandJob?.cancel()
         publishMonitoringState(MonitoringRuntimeState.Pausing)
+        logEvent(
+            AnalyticsEvents.SERVICE_STATE_CHANGED,
+            AnalyticsEvents.PARAM_STATE to AnalyticsEvents.STATE_PAUSED,
+            AnalyticsEvents.PARAM_SOURCE to AnalyticsEvents.SOURCE_USER,
+        )
         coordinator?.beginStopping()
         commandJob = serviceScope.launch { finishPaused() }
     }
@@ -329,11 +376,38 @@ class FlipMonitoringService : Service() {
         stopSelfResult(commandSequencer.latestStartId.coerceAtLeast(startId))
     }
 
-    private suspend fun failStart(reason: MonitoringFailure, startId: Int = commandSequencer.latestStartId) {
-        debugLog("Monitoring runtime failure reason: ${reason.name}")
+    private suspend fun failStart(
+        reason: MonitoringFailure,
+        startId: Int = commandSequencer.latestStartId,
+        phase: FailurePhase = FailurePhase.STARTING,
+    ) {
+        val source = sessionSource
+        val decision = InterruptionPolicy.decide(source, phase, reason)
+        debugLog("Monitoring failure ${reason.name} from ${source.name} while ${phase.name}: ${decision.name}")
         publishMonitoringState(MonitoringRuntimeState.Error(reason))
         debugLog("Runtime state changed to Error")
-        finishStopped(writePreference = true, preserveError = true, failure = reason, startId = startId)
+        logEvent(
+            AnalyticsEvents.SERVICE_INTERRUPTED,
+            AnalyticsEvents.PARAM_REASON to reason.name.lowercase(),
+            AnalyticsEvents.PARAM_SOURCE to source.analyticsName,
+            AnalyticsEvents.PARAM_PHASE to phase.name.lowercase(),
+        )
+        if (source != MonitoringStartSource.USER && phase == FailurePhase.STARTING) {
+            logEvent(
+                AnalyticsEvents.AUTO_RESUME,
+                AnalyticsEvents.PARAM_SOURCE to source.analyticsName,
+                AnalyticsEvents.PARAM_SUCCESS to "false",
+            )
+        }
+        when (decision) {
+            InterruptionDecision.TURN_OFF ->
+                finishStopped(writePreference = true, preserveError = true, failure = reason, startId = startId)
+            InterruptionDecision.KEEP_ON_AND_ALERT -> {
+                // Keep the user's "on" choice: the app restarts it on the next open, health check or tap on the alert
+                finishStopped(writePreference = false, preserveError = true, failure = reason, startId = startId)
+                container.interruptionAlertController.showStoppedAlert()
+            }
+        }
     }
 
     private suspend fun finishStopped(
@@ -392,8 +466,14 @@ class FlipMonitoringService : Service() {
     }
 
     companion object {
-        fun createStartIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
+        internal const val EXTRA_START_SOURCE = "com.droidnova.fliptomute.extra.START_SOURCE"
+
+        fun createStartIntent(
+            context: Context,
+            source: MonitoringStartSource = MonitoringStartSource.USER,
+        ) = Intent(context, FlipMonitoringService::class.java)
             .setAction(MonitoringServiceCommandClassifier.START_ACTION)
+            .putExtra(EXTRA_START_SOURCE, source.name)
         fun createStopIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
             .setAction(MonitoringServiceCommandClassifier.STOP_ACTION)
         fun createPauseIntent(context: Context) = Intent(context, FlipMonitoringService::class.java)
@@ -406,6 +486,29 @@ class FlipMonitoringService : Service() {
 
     private fun debugLog(message: String) {
         MonitoringLog.d(this, message)
+    }
+
+    private fun onFlipApplied(event: FlipAppliedEvent) {
+        logEvent(
+            AnalyticsEvents.FLIP_APPLIED,
+            AnalyticsEvents.PARAM_ACTION to if (event.action == FlipAction.VIBRATE) "vibrate" else "silence",
+            AnalyticsEvents.PARAM_FLAT_ONLY to event.flatOnly.toString(),
+            AnalyticsEvents.PARAM_POCKET_PROTECTION to event.pocketProtection.toString(),
+        )
+        try {
+            container.funnel.flipApplied()
+        } catch (error: RuntimeException) {
+            MonitoringLog.failure(this, "Funnel update failed", error)
+        }
+    }
+
+    /** Analytics must never stop the service from working. */
+    private fun logEvent(event: String, vararg params: Pair<String, String>) {
+        try {
+            container.analyticsLogger.log(event, params.toMap())
+        } catch (error: RuntimeException) {
+            MonitoringLog.failure(this, "Analytics event failed", error)
+        }
     }
 
     private fun publishMonitoringState(state: MonitoringRuntimeState) {

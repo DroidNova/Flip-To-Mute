@@ -1,6 +1,11 @@
 package com.droidnova.fliptomute.app
 
 import android.content.Context
+import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
+import com.droidnova.fliptomute.data.analytics.Funnel
+import com.droidnova.fliptomute.data.analytics.firebaseAnalyticsLogger
+import com.droidnova.fliptomute.data.reliability.AndroidBatteryOptimizationStatus
+import com.droidnova.fliptomute.data.reliability.BatteryOptimizationStatus
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.preferences.DataStoreAppPreferencesRepository
 import com.droidnova.fliptomute.data.preferences.appDataStore
@@ -18,6 +23,8 @@ import com.droidnova.fliptomute.telephony.AndroidCellularCallMonitor
 import com.droidnova.fliptomute.telephony.CellularCallMonitorFactory
 import com.droidnova.fliptomute.audio.AndroidRingerModeController
 import com.droidnova.fliptomute.audio.RingerModeControllerFactory
+import com.droidnova.fliptomute.audio.AndroidFlipFeedback
+import com.droidnova.fliptomute.audio.FlipFeedback
 import com.droidnova.fliptomute.audio.AndroidIncomingCallVibrationController
 import com.droidnova.fliptomute.audio.AndroidVibrationCapabilityRepository
 import com.droidnova.fliptomute.audio.IncomingCallVibrationControllerFactory
@@ -28,10 +35,12 @@ import com.droidnova.fliptomute.service.MonitoringServiceController
 import com.droidnova.fliptomute.service.MonitoringStateRepository
 import com.droidnova.fliptomute.service.AppRecoveryManager
 import com.droidnova.fliptomute.service.DefaultAppRecoveryManager
+import com.droidnova.fliptomute.service.MonitoringHealthCheck
 import com.droidnova.fliptomute.quicksettings.AndroidQuickSettingsTileUpdateRequester
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
 import com.droidnova.fliptomute.notification.MonitoringNotificationManager
 import com.droidnova.fliptomute.notification.PausedNotificationController
+import com.droidnova.fliptomute.notification.InterruptionAlertController
 import com.droidnova.fliptomute.boot.BootMonitoringCoordinator
 import com.droidnova.fliptomute.boot.DefaultBootMonitoringCoordinator
 import com.droidnova.fliptomute.util.MonitoringLog
@@ -61,7 +70,13 @@ interface AppContainer {
     val appRecoveryManager: AppRecoveryManager
     val quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester
     val pausedNotificationController: PausedNotificationController
+    val interruptionAlertController: InterruptionAlertController
     val bootMonitoringCoordinator: BootMonitoringCoordinator
+    val analyticsLogger: AnalyticsLogger
+    val funnel: Funnel
+    val monitoringHealthCheck: MonitoringHealthCheck
+    val batteryOptimizationStatus: BatteryOptimizationStatus
+    val flipFeedback: FlipFeedback
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -98,8 +113,10 @@ class DefaultAppContainer(context: Context) : AppContainer {
         AndroidMonitoringServiceController(applicationContext)
     override val quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester =
         AndroidQuickSettingsTileUpdateRequester(applicationContext)
+    private val notificationManager = MonitoringNotificationManager(applicationContext)
+    override val interruptionAlertController: InterruptionAlertController = notificationManager
     override val pausedNotificationController: PausedNotificationController =
-        MonitoringNotificationManager(applicationContext)
+        notificationManager
     override val bootMonitoringCoordinator: BootMonitoringCoordinator by lazy {
         DefaultBootMonitoringCoordinator(
             appPreferencesRepository,
@@ -110,6 +127,22 @@ class DefaultAppContainer(context: Context) : AppContainer {
             quickSettingsTileUpdateRequester,
             ringerModeControllerFactory.create(),
             log = { message -> MonitoringLog.d(applicationContext, message) },
+            alertController = interruptionAlertController,
+            analytics = analyticsLogger,
+        )
+    }
+    override val analyticsLogger: AnalyticsLogger by lazy { firebaseAnalyticsLogger(applicationContext) }
+    override val funnel: Funnel by lazy { Funnel(applicationContext, analyticsLogger) }
+    override val batteryOptimizationStatus: BatteryOptimizationStatus = AndroidBatteryOptimizationStatus(applicationContext)
+    override val flipFeedback: FlipFeedback = AndroidFlipFeedback(applicationContext)
+    override val monitoringHealthCheck: MonitoringHealthCheck by lazy {
+        MonitoringHealthCheck(
+            appPreferencesRepository,
+            setupAccessRepository,
+            monitoringStateRepository,
+            monitoringServiceController,
+            interruptionAlertController,
+            analyticsLogger,
         )
     }
     override val appRecoveryManager: AppRecoveryManager by lazy {

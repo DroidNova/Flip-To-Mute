@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -60,13 +61,14 @@ fun PermissionsRoute(
     val viewModel: PermissionsViewModel = viewModel(factory = viewModelFactory)
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val context = LocalContext.current
+    val resources = LocalResources.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var dialog by remember { mutableStateOf<ExplanationDialog?>(null) }
 
     fun reportSettingsResult(result: SettingsLaunchResult) {
         if (result == SettingsLaunchResult.UNAVAILABLE) scope.launch {
-            snackbarHostState.showSnackbar(context.getString(R.string.settings_unavailable))
+            snackbarHostState.showSnackbar(resources.getString(R.string.settings_unavailable))
         }
     }
 
@@ -83,8 +85,8 @@ fun PermissionsRoute(
                 ),
             ) == RuntimePermissionAction.OPEN_SETTINGS
             val result = snackbarHostState.showSnackbar(
-                message = context.getString(R.string.phone_access_denied),
-                actionLabel = if (permanentlyDenied) context.getString(R.string.open_app_settings) else null,
+                message = resources.getString(R.string.phone_access_denied),
+                actionLabel = if (permanentlyDenied) resources.getString(R.string.open_app_settings) else null,
             )
             if (permanentlyDenied && result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                 reportSettingsResult(context.openAppDetailsSettings())
@@ -104,8 +106,8 @@ fun PermissionsRoute(
                 ),
             ) == RuntimePermissionAction.OPEN_SETTINGS
             val result = snackbarHostState.showSnackbar(
-                message = context.getString(R.string.notification_access_denied),
-                actionLabel = if (permanentlyDenied) context.getString(R.string.open_settings_action) else null,
+                message = resources.getString(R.string.notification_access_denied),
+                actionLabel = if (permanentlyDenied) resources.getString(R.string.open_settings_action) else null,
             )
             if (permanentlyDenied && result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                 reportSettingsResult(context.openAppNotificationSettings())

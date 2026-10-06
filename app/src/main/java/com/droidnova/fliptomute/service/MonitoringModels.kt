@@ -1,5 +1,12 @@
 package com.droidnova.fliptomute.service
 
+/** A ringing call was silenced or switched to vibrate by a flip. Anonymous: no call details. */
+data class FlipAppliedEvent(
+    val action: com.droidnova.fliptomute.ui.screens.home.FlipAction,
+    val flatOnly: Boolean,
+    val pocketProtection: Boolean,
+)
+
 enum class MonitoringFailure {
     SETUP_REQUIRED,
     TELEPHONY_UNAVAILABLE,

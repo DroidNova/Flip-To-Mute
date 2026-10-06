@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Manufacturer steps for the "Keep it running" screen (M1-07, shown from M6-02). Short, one action each. -->
+<resources>
+    <string-array name="keep_running_steps_xiaomi">
+        <item>Open App info and tap Battery saver.</item>
+        <item>Choose No restrictions.</item>
+        <item>Back in App info, turn on Autostart.</item>
+    </string-array>
+    <string-array name="keep_running_steps_samsung">
+        <item>Open App info and tap Battery.</item>
+        <item>Choose Unrestricted.</item>
+        <item>In Settings, Battery, Background usage limits, make sure Flip to Mute is not in Sleeping apps.</item>
+    </string-array>
+    <string-array name="keep_running_steps_oppo">
+        <item>Open App info and tap Battery usage.</item>
+        <item>Turn on Allow background activity.</item>
+        <item>Turn on Allow auto launch, if your phone shows it.</item>
+    </string-array>
+    <string-array name="keep_running_steps_vivo">
+        <item>Open App info and tap Battery.</item>
+        <item>Allow high background power consumption.</item>
+        <item>In iManager or Settings, allow Flip to Mute to auto start.</item>
+    </string-array>
+    <string-array name="keep_running_steps_huawei">
+        <item>Open Settings, Battery, App launch.</item>
+        <item>Find Flip to Mute and turn off Manage automatically.</item>
+        <item>Turn on Auto-launch, Secondary launch and Run in background.</item>
+    </string-array>
+    <string-array name="keep_running_steps_other">
+        <item>Open App info and tap Battery.</item>
+        <item>Choose Unrestricted, or turn off battery optimisation.</item>
+        <item>Keep Flip to Mute out of any app cleaner or sleep list.</item>
+    </string-array>
+</resources>

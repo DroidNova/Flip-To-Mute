@@ -7,7 +7,8 @@ data class AppPreferences(
     val callActionSelection: CallActionSelection = CallActionSelection(),
     val monitoringEnabled: Boolean = false,
     val monitoringPaused: Boolean = false,
-    val startAfterPhoneRestart: Boolean = false,
+    // On unless the user turned it off (v2.0 plan, decision D5): a restart must not silently stop Flip to Mute
+    val startAfterPhoneRestart: Boolean = true,
     val detectionFeedbackEnabled: Boolean = true,
     val requireFlatSurfaceBeforeFlip: Boolean = false,
     val pocketProtectionEnabled: Boolean = true,

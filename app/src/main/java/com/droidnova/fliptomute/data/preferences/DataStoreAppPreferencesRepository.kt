@@ -110,7 +110,7 @@ class DataStoreAppPreferencesRepository(
             callActionSelection = selection,
             monitoringEnabled = monitoringEnabled,
             monitoringPaused = monitoringEnabled && (preferences[Keys.MONITORING_PAUSED] ?: false),
-            startAfterPhoneRestart = preferences[Keys.START_AFTER_PHONE_RESTART] ?: false,
+            startAfterPhoneRestart = preferences[Keys.START_AFTER_PHONE_RESTART] ?: true,
             detectionFeedbackEnabled = preferences[Keys.DETECTION_FEEDBACK_ENABLED] ?: true,
             requireFlatSurfaceBeforeFlip = preferences[Keys.REQUIRE_FLAT_SURFACE_BEFORE_FLIP] ?: false,
             pocketProtectionEnabled = preferences[Keys.POCKET_PROTECTION_ENABLED] ?: true,

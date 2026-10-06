@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import com.droidnova.fliptomute.data.okioStorage
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -25,7 +26,8 @@ class DataStoreAppPreferencesRepositoryTest {
             val preferences = repository.preferences.first()
             assertFalse(preferences.monitoringEnabled)
             assertFalse(preferences.monitoringPaused)
-            assertFalse(preferences.startAfterPhoneRestart)
+            // On by default since v2.0 (decision D5)
+            assertTrue(preferences.startAfterPhoneRestart)
             assertFalse(preferences.flipToLockEnabled)
         }
     }
@@ -90,9 +92,7 @@ class DataStoreAppPreferencesRepositoryTest {
     ) {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
-        val dataStore = PreferenceDataStoreFactory.create(scope = scope) {
-            file
-        }
+        val dataStore = PreferenceDataStoreFactory.create(storage = okioStorage(file), scope = scope)
         try {
             block(dataStore)
         } finally {

@@ -30,7 +30,7 @@ class SettingsViewModelTest {
 
         assertTrue(viewModel.uiState.value.detectionFeedbackEnabled)
         assertFalse(viewModel.uiState.value.requireFlatSurfaceBeforeFlip)
-        assertFalse(viewModel.uiState.value.startAfterPhoneRestart)
+        assertTrue(viewModel.uiState.value.startAfterPhoneRestart)
     }
 
     @Test

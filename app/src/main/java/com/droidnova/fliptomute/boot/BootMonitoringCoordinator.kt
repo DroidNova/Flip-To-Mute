@@ -2,8 +2,11 @@ package com.droidnova.fliptomute.boot
 
 import com.droidnova.fliptomute.audio.RingerModeController
 import com.droidnova.fliptomute.audio.RingerModeRecoveryResult
+import com.droidnova.fliptomute.data.analytics.AnalyticsEvents
+import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.notification.InterruptionAlertController
 import com.droidnova.fliptomute.notification.PausedNotificationController
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
 import com.droidnova.fliptomute.service.MonitoringCommandResult
@@ -16,7 +19,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 interface BootMonitoringCoordinator {
-    suspend fun handleBootCompleted(): BootMonitoringResult
+    /** Handles a phone restart or an app update. Each trigger is handled once per process. */
+    suspend fun handle(trigger: AutoStartTrigger): BootMonitoringResult
+
+    suspend fun handleBootCompleted(): BootMonitoringResult = handle(AutoStartTrigger.BOOT)
 }
 
 sealed interface BootMonitoringResult {
@@ -44,28 +50,31 @@ class DefaultBootMonitoringCoordinator(
     private val recoveryController: RingerModeController,
     private val resolver: BootMonitoringActionResolver = BootMonitoringActionResolver(),
     private val log: (String) -> Unit = {},
+    private val alertController: InterruptionAlertController = NoInterruptionAlerts,
+    private val analytics: AnalyticsLogger = AnalyticsLogger { _, _ -> },
 ) : BootMonitoringCoordinator {
     private val mutex = Mutex()
-    private var completedResult: BootMonitoringResult? = null
+    private val completedResults = mutableMapOf<AutoStartTrigger, BootMonitoringResult>()
 
-    override suspend fun handleBootCompleted(): BootMonitoringResult = mutex.withLock {
-        completedResult?.let { return@withLock it }
+    override suspend fun handle(trigger: AutoStartTrigger): BootMonitoringResult = mutex.withLock {
+        completedResults[trigger]?.let { return@withLock it }
         val result = try {
             val preferences = preferencesRepository.preferences.first()
-            log("Boot preferences loaded")
+            log("${trigger.name}: preferences loaded")
             log("Start after restart enabled: ${preferences.startAfterPhoneRestart}")
             log("Monitoring enabled: ${preferences.monitoringEnabled}")
             log("Monitoring paused: ${preferences.monitoringPaused}")
             val action = resolver.resolve(
+                trigger,
                 preferences.startAfterPhoneRestart,
                 preferences.monitoringEnabled,
                 preferences.monitoringPaused,
             )
-            log("Boot action resolved: ${action.javaClass.simpleName}")
+            log("${trigger.name}: action resolved: ${action.javaClass.simpleName}")
             when (action) {
                 BootMonitoringAction.StayOff -> stayOff()
                 BootMonitoringAction.RestorePausedState -> restorePaused()
-                BootMonitoringAction.StartMonitoring -> startMonitoring()
+                BootMonitoringAction.StartMonitoring -> startMonitoring(trigger)
             }
         } catch (_: java.io.IOException) {
             BootMonitoringResult.Failed(BootMonitoringFailure.PREFERENCES_UNAVAILABLE)
@@ -74,7 +83,7 @@ class DefaultBootMonitoringCoordinator(
         }
         tileUpdateRequester.requestUpdate()
         log("Tile update requested")
-        completedResult = result
+        completedResults[trigger] = result
         result
     }
 
@@ -100,22 +109,32 @@ class DefaultBootMonitoringCoordinator(
         return BootMonitoringResult.PausedStateRestored
     }
 
-    private suspend fun startMonitoring(): BootMonitoringResult {
+    private suspend fun startMonitoring(trigger: AutoStartTrigger): BootMonitoringResult {
         val setupComplete = setupAccessRepository.refreshAndGet().isSetupComplete
         log("Setup validation complete: $setupComplete")
         if (!setupComplete) {
+            // Access was removed: this can only be fixed by the user, so Flip to Mute turns off
             stayOff()
             return BootMonitoringResult.Failed(BootMonitoringFailure.SETUP_INCOMPLETE)
         }
-        return when (val commandResult = serviceController.startMonitoring()) {
+        return when (val commandResult = serviceController.startMonitoring(trigger.startSource)) {
             MonitoringCommandResult.Accepted -> {
-                log("Monitoring start requested from boot: accepted")
+                log("Monitoring start requested from ${trigger.name}: accepted")
                 BootMonitoringResult.MonitoringStartRequested
             }
             is MonitoringCommandResult.Rejected -> {
-                log("Monitoring start requested from boot: rejected")
-                stayOff()
-                val failure = if (serviceControllerFailureIsStartRestriction(commandResult.reason)) {
+                log("Monitoring start requested from ${trigger.name}: rejected")
+                // Keep the user's choice (audit R3): show the error and the "stopped" alert instead
+                monitoringStateRepository.updateState(MonitoringRuntimeState.Error(commandResult.reason))
+                alertController.showStoppedAlert()
+                analytics.log(
+                    AnalyticsEvents.AUTO_RESUME,
+                    mapOf(
+                        AnalyticsEvents.PARAM_SOURCE to trigger.startSource.analyticsName,
+                        AnalyticsEvents.PARAM_SUCCESS to "false",
+                    ),
+                )
+                val failure = if (commandResult.reason == MonitoringFailure.SERVICE_START_NOT_ALLOWED) {
                     BootMonitoringFailure.SERVICE_START_NOT_ALLOWED
                 } else {
                     BootMonitoringFailure.SERVICE_START_FAILED
@@ -124,7 +143,9 @@ class DefaultBootMonitoringCoordinator(
             }
         }
     }
+}
 
-    private fun serviceControllerFailureIsStartRestriction(reason: MonitoringFailure) =
-        reason == MonitoringFailure.SERVICE_START_NOT_ALLOWED
+private object NoInterruptionAlerts : InterruptionAlertController {
+    override fun showStoppedAlert() = Unit
+    override fun clearStoppedAlert() = Unit
 }

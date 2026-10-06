@@ -3,6 +3,7 @@ package com.droidnova.fliptomute.service
 import com.droidnova.fliptomute.audio.RingerModeController
 import com.droidnova.fliptomute.audio.RingerModeResult
 import com.droidnova.fliptomute.audio.DeviceRingerMode
+import com.droidnova.fliptomute.audio.FlipFeedback
 import com.droidnova.fliptomute.audio.IncomingCallVibrationController
 import com.droidnova.fliptomute.audio.IncomingCallVibrationResult
 import com.droidnova.fliptomute.audio.VibrationAvailability
@@ -53,6 +54,8 @@ class FlipMonitoringCoordinator(
     private val screenLockController: ScreenLockController? = null,
     private val screenStateRepository: ScreenStateRepository? = null,
     private val monitoringStateRepository: MonitoringStateRepository = InMemoryMonitoringStateRepository(),
+    private val flipFeedback: FlipFeedback? = null,
+    private val onFlipApplied: (FlipAppliedEvent) -> Unit = {},
 ) {
     constructor(
         preferencesRepository: AppPreferencesRepository,
@@ -266,6 +269,8 @@ class FlipMonitoringCoordinator(
                     state.orientation == DeviceOrientation.FACE_DOWN
                 }
                 if (!allowed) return@withLock
+                // Buzz before the sound mode changes: some phones mute every vibration once in Silent
+                if (latestPreferences.detectionFeedbackEnabled) flipFeedback?.play()
                 if (!currentSession.selection.vibratePhone) vibrationController.stop()
                 val modeAction = if (currentSession.selection.muteRingtone) FlipAction.SILENT else FlipAction.VIBRATE
                 val result = ringerModeController.applyTemporaryAction(modeAction)
@@ -279,6 +284,7 @@ class FlipMonitoringCoordinator(
                         ringingSession = currentSession.copy(actionHandled = true)
                         flatSurfaceFlipGate.reset()
                         updateOrientationMonitoring()
+                        reportFlipApplied(currentSession, modeAction)
                     }
                     is RingerModeResult.Failure -> {
                         if (currentSession.selection.vibratePhone) {
@@ -288,6 +294,7 @@ class FlipMonitoringCoordinator(
                                     ringingSession = currentSession.copy(actionHandled = true)
                                     flatSurfaceFlipGate.reset()
                                     updateOrientationMonitoring()
+                                    reportFlipApplied(currentSession, FlipAction.SILENT)
                                 }
                                 is RingerModeResult.Failure -> fail(MonitoringFailure.SOUND_CONTROL_FAILED)
                             }
@@ -302,6 +309,20 @@ class FlipMonitoringCoordinator(
                 orientationMonitor.stop()
             }
             is FaceDownDetectionState.Idle -> Unit
+        }
+    }
+
+    private fun reportFlipApplied(session: RingingSession, action: FlipAction) {
+        try {
+            onFlipApplied(
+                FlipAppliedEvent(
+                    action = action,
+                    flatOnly = session.requireFlatSurfaceBeforeFlip,
+                    pocketProtection = latestPreferences.pocketProtectionEnabled,
+                ),
+            )
+        } catch (_: RuntimeException) {
+            // Reporting must never undo or block a flip that already worked
         }
     }
 

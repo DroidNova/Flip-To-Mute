@@ -40,10 +40,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import android.app.Activity
 import kotlinx.coroutines.launch
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddRequester
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddResult
@@ -86,7 +85,7 @@ fun SettingsRoute(
         viewModel.refreshDeviceAdminState()
     }
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
-    val activity = LocalContext.current as Activity
+    val activity = LocalActivity.current ?: return
     val addRequester = remember(activity) { QuickSettingsTileAddRequester(activity) }
     val snackbar = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()

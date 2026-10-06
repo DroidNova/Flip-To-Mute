@@ -138,7 +138,8 @@ class AndroidCellularCallMonitor(context: Context) : CellularCallMonitor {
             subscriptionManager?.activeSubscriptionInfoList
                 ?.asSequence()
                 ?.map { it.subscriptionId }
-                ?.filter { subscriptionId -> SubscriptionManager.isValidSubscriptionId(subscriptionId) }
+                // Same check as SubscriptionManager.isValidSubscriptionId, which only exists from API 29
+                ?.filter { subscriptionId -> subscriptionId > SubscriptionManager.INVALID_SUBSCRIPTION_ID }
                 ?.distinct()
                 ?.toList()
                 .orEmpty()

@@ -76,6 +76,7 @@
     <string name="bug_report_body">Device: %1$s %2$s\nAndroid: %3$s (API %4$d)\n\nDescribe the issue:\n</string>
     <string name="unknown_version">Unknown</string>
     <string name="no_compatible_app">No compatible app found</string>
+    <string name="no_email_app">No email app found</string>
     <string name="follow_instagram">Follow on Instagram</string>
     <string name="follow_instagram_description">Follow the DroidNova Instagram page</string>
     <string name="instagram_url" translatable="false">https://www.instagram.com/droidnova/</string>
@@ -274,4 +275,8 @@
     <string name="monitoring_telephony_error">Cellular call detection is unavailable on this device.</string>
     <string name="monitoring_notification_error">Allow notifications before turning on Flip to Mute.</string>
     <string name="monitoring_cleanup_error">Monitoring stopped, but cleanup could not finish. Check your sound and try again.</string>
+    <string name="alert_channel_name">Alerts</string>
+    <string name="alert_channel_description">Tells you when Flip to Mute stopped and needs a tap to come back.</string>
+    <string name="stopped_alert_title">Flip to Mute stopped</string>
+    <string name="stopped_alert_text">Tap to turn it back on.</string>
 </resources>

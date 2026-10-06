@@ -111,12 +111,11 @@ class DefaultAppRecoveryManager(
         if (requestActiveReconstruction && runtime is MonitoringRuntimeState.Recovering &&
             !activeReconstructionRequested
         ) {
-            when (val result = serviceController.startMonitoring()) {
+            when (val result = serviceController.startMonitoring(MonitoringStartSource.APP_RECOVERY)) {
                 MonitoringCommandResult.Accepted -> activeReconstructionRequested = true
-                is MonitoringCommandResult.Rejected -> {
-                    preferencesRepository.setMonitoringEnabled(false)
+                // Keep the user's "on" choice (audit R3); Home shows the error with "Try again"
+                is MonitoringCommandResult.Rejected ->
                     monitoringStateRepository.updateState(MonitoringRuntimeState.Error(result.reason))
-                }
             }
             tileUpdateRequester.requestUpdate()
         }

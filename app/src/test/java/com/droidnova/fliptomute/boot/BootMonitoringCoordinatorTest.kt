@@ -8,6 +8,7 @@ import com.droidnova.fliptomute.data.preferences.FakeAppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.FakeSetupAccessRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessState
 import com.droidnova.fliptomute.data.setup.SetupAccessStatus
+import com.droidnova.fliptomute.notification.InterruptionAlertController
 import com.droidnova.fliptomute.notification.PausedNotificationController
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileUpdateRequester
 import com.droidnova.fliptomute.service.FakeMonitoringServiceController
@@ -15,6 +16,7 @@ import com.droidnova.fliptomute.service.InMemoryMonitoringStateRepository
 import com.droidnova.fliptomute.service.MonitoringRuntimeState
 import com.droidnova.fliptomute.service.MonitoringCommandResult
 import com.droidnova.fliptomute.service.MonitoringFailure
+import com.droidnova.fliptomute.service.MonitoringStartSource
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,7 +25,7 @@ import org.junit.Test
 
 class BootMonitoringCoordinatorTest {
     @Test fun disabledAutoStartReconcilesStaleIntentToOff() = runTest {
-        val fixture = fixture(AppPreferences(monitoringEnabled = true))
+        val fixture = fixture(AppPreferences(monitoringEnabled = true, startAfterPhoneRestart = false))
         assertEquals(BootMonitoringResult.StayedOff, fixture.coordinator.handleBootCompleted())
         assertFalse(fixture.preferences.preferences.value.monitoringEnabled)
         assertEquals(MonitoringRuntimeState.Stopped, fixture.runtime.state.value)
@@ -79,7 +81,7 @@ class BootMonitoringCoordinatorTest {
         assertEquals(1, fixture.notifications.shown)
     }
 
-    @Test fun rejectedServiceStartClearsDurableActiveIntent() = runTest {
+    @Test fun rejectedServiceStartKeepsTheChoiceAndAlerts() = runTest {
         val fixture = fixture(
             AppPreferences(monitoringEnabled = true, startAfterPhoneRestart = true),
             setupComplete = true,
@@ -89,11 +91,16 @@ class BootMonitoringCoordinatorTest {
             BootMonitoringResult.Failed(BootMonitoringFailure.SERVICE_START_NOT_ALLOWED),
             fixture.coordinator.handleBootCompleted(),
         )
-        assertFalse(fixture.preferences.preferences.value.monitoringEnabled)
-        assertEquals(MonitoringRuntimeState.Stopped, fixture.runtime.state.value)
+        // v2.0 (audit R3): an automatic failure must not erase the user's choice
+        assertTrue(fixture.preferences.preferences.value.monitoringEnabled)
+        assertEquals(
+            MonitoringRuntimeState.Error(MonitoringFailure.SERVICE_START_NOT_ALLOWED),
+            fixture.runtime.state.value,
+        )
+        assertEquals(1, fixture.alerts.shown)
     }
 
-    @Test fun nonRestrictionServiceFailureIsReportedAndClearsDurableActiveIntent() = runTest {
+    @Test fun nonRestrictionServiceFailureIsReportedAndKeepsTheChoice() = runTest {
         val fixture = fixture(
             AppPreferences(monitoringEnabled = true, startAfterPhoneRestart = true),
             setupComplete = true,
@@ -104,8 +111,55 @@ class BootMonitoringCoordinatorTest {
             BootMonitoringResult.Failed(BootMonitoringFailure.SERVICE_START_FAILED),
             fixture.coordinator.handleBootCompleted(),
         )
-        assertFalse(fixture.preferences.preferences.value.monitoringEnabled)
-        assertEquals(MonitoringRuntimeState.Stopped, fixture.runtime.state.value)
+        assertTrue(fixture.preferences.preferences.value.monitoringEnabled)
+        assertEquals(MonitoringRuntimeState.Error(MonitoringFailure.UNKNOWN), fixture.runtime.state.value)
+        assertEquals(1, fixture.alerts.shown)
+    }
+
+    @Test fun bootStartIsTaggedWithTheBootSource() = runTest {
+        val fixture = fixture(AppPreferences(monitoringEnabled = true), setupComplete = true)
+        fixture.coordinator.handleBootCompleted()
+        assertEquals(listOf(MonitoringStartSource.BOOT), fixture.controller.startSources)
+    }
+
+    @Test fun appUpdateRestartsMonitoringEvenWhenRestartSettingIsOff() = runTest {
+        val fixture = fixture(
+            AppPreferences(monitoringEnabled = true, startAfterPhoneRestart = false),
+            setupComplete = true,
+        )
+        assertEquals(
+            BootMonitoringResult.MonitoringStartRequested,
+            fixture.coordinator.handle(AutoStartTrigger.PACKAGE_REPLACED),
+        )
+        assertEquals(listOf(MonitoringStartSource.PACKAGE_REPLACED), fixture.controller.startSources)
+        assertTrue(fixture.preferences.preferences.value.monitoringEnabled)
+    }
+
+    @Test fun appUpdateRestoresPausedStateWithoutStarting() = runTest {
+        val fixture = fixture(AppPreferences(monitoringEnabled = true, monitoringPaused = true))
+        assertEquals(
+            BootMonitoringResult.PausedStateRestored,
+            fixture.coordinator.handle(AutoStartTrigger.PACKAGE_REPLACED),
+        )
+        assertEquals(0, fixture.controller.startCount)
+        assertEquals(1, fixture.notifications.shown)
+    }
+
+    @Test fun appUpdateLeavesAnOffAppOff() = runTest {
+        val fixture = fixture(AppPreferences(monitoringEnabled = false), setupComplete = true)
+        assertEquals(BootMonitoringResult.StayedOff, fixture.coordinator.handle(AutoStartTrigger.PACKAGE_REPLACED))
+        assertEquals(0, fixture.controller.startCount)
+    }
+
+    @Test fun bootAndUpdateInTheSameProcessAreHandledSeparately() = runTest {
+        val fixture = fixture(AppPreferences(monitoringEnabled = true), setupComplete = true)
+        fixture.coordinator.handleBootCompleted()
+        fixture.coordinator.handle(AutoStartTrigger.PACKAGE_REPLACED)
+        fixture.coordinator.handle(AutoStartTrigger.PACKAGE_REPLACED)
+        assertEquals(
+            listOf(MonitoringStartSource.BOOT, MonitoringStartSource.PACKAGE_REPLACED),
+            fixture.controller.startSources,
+        )
     }
 
     private fun fixture(
@@ -121,11 +175,13 @@ class BootMonitoringCoordinatorTest {
         val controller = FakeMonitoringServiceController()
         val notifications = FakePausedNotifications()
         val tiles = FakeTileUpdates()
+        val alerts = FakeInterruptionAlerts()
         val coordinator = DefaultBootMonitoringCoordinator(
             repository, FakeSetupAccessRepository(setup), runtime, controller, notifications, tiles,
             recoveryController,
+            alertController = alerts,
         )
-        return Fixture(coordinator, repository, runtime, controller, notifications, tiles)
+        return Fixture(coordinator, repository, runtime, controller, notifications, tiles, alerts)
     }
 
     private data class Fixture(
@@ -135,7 +191,14 @@ class BootMonitoringCoordinatorTest {
         val controller: FakeMonitoringServiceController,
         val notifications: FakePausedNotifications,
         val tiles: FakeTileUpdates,
+        val alerts: FakeInterruptionAlerts,
     )
+}
+
+private class FakeInterruptionAlerts : InterruptionAlertController {
+    var shown = 0
+    override fun showStoppedAlert() { shown++ }
+    override fun clearStoppedAlert() = Unit
 }
 
 private class FakePausedNotifications : PausedNotificationController {

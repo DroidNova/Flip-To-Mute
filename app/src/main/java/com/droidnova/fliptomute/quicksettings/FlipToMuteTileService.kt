@@ -155,7 +155,8 @@ class FlipToMuteTileService : TileService() {
             this,
             REQUEST_CODE,
             intent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+            // The wrapper adds FLAG_IMMUTABLE itself because isMutable is false
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT,
             false,
         )
         TileServiceCompat.startActivityAndCollapse(this, wrapper)

@@ -51,7 +51,9 @@ class HomeViewModel(
             selectedFlipAction = preferences.selectedFlipAction,
             callActionSelection = preferences.callActionSelection,
             monitoringState = runtime,
-            isMonitoringChecked = preferences.monitoringEnabled || pausedError || runtime is MonitoringRuntimeState.Active ||
+            // An interrupted session keeps the saved choice but is not running: show it as off, with "Try again"
+            isMonitoringChecked = (preferences.monitoringEnabled && runtime !is MonitoringRuntimeState.Error) ||
+                pausedError || runtime is MonitoringRuntimeState.Active ||
                 runtime is MonitoringRuntimeState.Starting || runtime is MonitoringRuntimeState.Resuming,
             isMonitoringSwitchEnabled = !transitional,
             message = currentMessage,

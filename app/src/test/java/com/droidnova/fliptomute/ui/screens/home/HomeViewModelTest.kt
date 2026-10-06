@@ -86,6 +86,19 @@ class HomeViewModelTest {
         assertFalse(fixture.viewModel.uiState.value.isMonitoringChecked)
     }
 
+    @Test fun interruptedSessionKeepsTheChoiceButShowsAsOffSoTryAgainIsOffered() = runTest {
+        val preferences = FakeAppPreferencesRepository(
+            com.droidnova.fliptomute.data.preferences.AppPreferences(monitoringEnabled = true),
+        )
+        val fixture = fixture(granted = true, preferences = preferences)
+        collect(fixture.viewModel)
+        fixture.runtime.updateState(MonitoringRuntimeState.Error(MonitoringFailure.SERVICE_START_NOT_ALLOWED))
+        assertFalse(fixture.viewModel.uiState.value.isMonitoringChecked)
+        assertTrue(preferences.preferences.value.monitoringEnabled)
+        fixture.runtime.updateState(MonitoringRuntimeState.Active)
+        assertTrue(fixture.viewModel.uiState.value.isMonitoringChecked)
+    }
+
     @Test fun pauseResumeAndStopWhilePausedUseSingleControllerCommands() = runTest {
         val preferences = FakeAppPreferencesRepository(
             com.droidnova.fliptomute.data.preferences.AppPreferences(monitoringEnabled = true),

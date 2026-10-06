@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runTest
+import com.droidnova.fliptomute.data.okioStorage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -53,7 +54,7 @@ class DataStoreRingerRecoveryRepositoryTest {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
         val file = File(temporaryFolder.root, "${UUID.randomUUID()}-$name")
-        val dataStore = PreferenceDataStoreFactory.create(scope = scope) { file }
+        val dataStore = PreferenceDataStoreFactory.create(storage = okioStorage(file), scope = scope)
         try {
             block(dataStore)
         } finally {

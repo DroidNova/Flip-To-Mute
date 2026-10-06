@@ -13,3 +13,17 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Per-machine Android Studio files (M0-13). .idea/misc.xml stays tracked.
+/.idea/.name
+/.idea/AndroidProjectSystem.xml
+/.idea/appInsightsSettings.xml
+/.idea/compiler.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/deviceManager.xml
+/.idea/gradle.xml
+/.idea/runConfigurations.xml
+/.idea/shelf/
+/.idea/vcs.xml
+/.idea/caches/
+/.idea/other.xml
+/.kotlin/

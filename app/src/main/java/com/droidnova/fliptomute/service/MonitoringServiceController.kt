@@ -5,7 +5,7 @@ import androidx.core.content.ContextCompat
 import com.droidnova.fliptomute.util.MonitoringLog
 
 interface MonitoringServiceController {
-    fun startMonitoring(): MonitoringCommandResult
+    fun startMonitoring(source: MonitoringStartSource = MonitoringStartSource.USER): MonitoringCommandResult
     fun pauseMonitoring(): MonitoringCommandResult
     fun resumeMonitoring(): MonitoringCommandResult
     fun stopMonitoring(): MonitoringCommandResult
@@ -15,9 +15,9 @@ interface MonitoringServiceController {
 class AndroidMonitoringServiceController(context: Context) : MonitoringServiceController {
     private val context = context.applicationContext
 
-    override fun startMonitoring(): MonitoringCommandResult = try {
-        MonitoringLog.d(context, "Monitoring start requested")
-        ContextCompat.startForegroundService(context, FlipMonitoringService.createStartIntent(context))
+    override fun startMonitoring(source: MonitoringStartSource): MonitoringCommandResult = try {
+        MonitoringLog.d(context, "Monitoring start requested by ${source.name}")
+        ContextCompat.startForegroundService(context, FlipMonitoringService.createStartIntent(context, source))
         MonitoringLog.d(context, "Foreground service start intent sent")
         MonitoringCommandResult.Accepted
     } catch (error: SecurityException) {

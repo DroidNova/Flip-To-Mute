@@ -39,7 +39,9 @@ class AndroidDeviceOrientationMonitor(
             return
         }
         resetProcessing()
-        isStarted = sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        // UI rate (about 16 readings a second instead of 5) makes a flip register sooner (M1-11, audit R11).
+        // The sensor only runs while a call rings or Flip to lock waits on an unlocked screen.
+        isStarted = sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI)
         mutableState.value = if (isStarted) {
             FaceDownDetectionState.Detecting(DeviceOrientation.UNKNOWN, source, 0f, 0f, 0f)
         } else {

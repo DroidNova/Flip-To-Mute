@@ -8,7 +8,12 @@ class FakeMonitoringServiceController(
     var pauseCount = 0
     var resumeCount = 0
     var revalidateCount = 0
-    override fun startMonitoring(): MonitoringCommandResult { startCount++; return startResult }
+    val startSources = mutableListOf<MonitoringStartSource>()
+    override fun startMonitoring(source: MonitoringStartSource): MonitoringCommandResult {
+        startCount++
+        startSources += source
+        return startResult
+    }
     override fun pauseMonitoring(): MonitoringCommandResult { pauseCount++; return MonitoringCommandResult.Accepted }
     override fun resumeMonitoring(): MonitoringCommandResult { resumeCount++; return MonitoringCommandResult.Accepted }
     override fun stopMonitoring(): MonitoringCommandResult { stopCount++; return MonitoringCommandResult.Accepted }

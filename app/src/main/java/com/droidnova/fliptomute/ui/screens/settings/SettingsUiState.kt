@@ -11,7 +11,7 @@ data class SettingsUiState(
     val pocketProtectionEnabled: Boolean = true,
     val isProximitySensorAvailable: Boolean = true,
     val monitoringEnabled: Boolean = false,
-    val startAfterPhoneRestart: Boolean = false,
+    val startAfterPhoneRestart: Boolean = true,
     val flipToLockEnabled: Boolean = false,
     val deviceAdminAvailability: DeviceAdminAvailability = DeviceAdminAvailability.INACTIVE,
     val accessState: SetupAccessState = SetupAccessState(),

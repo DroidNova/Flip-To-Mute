@@ -7,16 +7,27 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.content.edit
+import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
 import com.droidnova.fliptomute.MainActivity
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.service.FlipMonitoringService
+
+/** The "Flip to Mute stopped" alert for automatic interruptions (v2.0 plan section 4.1). */
+interface InterruptionAlertController {
+    /** Posts the alert, at most once per interruption. */
+    fun showStoppedAlert()
+
+    /** Flip to Mute runs again, or the user turned it off: the alert no longer applies. */
+    fun clearStoppedAlert()
+}
 
 interface PausedNotificationController {
     fun showPausedNotification()
     fun cancelPausedNotification()
 }
 
-class MonitoringNotificationManager(context: Context) : PausedNotificationController {
+class MonitoringNotificationManager(context: Context) : PausedNotificationController, InterruptionAlertController {
     private val context = context.applicationContext
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
 
@@ -103,6 +114,51 @@ class MonitoringNotificationManager(context: Context) : PausedNotificationContro
             .build()
     }
 
+    override fun showStoppedAlert() {
+        if (alertPrefs.getBoolean(KEY_ALERT_SHOWN, false)) return
+        createAlertChannel()
+        val intent = Intent(context, MainActivity::class.java)
+            // Same request as the tile: opening the app turns Flip to Mute back on, which Android allows in the foreground
+            .setAction(MainActivityLaunchRequestParser.OPEN_SETUP_AND_ENABLE_ACTION)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val contentIntent = PendingIntent.getActivity(
+            context, ALERT_CONTENT_REQUEST_CODE, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_flip)
+            .setContentTitle(context.getString(R.string.stopped_alert_title))
+            .setContentText(context.getString(R.string.stopped_alert_text))
+            .setContentIntent(contentIntent)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        try {
+            notificationManager?.notify(STOPPED_ALERT_NOTIFICATION_ID, notification)
+            alertPrefs.edit { putBoolean(KEY_ALERT_SHOWN, true) }
+        } catch (_: SecurityException) {
+            // Notifications are blocked; the app shows the error the next time it is opened.
+        }
+    }
+
+    override fun clearStoppedAlert() {
+        notificationManager?.cancel(STOPPED_ALERT_NOTIFICATION_ID)
+        if (alertPrefs.getBoolean(KEY_ALERT_SHOWN, false)) alertPrefs.edit { putBoolean(KEY_ALERT_SHOWN, false) }
+    }
+
+    private val alertPrefs get() = context.getSharedPreferences(ALERT_PREFS, Context.MODE_PRIVATE)
+
+    private fun createAlertChannel() {
+        val channel = NotificationChannel(
+            ALERT_CHANNEL_ID,
+            context.getString(R.string.alert_channel_name),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply { description = context.getString(R.string.alert_channel_description) }
+        notificationManager?.createNotificationChannel(channel)
+    }
+
     companion object {
         const val CHANNEL_ID = "flip_monitoring"
         const val NOTIFICATION_ID = 1001
@@ -111,5 +167,10 @@ class MonitoringNotificationManager(context: Context) : PausedNotificationContro
         private const val RESUME_REQUEST_CODE = 3
         private const val PAUSED_STOP_REQUEST_CODE = 4
         private const val PAUSED_CONTENT_REQUEST_CODE = 5
+        const val ALERT_CHANNEL_ID = "flip_alerts"
+        const val STOPPED_ALERT_NOTIFICATION_ID = 1003
+        private const val ALERT_CONTENT_REQUEST_CODE = 6
+        private const val ALERT_PREFS = "interruption_alert"
+        private const val KEY_ALERT_SHOWN = "shown"
     }
 }

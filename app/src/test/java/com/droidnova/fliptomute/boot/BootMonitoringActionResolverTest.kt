@@ -12,6 +12,14 @@ class BootMonitoringActionResolverTest {
         assertEquals(BootMonitoringAction.StayOff, resolver.resolve(false, true, true))
     }
 
+    @Test fun appUpdateIgnoresTheRestartSettingButRespectsTheSavedChoice() {
+        val update = AutoStartTrigger.PACKAGE_REPLACED
+        assertEquals(BootMonitoringAction.StayOff, resolver.resolve(update, false, false, false))
+        assertEquals(BootMonitoringAction.StartMonitoring, resolver.resolve(update, false, true, false))
+        assertEquals(BootMonitoringAction.RestorePausedState, resolver.resolve(update, false, true, true))
+        assertEquals(BootMonitoringAction.StartMonitoring, resolver.resolve(update, true, true, false))
+    }
+
     @Test fun enabledSettingRespectsDurableMonitoringIntent() {
         assertEquals(BootMonitoringAction.StayOff, resolver.resolve(true, false, false))
         assertEquals(BootMonitoringAction.StayOff, resolver.resolve(true, false, true))

@@ -1,9 +1,19 @@
+import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services")
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.firebase.appdistribution)
+}
+
+// Machine-specific values such as the App Distribution key path. Never committed.
+val localProperties = Properties().apply {
+    providers.fileContents(rootProject.layout.projectDirectory.file("local.properties"))
+        .asText.orNull?.let { load(it.reader()) }
 }
 
 android {
@@ -18,14 +28,22 @@ android {
         applicationId = "com.droidnova.fliptomute"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.7"
+        versionCode = 9
+        versionName = "2.0.0"
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
+            // Tester builds, as in Secret Calculator: ./gradlew assembleDebug appDistributionUploadDebug
+            // The service account key stays outside the repository; its path is read from local.properties.
+            firebaseAppDistribution {
+                localProperties.getProperty("firebaseAppDistribution.serviceCredentialsFile")
+                    ?.let { serviceCredentialsFile = it }
+                groups = localProperties.getProperty("firebaseAppDistribution.groups", "me-flip-to-mute")
+                artifactType = "APK"
+            }
         }
         release {
             isMinifyEnabled = true
@@ -40,6 +58,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    testOptions {
+        // Robolectric tests read the app's own resources, as in Secret Calculator
+        unitTests.isIncludeAndroidResources = true
     }
     buildFeatures {
         buildConfig = false
@@ -77,14 +99,20 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.datastore.preferences)
+    // Health check (M1-06). Declared explicitly; it used to arrive only through the ads SDK, at 2.7.0.
+    implementation(libs.androidx.work.runtime.ktx)
     // The Lite SDK provides the same client API while loading the ads runtime
     // from Google Play services instead of packaging native runtime binaries.
     implementation(libs.google.mobile.ads.lite)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.test.core)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
-    implementation("com.google.firebase:firebase-analytics")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
 }
