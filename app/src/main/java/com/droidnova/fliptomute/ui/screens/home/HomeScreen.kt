@@ -127,6 +127,8 @@ fun HomeRoute(
         when (externalMonitoringRequest.request) {
             MainActivityLaunchRequest.OpenSetupAndEnableMonitoring -> viewModel.onMonitoringChanged(true)
             MainActivityLaunchRequest.OpenSetupAndResumeMonitoring -> viewModel.onResumeMonitoring()
+            MainActivityLaunchRequest.PauseForOneHour -> viewModel.onPauseFor(60)
+            MainActivityLaunchRequest.TurnOff -> viewModel.onMonitoringChanged(false)
             // The nav host shows the activity screen itself
             is MainActivityLaunchRequest.OpenActivity, MainActivityLaunchRequest.None -> return@LaunchedEffect
         }

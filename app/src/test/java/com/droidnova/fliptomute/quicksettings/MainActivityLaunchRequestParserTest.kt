@@ -30,4 +30,19 @@ class MainActivityLaunchRequestParserTest {
             MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_RECAP_ACTION),
         )
     }
+
+    @Test fun launcherShortcutsAreRecognized() {
+        assertEquals(
+            MainActivityLaunchRequest.PauseForOneHour,
+            MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.SHORTCUT_PAUSE_ACTION),
+        )
+        assertEquals(
+            MainActivityLaunchRequest.TurnOff,
+            MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.SHORTCUT_TURN_OFF_ACTION),
+        )
+        assertEquals(
+            MainActivityLaunchRequest.OpenActivity("shortcut"),
+            MainActivityLaunchRequestParser.parseAction(MainActivityLaunchRequestParser.OPEN_ACTIVITY_FROM_SHORTCUT_ACTION),
+        )
+    }
 }

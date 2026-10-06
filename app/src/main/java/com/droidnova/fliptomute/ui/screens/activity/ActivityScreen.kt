@@ -25,7 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -63,6 +66,7 @@ import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.ui.theme.labelRes
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
 import com.droidnova.fliptomute.utils.AppTheme
+import com.droidnova.fliptomute.utils.about_utils.IntentUtil
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Date
@@ -71,15 +75,25 @@ import java.util.Locale
 @Composable
 fun ActivityRoute(onBack: () -> Unit, viewModel: ActivityViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     RefreshOnResume(viewModel::refresh)
-    ActivityScreen(state = state, onBack = onBack)
+    ActivityScreen(state = state, onBack = onBack, onShare = { IntentUtil.shareFlips(context, state.total) })
 }
 
 /** The flips this phone has made (future features F13): a week at a glance, then the recent ones. */
 @Composable
-fun ActivityScreen(state: ActivityUiState, onBack: () -> Unit) {
+fun ActivityScreen(state: ActivityUiState, onBack: () -> Unit, onShare: () -> Unit = {}) {
     Scaffold(
-        topBar = { NovaTopBar(stringResource(R.string.activity_title), onBack = onBack) },
+        topBar = {
+            NovaTopBar(stringResource(R.string.activity_title), onBack = onBack) {
+                // Nothing to show off before the first flip
+                if (state.total > 0) {
+                    IconButton(onClick = onShare) {
+                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.share_flips))
+                    }
+                }
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background,
         // MainActivity pads for the system bars once
         contentWindowInsets = WindowInsets(0),

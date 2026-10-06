@@ -1,6 +1,7 @@
 package com.droidnova.fliptomute.utils.about_utils
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,6 +9,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.annotation.StringRes
 import com.droidnova.fliptomute.R
+import com.droidnova.fliptomute.utils.ShareCard
 import java.util.Locale
 
 /**
@@ -31,6 +33,26 @@ object IntentUtil {
             putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_app_message, storeUrl))
         }
         startFirstAvailable(context, Intent.createChooser(shareIntent, context.getString(R.string.share_app)))
+    }
+
+    /** The share card picture with a line of text; text alone when the picture could not be saved. */
+    fun shareFlips(context: Context, total: Int) {
+        val storeUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
+        val text = context.resources.getQuantityString(R.plurals.share_flips_message, total, total, storeUrl)
+        val picture = ShareCard.write(context, total)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            putExtra(Intent.EXTRA_TEXT, text)
+            if (picture != null) {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, picture)
+                // The chooser shows a preview only when the address travels as clip data too
+                clipData = ClipData.newRawUri(null, picture)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } else {
+                type = "text/plain"
+            }
+        }
+        startFirstAvailable(context, Intent.createChooser(shareIntent, context.getString(R.string.share_flips)))
     }
 
     fun openInstagram(context: Context) {

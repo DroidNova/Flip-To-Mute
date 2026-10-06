@@ -21,7 +21,7 @@ This is the working document. Update it in every session.
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | In progress | 8 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
-| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 15 of 22 | 6 days, plus the Flip to Focus spike |
+| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 17 of 22 | 6 days, plus the Flip to Focus spike |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
 then migration with behaviour unchanged, then redesign, then features. Keeping
@@ -327,8 +327,8 @@ without it. The owner decides whether it merges into v2.0 or ships as v2.1.
 | [x] | M9-17 | Flip to pause music or video: off by default. Uses the Flip to lock gesture (face up and still, then face down on a flat surface), only while something plays and the screen is on and unlocked. Sends the media pause key; no new access. **Untested on a phone: which apps obey the key, and the battery cost of the sensor while media plays.** | M | F3 |
 | [x] | M9-18 | "Ring again when turned face up": off by default, because lifting the phone flat to see who calls would also ring again. The sensor stays on after the flip only when this is on. | S | F4 |
 | [x] | M9-19 | Sensitivity: Quick, Normal, Careful. Normal is exactly the 1.x and 2.0 detection. **Quick and Careful values are first guesses and need tuning on phones.** | S | F7 |
-| [ ] | M9-20 | App shortcuts on the launcher icon | S | F12 |
-| [ ] | M9-21 | Share card from the activity screen | S | F38 |
+| [x] | M9-20 | App shortcuts on the launcher icon: Pause 1 hour, Turn on, Turn off, Your flips. Each opens the app, which then acts, because Android lets a shortcut start only an activity. | S | F12 |
+| [x] | M9-21 | Share card: a share button on the activity screen sends a square picture ("50 calls silenced with a flip of my phone") with a line of text and the Play link. Uses a `FileProvider` limited to `cache/share`. | S | F38 |
 | [ ] | M9-22 | Remove ads purchase (needs an in-app product in Play Console from the owner) | M | F19 |
 
 Device testing for all of M9 happens in one pass at the end (owner decision, 2026-10-07).

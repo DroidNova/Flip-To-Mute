@@ -357,4 +357,20 @@
     <string name="ring_again_setting_description">Flipped by mistake? Turn your phone back over and it rings again.</string>
     <string name="flip_to_pause_title">Flip to pause music or video</string>
     <string name="flip_to_pause_description">Place your phone face down on a flat surface while the screen is on.</string>
+    <string name="shortcut_pause_short">Pause 1 hour</string>
+    <string name="shortcut_pause_long">Pause for 1 hour</string>
+    <string name="shortcut_on_short">Turn on</string>
+    <string name="shortcut_on_long">Turn Flip to Mute on</string>
+    <string name="shortcut_off_short">Turn off</string>
+    <string name="shortcut_off_long">Turn Flip to Mute off</string>
+    <string name="share_flips">Share your flips</string>
+    <string name="share_card_how">with a flip of my phone</string>
+    <plurals name="share_card_calls">
+        <item quantity="one">call silenced</item>
+        <item quantity="other">calls silenced</item>
+    </plurals>
+    <plurals name="share_flips_message">
+        <item quantity="one">I silenced %1$d call just by flipping my phone, with Flip to Mute: %2$s</item>
+        <item quantity="other">I silenced %1$d calls just by flipping my phone, with Flip to Mute: %2$s</item>
+    </plurals>
 </resources>

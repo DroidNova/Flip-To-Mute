@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long press on the launcher icon (future features F12). Each one opens MainActivity with an
+     action that MainActivityLaunchRequestParser understands. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_pause"
+        android:shortcutId="pause_1_hour"
+        android:shortcutLongLabel="@string/shortcut_pause_long"
+        android:shortcutShortLabel="@string/shortcut_pause_short">
+        <intent
+            android:action="com.droidnova.fliptomute.action.SHORTCUT_PAUSE_1_HOUR"
+            android:targetClass="com.droidnova.fliptomute.MainActivity"
+            android:targetPackage="com.droidnova.fliptomute" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_on"
+        android:shortcutId="turn_on"
+        android:shortcutLongLabel="@string/shortcut_on_long"
+        android:shortcutShortLabel="@string/shortcut_on_short">
+        <intent
+            android:action="com.droidnova.fliptomute.action.OPEN_SETUP_AND_ENABLE"
+            android:targetClass="com.droidnova.fliptomute.MainActivity"
+            android:targetPackage="com.droidnova.fliptomute" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_off"
+        android:shortcutId="turn_off"
+        android:shortcutLongLabel="@string/shortcut_off_long"
+        android:shortcutShortLabel="@string/shortcut_off_short">
+        <intent
+            android:action="com.droidnova.fliptomute.action.SHORTCUT_TURN_OFF"
+            android:targetClass="com.droidnova.fliptomute.MainActivity"
+            android:targetPackage="com.droidnova.fliptomute" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_flips"
+        android:shortcutId="your_flips"
+        android:shortcutLongLabel="@string/activity_title"
+        android:shortcutShortLabel="@string/activity_title">
+        <intent
+            android:action="com.droidnova.fliptomute.action.OPEN_ACTIVITY_FROM_SHORTCUT"
+            android:targetClass="com.droidnova.fliptomute.MainActivity"
+            android:targetPackage="com.droidnova.fliptomute" />
+    </shortcut>
+</shortcuts>

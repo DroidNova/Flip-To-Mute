@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The one folder FileProvider may hand out: the share card image (future features F38). -->
+<paths>
+    <cache-path
+        name="share"
+        path="share/" />
+</paths>

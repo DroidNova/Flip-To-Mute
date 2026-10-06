@@ -30,5 +30,6 @@ object AnalyticsEvents {
     const val SOURCE_HOME = "home"
     const val SOURCE_FLIP_NOTIFICATION = "flip_notification"
     const val SOURCE_WEEKLY_RECAP = "weekly_recap"
+    const val SOURCE_SHORTCUT = "shortcut"
     const val PARAM_TIMED = "timed"
 }
