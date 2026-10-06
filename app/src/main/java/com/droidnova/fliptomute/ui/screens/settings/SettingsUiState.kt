@@ -7,6 +7,7 @@ import com.droidnova.fliptomute.sensor.FlipSensitivity
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
 import com.droidnova.fliptomute.utils.AppTheme
 import com.droidnova.fliptomute.utils.ThemeMode
+import com.droidnova.fliptomute.utils.about_utils.OtherAppItem
 
 data class SettingsUiState(
     val selectedFlipAction: FlipAction = FlipAction.SILENT,
@@ -36,6 +37,8 @@ data class SettingsUiState(
     val totalFlips: Int = 0,
     /** Set by the activity from the consent status (M7-02). */
     val privacyOptionsRequired: Boolean = false,
+    /** Two other DroidNova apps for the foot of the list; picked by the route each time Settings opens. */
+    val otherApps: List<OtherAppItem> = emptyList(),
     /** "Remove ads" (future features F19): set by the route from the activity's billing state. */
     /** False while the purchase is switched off (`AppConstants.REMOVE_ADS_ENABLED`): the row is hidden. */
     val removeAdsAvailable: Boolean = false,

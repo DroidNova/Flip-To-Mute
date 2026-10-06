@@ -87,7 +87,10 @@ import com.droidnova.fliptomute.ui.theme.labelRes
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
 import com.droidnova.fliptomute.utils.AppTheme
 import com.droidnova.fliptomute.utils.ThemeMode
+import com.droidnova.fliptomute.ui.screens.about.OtherAppsSection
 import com.droidnova.fliptomute.utils.about_utils.AppConstants
+import com.droidnova.fliptomute.utils.about_utils.IntentUtil
+import com.droidnova.fliptomute.utils.about_utils.randomOtherApps
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -124,6 +127,8 @@ interface SettingsActions {
     fun openPrivacyPolicy()
     fun openPrivacyOptions()
     fun removeAds()
+    fun openOtherApp(packageName: String)
+    fun openMoreApps()
 }
 
 @Composable
@@ -149,6 +154,7 @@ fun SettingsRoute(
     val premium = LocalPremiumController.current
     val premiumUi by premium.premiumUi.collectAsStateWithLifecycle()
     val activity = LocalActivity.current ?: return
+    val otherApps = remember { randomOtherApps(activity.packageName) }
     val addRequester = remember(activity) { QuickSettingsTileAddRequester(activity) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -179,6 +185,7 @@ fun SettingsRoute(
     SettingsScreen(
         state = state.copy(
             privacyOptionsRequired = privacyOptionsRequired,
+            otherApps = otherApps,
             removeAdsAvailable = AppConstants.REMOVE_ADS_ENABLED,
             adsRemoved = premiumUi.isPremium,
             removeAdsPrice = premiumUi.priceLabel,
@@ -224,6 +231,8 @@ fun SettingsRoute(
             override fun openPrivacyPolicy() = onOpenPrivacyPolicy()
             override fun openPrivacyOptions() = onOpenPrivacyOptions()
             override fun removeAds() = premium.launchPurchase()
+            override fun openOtherApp(packageName: String) = IntentUtil.openPlayStore(activity, packageName)
+            override fun openMoreApps() = IntentUtil.openDeveloperPlayConsole(activity)
         },
     )
     if (showManualInstructions) {
@@ -321,6 +330,17 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions, snackbarHos
             item(key = "notifications") { NotificationsGroup(state, actions) }
             item(key = "appearance") { AppearanceGroup(state, actions) }
             item(key = "help") { HelpGroup(state, actions) }
+            // Other DroidNova apps at the foot of the list, as in All File Reader
+            if (state.otherApps.isNotEmpty()) {
+                item(key = "other-apps") {
+                    OtherAppsSection(
+                        state.otherApps,
+                        onOpenApp = actions::openOtherApp,
+                        onMoreApps = actions::openMoreApps,
+                        modifier = Modifier.widthIn(max = 560.dp).padding(start = 4.dp, end = 4.dp, top = 12.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -704,4 +724,6 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun openPrivacyPolicy() = Unit
     override fun openPrivacyOptions() = Unit
     override fun removeAds() = Unit
+    override fun openOtherApp(packageName: String) = Unit
+    override fun openMoreApps() = Unit
 }

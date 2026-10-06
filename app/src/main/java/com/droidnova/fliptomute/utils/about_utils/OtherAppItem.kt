@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.droidnova.fliptomute.R
 
-/** Another DroidNova app for About, with translatable text, as in Secret Calculator (M6-10). */
+/** Another DroidNova app, promoted in Settings and on the About page, with translatable text (M6-10). */
 data class OtherAppItem(
     @param:StringRes val titleRes: Int,
     @param:StringRes val descriptionRes: Int,
@@ -20,11 +20,8 @@ private val otherApps = listOf(
     OtherAppItem(R.string.other_app_bvr_title, R.string.other_app_bvr_description, BACKGROUND_VIDEO_RECORDER_PACKAGE, R.drawable.ic_bvr),
 )
 
-/** Background Video Recorder first, then one other app at random, as in 1.x. */
-fun getFeaturedOtherApps(): List<OtherAppItem> {
-    val featured = otherApps.firstOrNull { it.packageName == BACKGROUND_VIDEO_RECORDER_PACKAGE }
-    val randomSecond = otherApps.filter { it.packageName != BACKGROUND_VIDEO_RECORDER_PACKAGE }.shuffled().firstOrNull()
-    return listOfNotNull(featured, randomSecond)
-}
+/** A different pair each time the screen opens, never this app itself; the same rule as All File Reader. */
+fun randomOtherApps(ownPackage: String, count: Int = 2): List<OtherAppItem> =
+    otherApps.filter { it.packageName != ownPackage }.shuffled().take(count.coerceAtLeast(0))
 
 private const val BACKGROUND_VIDEO_RECORDER_PACKAGE = "com.droidnova.backgroundcamera"

@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.core.content.pm.PackageInfoCompat
 import com.droidnova.fliptomute.R
 import com.droidnova.fliptomute.utils.ShareCard
 import java.util.Locale
@@ -122,6 +123,14 @@ object IntentUtil {
     fun fetchAppVersion(context: Context): String {
         return PackageManagerExt.getPackageInfo(context.packageManager, context.packageName)
             ?.versionName.orEmpty().ifBlank { context.getString(R.string.unknown_version) }
+    }
+
+    /** "2.0.0 (9)": the version name and code, as every DroidNova About page shows them. */
+    fun fetchAppVersionWithCode(context: Context): String {
+        val info = PackageManagerExt.getPackageInfo(context.packageManager, context.packageName)
+            ?: return context.getString(R.string.unknown_version)
+        val name = info.versionName.orEmpty().ifBlank { context.getString(R.string.unknown_version) }
+        return context.getString(R.string.version_value_format, name, PackageInfoCompat.getLongVersionCode(info))
     }
 
     fun openPlayStore(context: Context, packageName: String) {

@@ -37,14 +37,18 @@ class ReviewStore @Inject constructor(@ApplicationContext private val context: C
         valueMoments = prefs.getInt(KEY_MOMENTS, 0),
         askCount = prefs.getInt(KEY_ASK_COUNT, 0),
         lastAskedLaunch = prefs.getInt(KEY_LAST_ASKED_LAUNCH, 0).takeIf { it > 0 },
-        // Flip to Mute shows no full-screen ads (UPDATE_PLAN section 9)
-        lastAdAt = null,
+        lastAdAt = prefs.getLong(KEY_LAST_AD_AT, 0L).takeIf { it > 0L },
+        lastAskedAt = prefs.getLong(KEY_LAST_ASKED_AT, 0L).takeIf { it > 0L },
     )
 
-    fun markAsked(state: ReviewState) = prefs.edit {
+    fun markAsked(state: ReviewState, now: Long = System.currentTimeMillis()) = prefs.edit {
         putInt(KEY_ASK_COUNT, state.askCount + 1)
         putInt(KEY_LAST_ASKED_LAUNCH, state.launchCount)
+        putLong(KEY_LAST_ASKED_AT, now)
     }
+
+    /** A full-screen ad (rewarded or interstitial) just closed: no review prompt for a few minutes. */
+    fun recordAdClosed(now: Long = System.currentTimeMillis()) = prefs.edit { putLong(KEY_LAST_AD_AT, now) }
 
     private companion object {
         const val PREFS = "in_app_review"
@@ -52,6 +56,8 @@ class ReviewStore @Inject constructor(@ApplicationContext private val context: C
         const val KEY_MOMENTS = "value_moments"
         const val KEY_ASK_COUNT = "ask_count"
         const val KEY_LAST_ASKED_LAUNCH = "last_asked_launch"
+        const val KEY_LAST_ASKED_AT = "last_asked_at"
+        const val KEY_LAST_AD_AT = "last_ad_at"
     }
 }
 

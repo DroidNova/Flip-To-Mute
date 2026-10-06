@@ -34,6 +34,13 @@ class ReviewPolicyTest {
     }
 
     @Test
+    fun withinThirtyDaysOfTheLastAsk_isNotAskedAgain() {
+        val asked = ready.copy(launchCount = 6, askCount = 1, lastAskedLaunch = 3, lastAskedAt = now - ReviewPolicy.COOLDOWN_MS + 1)
+        assertFalse(ReviewPolicy.shouldAsk(asked, now))
+        assertTrue(ReviewPolicy.shouldAsk(asked.copy(lastAskedAt = now - ReviewPolicy.COOLDOWN_MS), now))
+    }
+
+    @Test
     fun tooFewGoodMoments_isNotAsked() = assertFalse(ReviewPolicy.shouldAsk(ready.copy(valueMoments = 2), now))
 
     @Test

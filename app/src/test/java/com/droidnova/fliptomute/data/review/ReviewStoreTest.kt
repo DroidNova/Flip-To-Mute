@@ -33,4 +33,13 @@ class ReviewStoreTest {
         assertEquals(1, store.state().askCount)
         assertEquals(5, store.state().lastAskedLaunch)
     }
+
+    @Test fun markAskedStartsTheCooldown_andAnAdStartsItsQuietTime() {
+        assertNull(store.state().lastAskedAt)
+        store.markAsked(store.state(), now = 7_000L)
+        assertEquals(7_000L, store.state().lastAskedAt)
+
+        store.recordAdClosed(now = 9_000L)
+        assertEquals(9_000L, store.state().lastAdAt)
+    }
 }

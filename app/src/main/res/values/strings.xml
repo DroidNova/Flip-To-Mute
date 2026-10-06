@@ -55,7 +55,6 @@
     <string name="share_app">Share app</string>
     <string name="share_app_message">Try Flip to Mute: %1$s</string>
     <string name="unknown_version">Unknown</string>
-    <string name="version_label">v%1$s</string>
     <string name="no_compatible_app">No compatible app found</string>
     <string name="no_email_app">No email app found</string>
     <string name="support_subject_bug">Bug report - %1$s v%2$s</string>
@@ -65,11 +64,11 @@
     <string name="support_check_results">Check my setup results:</string>
     <string name="support_describe_issue">Describe the issue:</string>
     <string name="support_your_feedback">Your feedback:</string>
-    <string name="follow_instagram">Follow on Instagram</string>
-    <string name="follow_instagram_description">Follow the DroidNova Instagram page</string>
-    <string name="join_whatsapp">Join WhatsApp Community</string>
-    <string name="join_whatsapp_description">Explore WhatsApp Communities</string>
-    <string name="more_apps_play_store">More apps on Play Store</string>
+    <string name="follow_instagram">Follow us on Instagram</string>
+    <string name="follow_instagram_description">Get updates, tips, and new releases.</string>
+    <string name="join_whatsapp">Join our WhatsApp Community</string>
+    <string name="join_whatsapp_description">Ask questions and get quick support.</string>
+    <string name="more_apps_play_store">Check more apps on Play Store</string>
     <string name="permissions_sheet_title">Allow access</string>
     <string name="permissions_sheet_body">A few permissions are needed before Flip to Mute can start.</string>
     <string name="back_content_description">Go back</string>
@@ -241,9 +240,7 @@
     <string name="other_app_secret_calculator_description">Securely hide files behind a calculator lock.</string>
     <string name="other_app_bvr_title">Background Video Recorder</string>
     <string name="other_app_bvr_description">Record videos while the app stays in the background.</string>
-    <string name="about_section_community">Community</string>
-    <string name="about_more_from">More from DroidNova</string>
-    <string name="share_us">Share</string>
+    <string name="share_us">Share Us</string>
     <string name="check_all_good">Everything works</string>
     <string name="check_send_report">Send report</string>
     <string name="check_start">Start</string>
@@ -381,4 +378,12 @@
     <string name="premium_welcome_title">Ads removed</string>
     <string name="premium_welcome_body">Thank you for supporting Flip to Mute.</string>
     <string name="ad_badge">Ad</string>
+    <string name="rate_us_desc">Tell us what you think on Google Play.</string>
+    <string name="share_us_desc">Invite friends to try Flip to Mute.</string>
+    <string name="report_bugs">Report Bugs</string>
+    <string name="report_bugs_desc">Report any bugs or issues you encounter.</string>
+    <string name="app_version">App Version</string>
+    <string name="version_value_format" translatable="false">%1$s (%2$d)</string>
+    <string name="privacy_policy_desc">Flip to Mute never sees who is calling.</string>
+    <string name="checkout_other_apps">Check Out Other Apps</string>
 </resources>

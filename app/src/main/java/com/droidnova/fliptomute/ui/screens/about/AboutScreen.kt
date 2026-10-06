@@ -2,61 +2,58 @@ package com.droidnova.fliptomute.ui.screens.about
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.StarRate
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.droidnova.fliptomute.R
-import com.droidnova.fliptomute.ui.components.ActionTile
-import com.droidnova.fliptomute.ui.components.NovaCard
-import com.droidnova.fliptomute.ui.components.NovaTopBar
-import com.droidnova.fliptomute.ui.components.SectionLabel
-import com.droidnova.fliptomute.ui.components.SettingsGroup
-import com.droidnova.fliptomute.ui.components.SettingsRow
-import com.droidnova.fliptomute.ui.components.appearIn
-import com.droidnova.fliptomute.ui.components.novaCardColor
-import com.droidnova.fliptomute.ui.components.novaTileColor
 import com.droidnova.fliptomute.utils.about_utils.AppConstants
 import com.droidnova.fliptomute.utils.about_utils.IntentUtil
 import com.droidnova.fliptomute.utils.about_utils.OtherAppItem
-import com.droidnova.fliptomute.utils.about_utils.getFeaturedOtherApps
+import com.droidnova.fliptomute.utils.about_utils.randomOtherApps
 
 /** Everything About can ask for, as Secret Calculator's AboutActions. */
 interface AboutActions {
@@ -74,10 +71,10 @@ interface AboutActions {
 @Composable
 fun AboutRoute(onBack: () -> Unit, onReportProblem: () -> Unit, onRateUsTapped: () -> Unit) {
     val context = LocalContext.current
-    val featured = remember { getFeaturedOtherApps() }
+    val apps = remember { randomOtherApps(context.packageName) }
     AboutScreen(
-        versionName = IntentUtil.fetchAppVersion(context),
-        featuredApps = featured,
+        versionName = IntentUtil.fetchAppVersionWithCode(context),
+        featuredApps = apps,
         actions = object : AboutActions {
             override fun back() = onBack()
             // Unchanged from 1.x: opens the Play Store listing (decision D1, UPDATE_PLAN section 8)
@@ -96,11 +93,28 @@ fun AboutRoute(onBack: () -> Unit, onReportProblem: () -> Unit, onRateUsTapped: 
     )
 }
 
-/** Same layout as Secret Calculator's About screen (design spec 4.9). */
+/**
+ * The DroidNova About page, laid out as in All File Reader (and NotiSave), so every app of ours looks
+ * the same here: the app header, the support links as plain rows with a line of explanation each,
+ * the version, the privacy policy, then other DroidNova apps. Colours come from the app's own theme.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(versionName: String, featuredApps: List<OtherAppItem>, actions: AboutActions) {
     Scaffold(
-        topBar = { NovaTopBar(title = stringResource(R.string.about_title), onBack = actions::back) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.about_title), fontWeight = FontWeight.W900, style = MaterialTheme.typography.titleLarge) },
+                navigationIcon = {
+                    IconButton(onClick = actions::back) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_content_description))
+                    }
+                },
+                // MainActivity pads for the system bars once
+                windowInsets = WindowInsets(0),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0),
     ) { padding ->
@@ -109,121 +123,139 @@ fun AboutScreen(versionName: String, featuredApps: List<OtherAppItem>, actions: 
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 4.dp),
+                .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(Modifier.widthIn(max = 560.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                AppHeader(versionName)
-                Row(Modifier.padding(top = 8.dp)) {
-                    ActionTile(Icons.Outlined.StarRate, stringResource(R.string.rate_us), actions::rateUs, Modifier.weight(1f))
-                    ActionTile(Icons.Outlined.Share, stringResource(R.string.share_us), actions::shareApp, Modifier.weight(1f))
-                    ActionTile(Icons.Outlined.BugReport, stringResource(R.string.report_a_problem), actions::reportProblem, Modifier.weight(1f))
-                }
+            // Centred on tablets and in landscape (design spec 8)
+            Column(Modifier.widthIn(max = 560.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppHeader()
+                Spacer(Modifier.height(8.dp))
+                AboutItem(stringResource(R.string.rate_us), stringResource(R.string.rate_us_desc), imageVector = Icons.Outlined.Star, onClick = actions::rateUs)
+                AboutItem(stringResource(R.string.share_us), stringResource(R.string.share_us_desc), imageVector = Icons.Outlined.Share, onClick = actions::shareApp)
+                AboutItem(stringResource(R.string.report_bugs), stringResource(R.string.report_bugs_desc), imageVector = Icons.Outlined.BugReport, onClick = actions::reportProblem)
+                AboutItem(
+                    stringResource(R.string.follow_instagram), stringResource(R.string.follow_instagram_description),
+                    iconRes = R.drawable.ic_instagram, keepIconColors = true, onClick = actions::openInstagram,
+                )
+                AboutItem(
+                    stringResource(R.string.join_whatsapp), stringResource(R.string.join_whatsapp_description),
+                    iconRes = R.drawable.ic_whatsapp, keepIconColors = true, onClick = actions::openWhatsApp,
+                )
+                AboutItem(stringResource(R.string.app_version), versionName, imageVector = Icons.Outlined.Info, onClick = null)
+                // Shown once the privacy policy address is set (decision D7, M6-06)
                 if (AppConstants.PRIVACY_POLICY_URL.isNotBlank()) {
-                    SettingsGroup(stringResource(R.string.about_title)) {
-                        SettingsRow(Icons.Filled.Policy, stringResource(R.string.privacy_policy), onClick = actions::openPrivacyPolicy)
-                    }
-                }
-                SettingsGroup(stringResource(R.string.about_section_community)) {
-                    // Brand icons keep their own colours
-                    BrandRow(R.drawable.ic_instagram, stringResource(R.string.follow_instagram), stringResource(R.string.follow_instagram_description), actions::openInstagram)
-                    BrandRow(R.drawable.ic_whatsapp, stringResource(R.string.join_whatsapp), stringResource(R.string.join_whatsapp_description), actions::openWhatsApp)
-                }
-                SectionLabel(stringResource(R.string.about_more_from), Modifier.padding(start = 6.dp, top = 12.dp, bottom = 2.dp))
-                featuredApps.forEachIndexed { index, app ->
-                    AppCard(
-                        iconRes = app.iconRes,
-                        title = stringResource(app.titleRes),
-                        description = stringResource(app.descriptionRes),
-                        onClick = { actions.openOtherApp(app.packageName) },
-                        modifier = Modifier.appearIn(index).padding(bottom = 8.dp),
+                    AboutItem(
+                        stringResource(R.string.privacy_policy), stringResource(R.string.privacy_policy_desc),
+                        imageVector = Icons.Outlined.Security, onClick = actions::openPrivacyPolicy,
                     )
                 }
-                AppCard(
-                    iconRes = R.drawable.ic_play_store,
-                    title = stringResource(R.string.more_apps_play_store),
-                    description = null,
-                    onClick = actions::openMoreApps,
-                )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(4.dp))
+                OtherAppsSection(featuredApps, onOpenApp = actions::openOtherApp, onMoreApps = actions::openMoreApps)
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
 }
 
-/** The app's icon, name, version and one line, centred, as in Secret Calculator. */
+/**
+ * "Check Out Other Apps": two DroidNova apps and the developer page. Used at the bottom of Settings
+ * and of the About page, as in All File Reader.
+ */
 @Composable
-private fun AppHeader(versionName: String) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
+fun OtherAppsSection(
+    apps: List<OtherAppItem>,
+    onOpenApp: (packageName: String) -> Unit,
+    onMoreApps: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.checkout_other_apps),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        apps.forEach { app ->
+            AppCard(stringResource(app.titleRes), stringResource(app.descriptionRes), app.iconRes) { onOpenApp(app.packageName) }
+        }
+        AppCard(stringResource(R.string.more_apps_play_store), null, R.drawable.ic_play_store, onMoreApps)
+    }
+}
+
+@Composable
+private fun AppCard(title: String, description: String?, @DrawableRes iconRes: Int, onClick: () -> Unit) {
+    OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(iconRes), contentDescription = null, modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)))
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (!description.isNullOrEmpty()) {
+                    Text(
+                        description,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The app's icon, name and one line, centred. */
+@Composable
+private fun AppHeader() {
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Image(
             painter = painterResource(R.drawable.ic_flip_to_mute),
             contentDescription = stringResource(R.string.app_icon_description),
-            modifier = Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)),
+            modifier = Modifier.size(80.dp).clip(RoundedCornerShape(20.dp)),
         )
+        Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.app_name),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 6.dp),
         )
-        Text(
-            stringResource(R.string.version_label, versionName),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.clip(RoundedCornerShape(50)).background(novaCardColor()).padding(horizontal = 10.dp, vertical = 3.dp),
-        )
+        Spacer(Modifier.height(4.dp))
         Text(
             stringResource(R.string.about_app_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
         )
     }
 }
 
-/** A row led by a brand logo (not tinted), like the settings rows. */
+/** One row: an icon, a title and a line under it. Brand logos keep their own colours. */
 @Composable
-private fun BrandRow(@DrawableRes iconRes: Int, title: String, subtitle: String, onClick: () -> Unit) {
+private fun AboutItem(
+    title: String,
+    description: String,
+    imageVector: ImageVector? = null,
+    @DrawableRes iconRes: Int? = null,
+    keepIconColors: Boolean = false,
+    onClick: (() -> Unit)?,
+) {
+    val tint = if (keepIconColors) Color.Unspecified else MaterialTheme.colorScheme.onSurface
     Row(
-        modifier = Modifier
+        Modifier
             .fillMaxWidth()
+            .heightIn(min = 56.dp)
             .clip(RoundedCornerShape(12.dp))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 6.dp, horizontal = 2.dp),
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(38.dp).background(novaTileColor(), CircleShape), contentAlignment = Alignment.Center) {
-            Icon(painterResource(iconRes), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(22.dp))
+        when {
+            imageVector != null -> Icon(imageVector, contentDescription = null, modifier = Modifier.padding(12.dp), tint = tint)
+            iconRes != null -> Icon(painterResource(iconRes), contentDescription = null, modifier = Modifier.padding(12.dp).size(24.dp), tint = tint)
         }
-        Column(Modifier.weight(1f).padding(start = 12.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun AppCard(@DrawableRes iconRes: Int, title: String, description: String?, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    NovaCard(modifier = modifier, contentPadding = PaddingValues(10.dp), onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(46.dp).clip(RoundedCornerShape(12.dp)),
-            )
-            Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                if (description != null) {
-                    Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
