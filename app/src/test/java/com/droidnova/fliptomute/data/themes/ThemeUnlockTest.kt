@@ -32,6 +32,12 @@ class ThemeUnlockPolicyTest {
         assertFalse(unlocked(AppTheme.MIDNIGHT, adUntil = 1_000L))
     }
 
+    @Test fun premiumOpensEveryTheme_andTheFreeWaysStillWorkWithoutIt() {
+        AppTheme.entries.forEach { assertTrue(ThemeUnlockPolicy.isUnlocked(it, 0, 0L, 1_000L, premium = true)) }
+        assertFalse(ThemeUnlockPolicy.isUnlocked(AppTheme.FOREST, 0, 0L, 1_000L, premium = false))
+        assertTrue(ThemeUnlockPolicy.isUnlocked(AppTheme.FOREST, 10, 0L, 1_000L, premium = false))
+    }
+
     @Test fun everyThemeHasItsOwnColoursInBothModes() {
         for (dark in listOf(false, true)) {
             val primaries = AppTheme.entries.map { it.colorScheme(dark).primary }
@@ -56,6 +62,16 @@ class ThemeUnlockStoreTest {
         assertEquals(setOf(AppTheme.FOREST, AppTheme.ROSE, AppTheme.MIDNIGHT), store().lockedThemes(0))
         assertEquals(setOf(AppTheme.ROSE, AppTheme.MIDNIGHT), store().lockedThemes(10))
         assertEquals(emptySet<AppTheme>(), store().lockedThemes(50))
+    }
+
+    @Test fun withPremiumNothingIsLocked_andNoThemeIsTakenBack() {
+        val premium = ThemeUnlockStore(context, isPremium = { true }) { time }
+        assertEquals(emptySet<AppTheme>(), premium.lockedThemes(0))
+        Appearance.load(context)
+        Appearance.updateTheme(AppTheme.MIDNIGHT)
+        premium.enforce(totalFlips = 0)
+        assertEquals(AppTheme.MIDNIGHT, Appearance.appTheme)
+        Appearance.updateTheme(AppTheme.BLUE)
     }
 
     @Test fun anAdOpensOneThemeForSevenDays_alsoAfterARestart() {

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
-import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.DarkMode
@@ -38,6 +37,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -126,7 +126,7 @@ interface SettingsActions {
     fun openAbout()
     fun openPrivacyPolicy()
     fun openPrivacyOptions()
-    fun removeAds()
+    fun openPremium()
     fun openOtherApp(packageName: String)
     fun openMoreApps()
 }
@@ -162,6 +162,16 @@ fun SettingsRoute(
     var showAdminExplanation by remember { mutableStateOf(false) }
     var showRemoveAdminConfirmation by remember { mutableStateOf(false) }
     var lockedTheme by remember { mutableStateOf<AppTheme?>(null) }
+    var showPremiumSheet by remember { mutableStateOf(false) }
+    // Premium opens every theme: the pills lose their locks at once, and the theme that was tapped is applied
+    LaunchedEffect(premiumUi.isPremium) {
+        viewModel.refreshAccessState()
+        if (premiumUi.isPremium) {
+            lockedTheme?.let(viewModel::selectTheme)
+            lockedTheme = null
+            showPremiumSheet = false
+        }
+    }
     // The switch turns on only after Android grants screen-lock access (architecture A11)
     val adminLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.onDeviceAdminActivationResult()
@@ -186,9 +196,8 @@ fun SettingsRoute(
         state = state.copy(
             privacyOptionsRequired = privacyOptionsRequired,
             otherApps = otherApps,
-            removeAdsAvailable = AppConstants.REMOVE_ADS_ENABLED,
-            adsRemoved = premiumUi.isPremium,
-            removeAdsPrice = premiumUi.priceLabel,
+            premiumAvailable = AppConstants.PREMIUM_ENABLED,
+            premiumActive = premiumUi.isPremium,
         ),
         snackbarHostState = snackbar,
         actions = object : SettingsActions {
@@ -230,7 +239,7 @@ fun SettingsRoute(
             override fun openAbout() = onAbout()
             override fun openPrivacyPolicy() = onOpenPrivacyPolicy()
             override fun openPrivacyOptions() = onOpenPrivacyOptions()
-            override fun removeAds() = premium.launchPurchase()
+            override fun openPremium() { showPremiumSheet = true }
             override fun openOtherApp(packageName: String) = IntentUtil.openPlayStore(activity, packageName)
             override fun openMoreApps() = IntentUtil.openDeveloperPlayConsole(activity)
         },
@@ -258,8 +267,40 @@ fun SettingsRoute(
             dismissButton = { TextButton(onClick = { showAdminExplanation = false }) { Text(stringResource(R.string.cancel_action)) } },
         )
     }
+    val watchAdFor: (AppTheme) -> Unit = { theme ->
+        scope.launch { snackbar.showSnackbar(activity.getString(R.string.theme_ad_loading)) }
+        onWatchAdForTheme(
+            { viewModel.onThemeUnlockedByAd(theme) },
+            { scope.launch { snackbar.showSnackbar(activity.getString(R.string.theme_ad_unavailable)) } },
+        )
+    }
+    // Premium, asked for from its row or by tapping a locked theme. It closes itself once bought.
+    val sheetTheme = lockedTheme.takeIf { AppConstants.PREMIUM_ENABLED }
+    if (AppConstants.PREMIUM_ENABLED && !premiumUi.isPremium && (showPremiumSheet || sheetTheme != null)) {
+        val closeSheet = {
+            showPremiumSheet = false
+            lockedTheme = null
+            premium.onPremiumSheetDismissed()
+        }
+        PremiumSheet(
+            state = PremiumSheetState(
+                price = premiumUi.priceLabel,
+                isLoading = premiumUi.isLoading,
+                theme = sheetTheme,
+                totalFlips = state.totalFlips,
+                rewardedAvailable = rewardedThemeAvailable,
+            ),
+            onBuy = premium::launchPurchase,
+            onWatchAd = {
+                val theme = sheetTheme
+                closeSheet()
+                if (theme != null) watchAdFor(theme)
+            },
+            onDismiss = closeSheet,
+        )
+    }
     // An earned theme that is not open yet: say how to earn it, and offer the ad where there is one
-    lockedTheme?.let { theme ->
+    lockedTheme?.takeUnless { AppConstants.PREMIUM_ENABLED }?.let { theme ->
         AlertDialog(
             onDismissRequest = { lockedTheme = null },
             title = { Text(stringResource(R.string.theme_locked_title, stringResource(theme.labelRes()))) },
@@ -275,11 +316,7 @@ fun SettingsRoute(
                 if (rewardedThemeAvailable) {
                     TextButton(onClick = {
                         lockedTheme = null
-                        scope.launch { snackbar.showSnackbar(activity.getString(R.string.theme_ad_loading)) }
-                        onWatchAdForTheme(
-                            { viewModel.onThemeUnlockedByAd(theme) },
-                            { scope.launch { snackbar.showSnackbar(activity.getString(R.string.theme_ad_unavailable)) } },
-                        )
+                        watchAdFor(theme)
                     }) { Text(stringResource(R.string.theme_watch_ad)) }
                 } else {
                     TextButton(onClick = { lockedTheme = null }) { Text(stringResource(R.string.got_it)) }
@@ -621,22 +658,26 @@ private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
                 )
             }
         }
+        if (state.lockedThemes.isNotEmpty()) {
+            Text(
+                stringResource(if (state.premiumAvailable) R.string.theme_locks_note_premium else R.string.theme_locks_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
+            )
+        }
     }
 }
 
 @Composable
 private fun HelpGroup(state: SettingsUiState, actions: SettingsActions) {
     SettingsGroup(stringResource(R.string.settings_group_help), Modifier.widthIn(max = 560.dp)) {
-        // One purchase, kept on the Google account (future features F19)
-        if (state.removeAdsAvailable) SettingsRow(
-            Icons.Filled.Block,
-            stringResource(R.string.remove_ads_title),
-            onClick = if (state.adsRemoved) null else actions::removeAds,
-            summary = when {
-                state.adsRemoved -> stringResource(R.string.ads_removed_summary)
-                state.removeAdsPrice != null -> stringResource(R.string.remove_ads_summary_price, state.removeAdsPrice)
-                else -> stringResource(R.string.remove_ads_summary)
-            },
+        // One purchase, kept on the Google account (future features F19). Shown once, here, and never pushed.
+        if (state.premiumAvailable) SettingsRow(
+            Icons.Filled.WorkspacePremium,
+            stringResource(R.string.premium_title),
+            onClick = if (state.premiumActive) null else actions::openPremium,
+            summary = stringResource(if (state.premiumActive) R.string.premium_active_summary else R.string.premium_summary),
         )
         SettingsRow(Icons.AutoMirrored.Filled.FactCheck, stringResource(R.string.attention_check_setup), onClick = actions::openCheckSetup)
         SettingsRow(Icons.Filled.BugReport, stringResource(R.string.report_a_problem), onClick = actions::reportProblem)
@@ -723,7 +764,7 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun openAbout() = Unit
     override fun openPrivacyPolicy() = Unit
     override fun openPrivacyOptions() = Unit
-    override fun removeAds() = Unit
+    override fun openPremium() = Unit
     override fun openOtherApp(packageName: String) = Unit
     override fun openMoreApps() = Unit
 }

@@ -39,11 +39,10 @@ data class SettingsUiState(
     val privacyOptionsRequired: Boolean = false,
     /** Two other DroidNova apps for the foot of the list; picked by the route each time Settings opens. */
     val otherApps: List<OtherAppItem> = emptyList(),
-    /** "Remove ads" (future features F19): set by the route from the activity's billing state. */
-    /** False while the purchase is switched off (`AppConstants.REMOVE_ADS_ENABLED`): the row is hidden. */
-    val removeAdsAvailable: Boolean = false,
-    val adsRemoved: Boolean = false,
-    val removeAdsPrice: String? = null,
+    /** Flip to Mute Premium (future features F19): set by the route from the activity's billing state. */
+    /** False while the purchase is switched off (`AppConstants.PREMIUM_ENABLED`): nothing mentions Premium. */
+    val premiumAvailable: Boolean = false,
+    val premiumActive: Boolean = false,
 )
 
 enum class SettingsMessage {

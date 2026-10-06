@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import com.droidnova.fliptomute.data.premium.PremiumStore
+import com.droidnova.fliptomute.data.premium.premiumActive
 import java.security.KeyPairGenerator
 import java.security.Signature
 import org.junit.Assert.assertFalse
@@ -24,6 +25,14 @@ class PremiumTest {
         // Play said the purchase is gone (a refund): ads return
         PremiumStore(context).hasBoughtPremium = false
         assertFalse(PremiumStore(context).hasBoughtPremium)
+    }
+
+    @Test fun premiumNeedsTheSwitchAndAPurchase() {
+        assertTrue(premiumActive(enabled = true, bought = true, debugSession = false))
+        assertTrue(premiumActive(enabled = true, bought = false, debugSession = true))
+        assertFalse(premiumActive(enabled = true, bought = false, debugSession = false))
+        // Switched off: nobody is treated as a buyer, whatever was stored
+        assertFalse(premiumActive(enabled = false, bought = true, debugSession = true))
     }
 
     @Test fun aPurchaseSignedByPlayIsAccepted_andATamperedOneIsNot() {

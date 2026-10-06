@@ -27,6 +27,8 @@ import com.droidnova.fliptomute.ui.screens.settings.PreviewSettingsActions
 import com.droidnova.fliptomute.ui.screens.settings.SettingsScreen
 import com.droidnova.fliptomute.ui.screens.settings.SettingsUiState
 import com.droidnova.fliptomute.data.preferences.FlipSchedule
+import com.droidnova.fliptomute.ui.screens.settings.PremiumSheetContent
+import com.droidnova.fliptomute.ui.screens.settings.PremiumSheetState
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.utils.AppTheme
 import com.droidnova.fliptomute.utils.about_utils.OtherAppItem
@@ -53,6 +55,20 @@ class M6Snapshots {
 
     @Test fun settingsSchedule() = snapshot("settings_schedule") {
         SettingsScreen(SettingsUiState(schedule = FlipSchedule(enabled = true)), PreviewSettingsActions)
+    }
+
+    @Test fun premiumSheet() = snapshot("premium_sheet") {
+        PremiumSheetContent(
+            PremiumSheetState(price = "Rs 99", theme = AppTheme.ROSE, totalFlips = 12, rewardedAvailable = true),
+            onBuy = {}, onWatchAd = {}, onDismiss = {},
+        )
+    }
+
+    @Test fun settingsWithPremiumOffered() = snapshot("settings_premium") {
+        SettingsScreen(
+            SettingsUiState(premiumAvailable = true, lockedThemes = setOf(AppTheme.FOREST, AppTheme.ROSE, AppTheme.MIDNIGHT)),
+            PreviewSettingsActions,
+        )
     }
 
     @Test fun settingsDark() = snapshot("settings_dark", dark = true) { SettingsScreen(SettingsUiState(), PreviewSettingsActions) }

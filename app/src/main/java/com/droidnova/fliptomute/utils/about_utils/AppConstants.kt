@@ -16,9 +16,10 @@ object AppConstants {
     const val PLAY_STORE_LICENSE_KEY = ""
 
     /**
-     * "Remove ads" is built but switched off (owner, 2026-10-07). To switch it on: create the in-app
-     * product `one_time_remove_ads` in Play Console, paste the licence key above, and set this to true.
-     * While false, Settings has no "Remove ads" row and the app never connects to Play Billing.
+     * Flip to Mute Premium (no ads, every colour theme) is built but switched off (owner, 2026-10-07).
+     * To switch it on: create the in-app product `one_time_remove_ads` in Play Console, paste the
+     * licence key above, and set this to true. While false, Settings has no Premium row, the app
+     * never connects to Play Billing, and the extra themes are earned or opened by a rewarded ad.
      */
-    const val REMOVE_ADS_ENABLED = false
+    const val PREMIUM_ENABLED = false
 }

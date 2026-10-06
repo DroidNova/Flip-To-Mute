@@ -124,7 +124,6 @@ class MainActivity : AppCompatActivity(), PremiumController {
     // "Remove ads" (future features F19), as Secret Calculator's AppActivity
     private var billingManager: PremiumBillingManager? = null
     private var hasPendingRemoveAdsClick = false
-    private var debugSessionPremiumPurchased = false
     private val mutablePremiumUi = MutableStateFlow(PremiumUi(isPremium = false))
     override val premiumUi: StateFlow<PremiumUi> = mutablePremiumUi.asStateFlow()
     private val mutablePremiumEvents = MutableSharedFlow<PremiumEvent>(extraBufferCapacity = 1)
@@ -298,7 +297,7 @@ class MainActivity : AppCompatActivity(), PremiumController {
     // --- Premium (PremiumController), as in Secret Calculator's AppActivity ---
 
     private fun initializeBilling() {
-        if (!AppConstants.REMOVE_ADS_ENABLED || billingManager != null) return
+        if (!AppConstants.PREMIUM_ENABLED || billingManager != null) return
         val manager = try {
             PremiumBillingManager(
                 context = applicationContext,
@@ -335,22 +334,21 @@ class MainActivity : AppCompatActivity(), PremiumController {
 
     private fun isDebugBuild(): Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
 
-    private fun isPremiumPurchased(): Boolean =
-        AppConstants.REMOVE_ADS_ENABLED && (premiumStore.hasBoughtPremium || debugSessionPremiumPurchased)
+    private fun isPremiumPurchased(): Boolean = premiumStore.isPremium
 
     override fun launchPurchase() {
-        if (!AppConstants.REMOVE_ADS_ENABLED || isPremiumPurchased()) return
+        if (!AppConstants.PREMIUM_ENABLED || isPremiumPurchased()) return
         hasPendingRemoveAdsClick = true
         if (isDebugBuild()) {
             // Debug builds unlock premium for the session without the store
-            debugSessionPremiumPurchased = true
+            premiumStore.debugSessionPremium = true
             hasPendingRemoveAdsClick = false
             mutablePremiumUi.update { it.copy(isPremium = true) }
             onPurchased()
             return
         }
         billingManager?.launchPurchaseFlow(this)
-            ?: Toast.makeText(this, R.string.remove_ads_unavailable, Toast.LENGTH_SHORT).show()
+            ?: Toast.makeText(this, R.string.premium_unavailable, Toast.LENGTH_SHORT).show()
     }
 
     /** Bought just now: tell the screens, and say thank you. */

@@ -21,7 +21,7 @@ This is the working document. Update it in every session.
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | In progress | 9 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
-| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 18 of 22 | 6 days, plus the Flip to Focus spike |
+| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 22 of 25 | 6 days, plus the Flip to Focus spike |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
 then migration with behaviour unchanged, then redesign, then features. Keeping
@@ -315,34 +315,45 @@ without it. The owner decides whether it merges into v2.0 or ships as v2.1.
 | [x] | M9-05 | Settings group "Notifications" with a switch for each notification, both on by default | S | F10, F31 |
 | [x] | M9-06 | Banner placement and Remote Config switch for the activity screen; `activity_opened` and `weekly_recap_shown` events | S | A16, A17 |
 | [ ] | M9-07 | Device test: flip a real call, then check the notification, the tap, the chart and the count. Let a silenced call ring out and check the callback reminder and its button. | S | |
-| [ ] | M9-08 | Native ad on the activity screen. **Blocked: needs a native ad unit ID from the owner.** | S | F32 |
+| [x] | M9-08 | Native ad on the activity screen, after the milestones card, asked for when the screen opens. The banner hides while it shows. Remote switch `ad_native_activity_enabled`. Unit ID from the owner, 2026-10-07. | S | F32 |
 | [ ] | M9-09 | Spike S1: face down and pick-up detection with the screen off, battery cost over 24 hours | M | F30, F1 |
 | [ ] | M9-10 | Flip to Focus: session, Do Not Disturb, summary screen with streak. After M9-09. | L | F30 |
 | [x] | M9-11 | Milestones at 1, 10, 25, 50, 100, 250, 500 and 1000 calls: card on the activity screen, and a milestone notification in place of the flip notification | S | F35 |
 | [x] | M9-12 | Callback reminder: when a silenced call ends unanswered, the flip notification becomes "You silenced a call at 3:40. Want to call back?" with an "Open phone" button. Own switch in Settings. | S | F37 |
 | [x] | M9-13 | Month card on the activity screen: this month against last month. `FlipStatsStore` keeps the finished month. | S | F39 |
 | [x] | M9-14 | Two more Home tips: "No flips yet?" after a week without a flip (opens Check my setup), and "Flipping by accident?" (turns on Only when lying flat) | S | F18 |
-| [x] | M9-15 | Three earned colour themes: Forest at 10 calls, Rose at 25, Midnight (true black in dark mode) at 50. A locked theme explains how to earn it and, on debug builds, offers a rewarded ad that opens it for 7 days. **Release builds offer the ad only after the owner supplies a rewarded ad unit ID** (`AdConfig.PROD_REWARDED_THEME`); remote switch `ad_rewarded_theme_enabled`. | M | F21, F34, F36 |
+| [x] | M9-15 | Three earned colour themes: Forest at 10 calls, Rose at 25, Midnight (true black in dark mode) at 50. A locked theme explains how to earn it and offers a rewarded ad that opens it for 7 days (unit ID from the owner, 2026-10-07); remote switch `ad_rewarded_theme_enabled`. A line under the theme pills says what the locks mean. | M | F21, F34, F36 |
 | [x] | M9-16 | Schedule: "Only at set times" in Settings with days, From and Until (overnight periods allowed). Outside it the service keeps running and calls ring normally, as in a timed pause, so no alarm is needed. Home says "Outside your schedule. Active again Mon, 9:00 AM." The notification and tile do not show the schedule. | M | F9 |
 | [x] | M9-17 | Flip to pause music or video: off by default. Uses the Flip to lock gesture (face up and still, then face down on a flat surface), only while something plays and the screen is on and unlocked. Sends the media pause key; no new access. **Untested on a phone: which apps obey the key, and the battery cost of the sensor while media plays.** | M | F3 |
 | [x] | M9-18 | "Ring again when turned face up": off by default, because lifting the phone flat to see who calls would also ring again. The sensor stays on after the flip only when this is on. | S | F4 |
 | [x] | M9-19 | Sensitivity: Quick, Normal, Careful. Normal is exactly the 1.x and 2.0 detection. **Quick and Careful values are first guesses and need tuning on phones.** | S | F7 |
 | [x] | M9-20 | App shortcuts on the launcher icon: Pause 1 hour, Turn on, Turn off, Your flips. Each opens the app, which then acts, because Android lets a shortcut start only an activity. | S | F12 |
 | [x] | M9-21 | Share card: a share button on the activity screen sends a square picture ("50 calls silenced with a flip of my phone") with a line of text and the Play link. Uses a `FileProvider` limited to `cache/share`. | S | F38 |
-| [x] | M9-22 | Remove ads purchase: Secret Calculator's billing files (deviation X15), a "Remove ads" row in Settings with the store price, the banner hidden for buyers, a thank-you dialog. Debug builds unlock for the session without the store, as Secret Calculator does. The rewarded theme ad stays, because the user asks for it. | M | F19, A25 |
+| [x] | M9-22 | Flip to Mute Premium, one purchase: no ads and every colour theme at once. Secret Calculator's billing files (deviation X15), a Premium row in Settings, a sheet that lists the benefits and what stays free, a thank-you dialog. Debug builds unlock for the session without the store. **Switched off by the owner on 2026-10-07** (`AppConstants.PREMIUM_ENABLED = false`): no row, no connection to Play Billing, and the extra themes are earned or opened by a rewarded ad. | M | F19, F20, A25 |
+| [x] | M9-23 | Interstitial at a natural break (`docs/AD_OPPORTUNITIES.md`): going back to Home from "Your flips" or "Check my setup", not before the 3rd launch, 12 hours apart, skipped when not loaded. **Release builds show none until the owner creates an interstitial ad unit** (`AdConfig.PROD_INTERSTITIAL`). | S | F33 |
+| [x] | M9-24 | About page rebuilt on All File Reader's layout, with the version code. "Check Out Other Apps" (two random DroidNova apps and the developer page) at the foot of Settings and of About. | S | |
+| [x] | M9-25 | In-app review: a 30 day cooldown between asks, and 3 minutes of quiet after any full-screen ad, on top of every third launch and three value moments | S | A18 |
 
 Device testing for all of M9 happens in one pass at the end (owner decision, 2026-10-07).
 
-**Needed from the owner before M9 can ship:**
+### Release checklist from the owner (2026-10-07)
+
+| Point | Status | Where |
+|-------|--------|-------|
+| 1. Native in-app rating | Done. Play's own review sheet. A session qualifies on every 3rd launch; the sheet is asked for only after 3 calls were silenced by a flip (or a clean setup check), while Home shows no problem; 30 days between asks, 3 asks at most, never within 3 minutes of a full-screen ad. Play's own quota applies on top. The app never asks a question first and never asks for a good rating. | `ReviewPolicy`, `InAppReview`, M9-25 |
+| 2. Consistent About section | Done, on All File Reader's layout: header, Rate us, Share Us, Report Bugs, Instagram, WhatsApp, App Version, Privacy Policy, then Check Out Other Apps. Colours come from the app's theme. Not copied: "Open source licences", which Flip to Mute has no screen for. | `AboutScreen`, M9-24 |
+| 3. Thoughtful ad placement | Done. The journey, the placements, the limits and the places ads never show are in `docs/AD_OPPORTUNITIES.md`. Banner, native and rewarded are live with the owner's unit IDs; the interstitial waits for a unit ID. | M9-08, M9-23 |
+| 4. Premium with useful free access | Built, and switched off as the owner asked. Free: everything the app does, three themes, and the extra three by milestone or rewarded ad. Premium: no ads and the three extra themes at once. Paid themes carry a lock and a line that says what the lock means; Premium is offered in one Settings row and when a locked theme is tapped, nowhere else. | `PremiumSheet`, `AppConstants.PREMIUM_ENABLED`, M9-22 |
+
+**Needed from the owner:**
 
 | What | Where it goes | Until then |
 |------|---------------|------------|
-| In-app product with the ID `one_time_remove_ads` in Play Console | Nothing to change in code | "Remove ads" shows no price and the purchase cannot start |
-| The app's licence key from Play Console | `AppConstants.PLAY_STORE_LICENSE_KEY` | Purchases are accepted without the signature check |
-| Rewarded ad unit ID from AdMob | `AdConfig.PROD_REWARDED_THEME` | Release builds do not offer "Watch ad" for locked themes |
-| Native ad unit ID from AdMob | M9-08 | No native ad on the activity screen |
-| AdMob App ID (still open from M7-01, decision D2) | `admob_app_id` string | Release ads cannot serve |
+| Interstitial ad unit ID from AdMob | `AdConfig.PROD_INTERSTITIAL` | Release builds show no interstitial |
+| To switch Premium on: in-app product `one_time_remove_ads` in Play Console, and the app's licence key | `AppConstants.PLAY_STORE_LICENSE_KEY`, then `PREMIUM_ENABLED = true` | Premium stays hidden |
 | Decision: M9 inside v2.0, or as v2.1 | Merge `feature/v2.1-engagement` into `release/v2.0`, or keep it apart | The work stays on its branch |
+
+Done by the owner on 2026-10-07: AdMob App ID, rewarded ad unit ID, native ad unit ID.
 
 **For the device pass at the end**, beyond the exit criteria below:
 
@@ -352,7 +363,9 @@ Device testing for all of M9 happens in one pass at the end (owner decision, 202
 - Flip to pause with YouTube, Spotify and one video player; battery use with it on.
 - Themes: all six in light and dark, the locked dialog, the rewarded ad, and the return to Blue after 7 days (change the phone date).
 - Launcher shortcuts on Samsung, Pixel and one Chinese launcher. The share card in WhatsApp and one other app.
-- Remove ads with a licence tester account: buy, reinstall, refund.
+- Premium, once switched on, with a licence tester account: buy, reinstall, refund; themes unlock and ads go.
+- Ads on a release build with the production IDs: banner, native on "Your flips" (and no banner beside it), rewarded, and the interstitial limits (with the phone date).
+- About and the other-apps cards on a 320 dp phone and in dark mode. The review sheet through Play's internal app sharing.
 
 Exit criteria:
 
@@ -407,6 +420,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-07 | M7, M9 | Owner supplied the AdMob App ID (M7-01, on `release/v2.0`) and the rewarded and native unit IDs, and asked for the purchase to be switched off. M9-08 native ad. Owner's four release points: review cooldown (M9-25), About on All File Reader's layout with other apps in Settings too (M9-24), `docs/AD_OPPORTUNITIES.md` and the interstitial (M9-23), Premium sheet and themes behind `PREMIUM_ENABLED = false` (M9-22). 414 tests, lint with no new warnings, release build passes at 4.04 MB unsigned. Nothing in M9 has run on a phone. | Interstitial unit ID. Decision on merging M9. Then the device pass |
 | 2026-10-07 | M9 | M9-15 to M9-22: three earned themes with a rewarded ad as the short cut, schedule, flip to pause media, ring again when turned face up, sensitivity, launcher shortcuts, share card, remove ads purchase. 402 tests (one address check skipped on Windows), lint with no new warnings, release build passes. Release APK 4.06 MB unsigned, up from 3.71 MB, mostly Play Billing. Nothing in M9 has run on a phone. | Owner items in the M9 table. Then the device pass, M9-08 and the Flip to Focus spike |
 | 2026-10-07 | M9 | Owner: build every feature first, test on phones at the end. M9-11 to M9-14: milestones, callback reminder, month comparison, two more Home tips. 357 tests pass. | M9-15 themes, then the rest of the list in order |
 | 2026-10-07 | M9 | Owner direction: retention and ad views first. Branch `feature/v2.1-engagement`. M9-01 to M9-06: flip history store, silent "Call silenced" notification, "Your flips" activity screen opened from the Home stats card and both notifications, weekly recap run from the health check worker, two switches in Settings, banner placement for the new screen. `FUTURE_FEATURES.md` section 1.1 added (F30 to F34). 341 tests, lint and release build pass. | M9-07 on a phone. Native ad unit ID from the owner. Spike S1 for Flip to Focus |
