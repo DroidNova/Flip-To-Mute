@@ -29,6 +29,10 @@ show, and how often. Change the limits here and in `InterstitialPolicy`, `AdConf
 
 Debug builds use Google's sample units for every format, so testers never click real ads.
 
+The banner is collapsible: it opens expanded on each launch and covers the lower half of the screen
+until the user closes it, as in 1.x. Seen on a Realme on 2026-10-07 and kept as it is by the owner's
+decision the same day.
+
 ## 3. Limits
 
 | Rule | Value | Where |
