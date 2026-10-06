@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.DarkMode
@@ -63,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.droidnova.fliptomute.R
+import com.droidnova.fliptomute.billing.LocalPremiumController
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddRequester
 import com.droidnova.fliptomute.sensor.FlipSensitivity
@@ -121,6 +123,7 @@ interface SettingsActions {
     fun openAbout()
     fun openPrivacyPolicy()
     fun openPrivacyOptions()
+    fun removeAds()
 }
 
 @Composable
@@ -143,6 +146,8 @@ fun SettingsRoute(
         viewModel.refreshDeviceAdminState()
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val premium = LocalPremiumController.current
+    val premiumUi by premium.premiumUi.collectAsStateWithLifecycle()
     val activity = LocalActivity.current ?: return
     val addRequester = remember(activity) { QuickSettingsTileAddRequester(activity) }
     val snackbar = remember { SnackbarHostState() }
@@ -172,7 +177,11 @@ fun SettingsRoute(
         }
     }
     SettingsScreen(
-        state = state.copy(privacyOptionsRequired = privacyOptionsRequired),
+        state = state.copy(
+            privacyOptionsRequired = privacyOptionsRequired,
+            adsRemoved = premiumUi.isPremium,
+            removeAdsPrice = premiumUi.priceLabel,
+        ),
         snackbarHostState = snackbar,
         actions = object : SettingsActions {
             override fun back() = onBack()
@@ -213,6 +222,7 @@ fun SettingsRoute(
             override fun openAbout() = onAbout()
             override fun openPrivacyPolicy() = onOpenPrivacyPolicy()
             override fun openPrivacyOptions() = onOpenPrivacyOptions()
+            override fun removeAds() = premium.launchPurchase()
         },
     )
     if (showManualInstructions) {
@@ -596,6 +606,17 @@ private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
 @Composable
 private fun HelpGroup(state: SettingsUiState, actions: SettingsActions) {
     SettingsGroup(stringResource(R.string.settings_group_help), Modifier.widthIn(max = 560.dp)) {
+        // One purchase, kept on the Google account (future features F19)
+        SettingsRow(
+            Icons.Filled.Block,
+            stringResource(R.string.remove_ads_title),
+            onClick = if (state.adsRemoved) null else actions::removeAds,
+            summary = when {
+                state.adsRemoved -> stringResource(R.string.ads_removed_summary)
+                state.removeAdsPrice != null -> stringResource(R.string.remove_ads_summary_price, state.removeAdsPrice)
+                else -> stringResource(R.string.remove_ads_summary)
+            },
+        )
         SettingsRow(Icons.AutoMirrored.Filled.FactCheck, stringResource(R.string.attention_check_setup), onClick = actions::openCheckSetup)
         SettingsRow(Icons.Filled.BugReport, stringResource(R.string.report_a_problem), onClick = actions::reportProblem)
         SettingsRow(Icons.Filled.Info, stringResource(R.string.about_title), onClick = actions::openAbout)
@@ -681,4 +702,5 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun openAbout() = Unit
     override fun openPrivacyPolicy() = Unit
     override fun openPrivacyOptions() = Unit
+    override fun removeAds() = Unit
 }

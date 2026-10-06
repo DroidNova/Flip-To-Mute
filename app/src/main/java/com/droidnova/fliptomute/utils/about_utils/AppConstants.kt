@@ -7,4 +7,11 @@ object AppConstants {
     const val INSTAGRAM_COMMUNITY_URL = "https://www.instagram.com/droid_nova?igsh=MWdjMGtsZGNmMm45dg=="
     /** Flip to Mute's privacy policy. Empty until the owner provides it (decision D7); Settings hides the row meanwhile. */
     const val PRIVACY_POLICY_URL = "https://sites.google.com/view/fliptomute/home"
+
+    /**
+     * The app's licence key from Play Console (Monetisation setup), used to check a "remove ads"
+     * purchase. Empty until the owner pastes it; purchases are then accepted without the check,
+     * as Secret Calculator does with an empty key.
+     */
+    const val PLAY_STORE_LICENSE_KEY = ""
 }

@@ -60,7 +60,13 @@ Rules for this theme:
 
 - Every notification must carry real content. No "come back" reminders.
 - No ads in notifications or on the lock screen: Play policy forbids both.
-- The widget (F11), app shortcuts (F12) and the tile keep the app installed but reduce opens. They stay in v2.3.
+- The widget (F11) and the tile keep the app installed but reduce opens. The widget stays in v2.3.
+
+Also built on this branch on 2026-10-07, ahead of their old place in the plan, because the owner
+asked for the app to be completed before testing: F3 flip to pause media, F4 ring again when turned
+face up, F7 sensitivity, F9 schedule, F12 app shortcuts, F18 as two more Home tips, F19 remove ads,
+and F21 as the three earned themes. Their rows in sections 2 to 4 describe the idea; `MILESTONES.md`
+M9 describes what was built and what each still needs on a phone.
 
 Measure with `activity_opened` (source: `home`, `flip_notification`, `weekly_recap`),
 `weekly_recap_shown`, and the existing `return_d1` and `return_d7`.

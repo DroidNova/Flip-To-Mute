@@ -1,8 +1,10 @@
 package com.droidnova.fliptomute
 
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -27,13 +29,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.droidnova.fliptomute.billing.LocalPremiumController
+import com.droidnova.fliptomute.billing.PremiumBillingManager
+import com.droidnova.fliptomute.billing.PremiumController
+import com.droidnova.fliptomute.billing.PremiumEvent
+import com.droidnova.fliptomute.billing.PremiumUi
 import com.droidnova.fliptomute.data.analytics.AnalyticsEvents
 import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
 import com.droidnova.fliptomute.data.analytics.Funnel
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.premium.PremiumStore
 import com.droidnova.fliptomute.data.review.InAppReview
 import com.droidnova.fliptomute.data.review.ReviewStore
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
@@ -45,6 +55,7 @@ import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
 import com.droidnova.fliptomute.ui.activities.OnboardingActivity
 import com.droidnova.fliptomute.ui.navigation.AppNavHost
+import com.droidnova.fliptomute.ui.navigation.Routes
 import com.droidnova.fliptomute.ui.screens.onboarding.OnboardingGate
 import com.droidnova.fliptomute.ui.screens.onboarding.StartDestination
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
@@ -70,8 +81,15 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -83,7 +101,7 @@ import kotlinx.coroutines.withContext
  * launcher component and can remove users' home-screen icons (architecture X12).
  */
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), PremiumController {
     @Inject lateinit var analytics: AnalyticsLogger
     @Inject lateinit var funnel: Funnel
     @Inject lateinit var inAppReview: InAppReview
@@ -93,6 +111,17 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var setupAccessRepository: SetupAccessRepository
     @Inject lateinit var flipStatsStore: FlipStatsStore
     @Inject lateinit var themeUnlockStore: ThemeUnlockStore
+    @Inject lateinit var premiumStore: PremiumStore
+
+    // "Remove ads" (future features F19), as Secret Calculator's AppActivity
+    private var billingManager: PremiumBillingManager? = null
+    private var hasPendingRemoveAdsClick = false
+    private var debugSessionPremiumPurchased = false
+    private val mutablePremiumUi = MutableStateFlow(PremiumUi(isPremium = false))
+    override val premiumUi: StateFlow<PremiumUi> = mutablePremiumUi.asStateFlow()
+    private val mutablePremiumEvents = MutableSharedFlow<PremiumEvent>(extraBufferCapacity = 1)
+    override val premiumEvents: SharedFlow<PremiumEvent> = mutablePremiumEvents.asSharedFlow()
+    private var showPremiumWelcome by mutableStateOf(false)
 
     private val externalMonitoringRequest = MutableStateFlow(MainActivityLaunchEvent())
 
@@ -139,11 +168,16 @@ class MainActivity : AppCompatActivity() {
     private fun showContent() {
         // A theme opened for a week by an ad goes back to the default when the week is over
         themeUnlockStore.enforce(flipStatsStore.stats.value.total)
+        mutablePremiumUi.value = PremiumUi(isPremium = isPremiumPurchased())
+        initializeBilling()
         setUpAds()
         setContent {
             FlipToMuteTheme {
                 // The root is a plain Column, as in Secret Calculator: give text a readable default colour
-                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+                CompositionLocalProvider(
+                    LocalContentColor provides MaterialTheme.colorScheme.onBackground,
+                    LocalPremiumController provides this,
+                ) {
                     Column(
                         Modifier
                             .fillMaxSize()
@@ -190,12 +224,23 @@ class MainActivity : AppCompatActivity() {
                         )
                         // Read here so the switches are read again once Remote Config arrives
                         val remoteReady = remoteConfigReady
-                        if (remoteReady && shouldShowBanner(adsReady, BannerPlacement.forRoute(currentRoute), RemoteAdGate::isBannerEnabled)) {
+                        val premium by premiumUi.collectAsStateWithLifecycle()
+                        if (remoteReady && !premium.isPremium &&
+                            shouldShowBanner(adsReady, BannerPlacement.forRoute(currentRoute), RemoteAdGate::isBannerEnabled)
+                        ) {
                             AndroidView(
                                 factory = { bannerAd().also { (it.parent as? ViewGroup)?.removeView(it) } },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
+                    }
+                    if (showPremiumWelcome) {
+                        AlertDialog(
+                            onDismissRequest = { showPremiumWelcome = false },
+                            title = { Text(stringResource(R.string.premium_welcome_title)) },
+                            text = { Text(stringResource(R.string.premium_welcome_body)) },
+                            confirmButton = { TextButton(onClick = { showPremiumWelcome = false }) { Text(stringResource(R.string.got_it)) } },
+                        )
                     }
                     if (updateReady) {
                         AlertDialog(
@@ -217,8 +262,86 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        billingManager?.endConnection()
         bannerView?.destroy()
         super.onDestroy()
+    }
+
+    // --- Premium (PremiumController), as in Secret Calculator's AppActivity ---
+
+    private fun initializeBilling() {
+        if (billingManager != null) return
+        val manager = try {
+            PremiumBillingManager(
+                context = applicationContext,
+                onPremiumStatusChanged = { isPremium -> runOnUiThread { handlePremiumStatusChanged(isPremium) } },
+                onError = { message ->
+                    runOnUiThread {
+                        // Only where the purchase is offered; a failed background check stays quiet
+                        if (currentRoute == Routes.SETTINGS) Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                    }
+                },
+            )
+        } catch (error: RuntimeException) {
+            // No Play Store on this phone: the app works as before, with ads
+            MonitoringLog.failure(this, "Billing unavailable", error)
+            return
+        }
+        billingManager = manager
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(
+                    manager.productDetails,
+                    manager.isFetchingProductDetails,
+                    manager.isPurchaseInProgress,
+                ) { details, fetching, purchasing ->
+                    mutablePremiumUi.update {
+                        it.copy(priceLabel = details?.oneTimePurchaseOfferDetails?.formattedPrice, isLoading = fetching || purchasing)
+                    }
+                }.collect {}
+            }
+        }
+        manager.queryActivePurchases()
+        manager.queryProductDetails()
+    }
+
+    private fun isDebugBuild(): Boolean = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+
+    private fun isPremiumPurchased(): Boolean = premiumStore.hasBoughtPremium || debugSessionPremiumPurchased
+
+    override fun launchPurchase() {
+        if (isPremiumPurchased()) return
+        hasPendingRemoveAdsClick = true
+        if (isDebugBuild()) {
+            // Debug builds unlock premium for the session without the store
+            debugSessionPremiumPurchased = true
+            hasPendingRemoveAdsClick = false
+            mutablePremiumUi.update { it.copy(isPremium = true) }
+            onPurchased()
+            return
+        }
+        billingManager?.launchPurchaseFlow(this)
+            ?: Toast.makeText(this, R.string.remove_ads_unavailable, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Bought just now: tell the screens, and say thank you. */
+    private fun onPurchased() {
+        showPremiumWelcome = true
+        mutablePremiumEvents.tryEmit(PremiumEvent.Purchased)
+    }
+
+    override fun onPremiumSheetDismissed() {
+        hasPendingRemoveAdsClick = false
+    }
+
+    private fun handlePremiumStatusChanged(isPremium: Boolean) {
+        val wasPremium = premiumStore.hasBoughtPremium
+        premiumStore.hasBoughtPremium = isPremium
+        mutablePremiumUi.update { it.copy(isPremium = isPremiumPurchased()) }
+        if (!wasPremium && isPremium) {
+            if (hasPendingRemoveAdsClick) onPurchased() else mutablePremiumEvents.tryEmit(PremiumEvent.Reactivated)
+            hasPendingRemoveAdsClick = false
+        }
     }
 
     // --- Ads, as in Secret Calculator's AppActivity ---

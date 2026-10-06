@@ -21,7 +21,7 @@ This is the working document. Update it in every session.
 | M6 | Settings, help, about, review | Done | 12 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | In progress | 8 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
-| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 17 of 22 | 6 days, plus the Flip to Focus spike |
+| M9 | v2.1: reasons to come back (branch `feature/v2.1-engagement`) | In progress | 18 of 22 | 6 days, plus the Flip to Focus spike |
 
 Order follows Secret Calculator's release rules: fixes first on the old code,
 then migration with behaviour unchanged, then redesign, then features. Keeping
@@ -329,9 +329,30 @@ without it. The owner decides whether it merges into v2.0 or ships as v2.1.
 | [x] | M9-19 | Sensitivity: Quick, Normal, Careful. Normal is exactly the 1.x and 2.0 detection. **Quick and Careful values are first guesses and need tuning on phones.** | S | F7 |
 | [x] | M9-20 | App shortcuts on the launcher icon: Pause 1 hour, Turn on, Turn off, Your flips. Each opens the app, which then acts, because Android lets a shortcut start only an activity. | S | F12 |
 | [x] | M9-21 | Share card: a share button on the activity screen sends a square picture ("50 calls silenced with a flip of my phone") with a line of text and the Play link. Uses a `FileProvider` limited to `cache/share`. | S | F38 |
-| [ ] | M9-22 | Remove ads purchase (needs an in-app product in Play Console from the owner) | M | F19 |
+| [x] | M9-22 | Remove ads purchase: Secret Calculator's billing files (deviation X15), a "Remove ads" row in Settings with the store price, the banner hidden for buyers, a thank-you dialog. Debug builds unlock for the session without the store, as Secret Calculator does. The rewarded theme ad stays, because the user asks for it. | M | F19, A25 |
 
 Device testing for all of M9 happens in one pass at the end (owner decision, 2026-10-07).
+
+**Needed from the owner before M9 can ship:**
+
+| What | Where it goes | Until then |
+|------|---------------|------------|
+| In-app product with the ID `one_time_remove_ads` in Play Console | Nothing to change in code | "Remove ads" shows no price and the purchase cannot start |
+| The app's licence key from Play Console | `AppConstants.PLAY_STORE_LICENSE_KEY` | Purchases are accepted without the signature check |
+| Rewarded ad unit ID from AdMob | `AdConfig.PROD_REWARDED_THEME` | Release builds do not offer "Watch ad" for locked themes |
+| Native ad unit ID from AdMob | M9-08 | No native ad on the activity screen |
+| AdMob App ID (still open from M7-01, decision D2) | `admob_app_id` string | Release ads cannot serve |
+| Decision: M9 inside v2.0, or as v2.1 | Merge `feature/v2.1-engagement` into `release/v2.0`, or keep it apart | The work stays on its branch |
+
+**For the device pass at the end**, beyond the exit criteria below:
+
+- A real flip: notification, tap, chart, milestone at the first flip, callback reminder after a call that rings out, and its "Open phone" button.
+- Schedule: a call inside and outside the hours, and an overnight period.
+- Sensitivity: tune Quick and Careful on at least three phones. Ring again when turned face up.
+- Flip to pause with YouTube, Spotify and one video player; battery use with it on.
+- Themes: all six in light and dark, the locked dialog, the rewarded ad, and the return to Blue after 7 days (change the phone date).
+- Launcher shortcuts on Samsung, Pixel and one Chinese launcher. The share card in WhatsApp and one other app.
+- Remove ads with a licence tester account: buy, reinstall, refund.
 
 Exit criteria:
 
@@ -386,6 +407,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-07 | M9 | M9-15 to M9-22: three earned themes with a rewarded ad as the short cut, schedule, flip to pause media, ring again when turned face up, sensitivity, launcher shortcuts, share card, remove ads purchase. 402 tests (one address check skipped on Windows), lint with no new warnings, release build passes. Release APK 4.06 MB unsigned, up from 3.71 MB, mostly Play Billing. Nothing in M9 has run on a phone. | Owner items in the M9 table. Then the device pass, M9-08 and the Flip to Focus spike |
 | 2026-10-07 | M9 | Owner: build every feature first, test on phones at the end. M9-11 to M9-14: milestones, callback reminder, month comparison, two more Home tips. 357 tests pass. | M9-15 themes, then the rest of the list in order |
 | 2026-10-07 | M9 | Owner direction: retention and ad views first. Branch `feature/v2.1-engagement`. M9-01 to M9-06: flip history store, silent "Call silenced" notification, "Your flips" activity screen opened from the Home stats card and both notifications, weekly recap run from the health check worker, two switches in Settings, banner placement for the new screen. `FUTURE_FEATURES.md` section 1.1 added (F30 to F34). 341 tests, lint and release build pass. | M9-07 on a phone. Native ad unit ID from the owner. Spike S1 for Flip to Focus |
 | 2026-10-06 | M1 | M1-14 started on a Samsung Galaxy A21s (Android 12): first run completes, the service returns after a process death (about 4 s) and after `adb install -r` (about 10 s). 1.7 built from `master` in `../FlipToMute-v17` for the cold start and upgrade tests. | Reboot result, force stop, cold start against 1.7, upgrade from 1.7 |

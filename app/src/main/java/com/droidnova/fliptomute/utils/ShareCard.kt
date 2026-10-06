@@ -10,6 +10,7 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
 import com.droidnova.fliptomute.R
 import java.io.File
 
@@ -26,7 +27,7 @@ object ShareCard {
     fun authority(context: Context): String = "${context.packageName}.share"
 
     fun render(context: Context, total: Int): Bitmap {
-        val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(SIZE, SIZE)
         val canvas = Canvas(bitmap)
         val centre = SIZE / 2f
         // The brand colours of the default theme, top to bottom

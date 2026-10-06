@@ -36,6 +36,9 @@ data class SettingsUiState(
     val totalFlips: Int = 0,
     /** Set by the activity from the consent status (M7-02). */
     val privacyOptionsRequired: Boolean = false,
+    /** "Remove ads" (future features F19): set by the route from the activity's billing state. */
+    val adsRemoved: Boolean = false,
+    val removeAdsPrice: String? = null,
 )
 
 enum class SettingsMessage {

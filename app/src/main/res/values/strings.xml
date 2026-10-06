@@ -218,8 +218,8 @@
     <string name="theme_rose">Rose</string>
     <string name="theme_midnight">Midnight</string>
     <string name="theme_locked_title">%1$s theme</string>
-    <string name="theme_locked_body">Unlocks when you have silenced %1$d calls. You are at %2$d.</string>
-    <string name="theme_locked_body_with_ad">Unlocks when you have silenced %1$d calls. You are at %2$d.\n\nOr watch a short ad to use it for 7 days.</string>
+    <string name="theme_locked_body">Unlocks when your count of silenced calls reaches %1$d. Your count now: %2$d.</string>
+    <string name="theme_locked_body_with_ad">Unlocks when your count of silenced calls reaches %1$d. Your count now: %2$d.\n\nOr watch a short ad to use it for 7 days.</string>
     <string name="theme_watch_ad">Watch ad</string>
     <string name="theme_ad_loading">Loading the ad…</string>
     <string name="theme_ad_unavailable">No ad is available right now. Try again later.</string>
@@ -373,4 +373,11 @@
         <item quantity="one">I silenced %1$d call just by flipping my phone, with Flip to Mute: %2$s</item>
         <item quantity="other">I silenced %1$d calls just by flipping my phone, with Flip to Mute: %2$s</item>
     </plurals>
+    <string name="remove_ads_title">Remove ads</string>
+    <string name="remove_ads_summary">One-time purchase</string>
+    <string name="remove_ads_summary_price">One-time purchase, %1$s</string>
+    <string name="ads_removed_summary">Ads are removed. Thank you!</string>
+    <string name="remove_ads_unavailable">Purchases are not available on this phone.</string>
+    <string name="premium_welcome_title">Ads removed</string>
+    <string name="premium_welcome_body">Thank you for supporting Flip to Mute.</string>
 </resources>

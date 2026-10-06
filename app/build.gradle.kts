@@ -121,6 +121,8 @@ dependencies {
     implementation(libs.google.mobile.ads.lite)
     // Consent before any ad request (M7-02, X5); Lite does not bring it in
     implementation(libs.ump)
+    // "Remove ads" purchase, same version as Secret Calculator (architecture A25)
+    implementation(libs.billing.ktx)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
