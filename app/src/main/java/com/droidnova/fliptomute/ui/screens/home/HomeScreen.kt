@@ -108,6 +108,8 @@ fun HomeRoute(
     onSettingsClick: () -> Unit,
     onOpenAccess: () -> Unit,
     onCheckSetup: () -> Unit,
+    /** Home is on with nothing to fix and no dialog: a good moment for the review prompt (M6-07). */
+    onCalm: () -> Unit = {},
     externalMonitoringRequest: MainActivityLaunchEvent = MainActivityLaunchEvent(),
     onExternalMonitoringRequestConsumed: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
@@ -124,6 +126,10 @@ fun HomeRoute(
         if (externalMonitoringRequest.request != MainActivityLaunchRequest.None) {
             onExternalMonitoringRequestConsumed()
         }
+    }
+    val calm = state.status == HomeStatus.ON && state.dialog == null && state.cards.none { it is HomeCard.NeedsAttention }
+    LaunchedEffect(calm) {
+        if (calm) onCalm()
     }
     // One-shot requests that need the activity
     LaunchedEffect(state.event) {

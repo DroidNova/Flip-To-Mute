@@ -2,8 +2,12 @@ package com.droidnova.fliptomute.ui.screens.about
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,285 +15,228 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.StarRate
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.droidnova.fliptomute.R
+import com.droidnova.fliptomute.ui.components.ActionTile
+import com.droidnova.fliptomute.ui.components.NovaCard
+import com.droidnova.fliptomute.ui.components.NovaTopBar
+import com.droidnova.fliptomute.ui.components.SectionLabel
+import com.droidnova.fliptomute.ui.components.SettingsGroup
+import com.droidnova.fliptomute.ui.components.SettingsRow
+import com.droidnova.fliptomute.ui.components.appearIn
+import com.droidnova.fliptomute.ui.components.novaCardColor
+import com.droidnova.fliptomute.ui.components.novaTileColor
+import com.droidnova.fliptomute.utils.about_utils.AppConstants
 import com.droidnova.fliptomute.utils.about_utils.IntentUtil
+import com.droidnova.fliptomute.utils.about_utils.OtherAppItem
 import com.droidnova.fliptomute.utils.about_utils.getFeaturedOtherApps
-import com.droidnova.fliptomute.ui.components.AppTopBar
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Everything About can ask for, as Secret Calculator's AboutActions. */
+interface AboutActions {
+    fun back()
+    fun rateUs()
+    fun shareApp()
+    fun reportProblem()
+    fun openPrivacyPolicy()
+    fun openInstagram()
+    fun openWhatsApp()
+    fun openOtherApp(packageName: String)
+    fun openMoreApps()
+}
+
 @Composable
-fun AboutScreen(onBack: () -> Unit) {
+fun AboutRoute(onBack: () -> Unit, onReportProblem: () -> Unit, onRateUsTapped: () -> Unit) {
     val context = LocalContext.current
-    val otherApps = remember { getFeaturedOtherApps() }
+    val featured = remember { getFeaturedOtherApps() }
+    AboutScreen(
+        versionName = IntentUtil.fetchAppVersion(context),
+        featuredApps = featured,
+        actions = object : AboutActions {
+            override fun back() = onBack()
+            // Unchanged from 1.x: opens the Play Store listing (decision D1, UPDATE_PLAN section 8)
+            override fun rateUs() {
+                onRateUsTapped()
+                IntentUtil.openRateUs(context)
+            }
+            override fun shareApp() = IntentUtil.shareApp(context)
+            override fun reportProblem() = onReportProblem()
+            override fun openPrivacyPolicy() = IntentUtil.openUrl(context, AppConstants.PRIVACY_POLICY_URL)
+            override fun openInstagram() = IntentUtil.openInstagram(context)
+            override fun openWhatsApp() = IntentUtil.openWhatsApp(context)
+            override fun openOtherApp(packageName: String) = IntentUtil.openPlayStore(context, packageName)
+            override fun openMoreApps() = IntentUtil.openDeveloperPlayConsole(context)
+        },
+    )
+}
 
+/** Same layout as Secret Calculator's About screen (design spec 4.9). */
+@Composable
+fun AboutScreen(versionName: String, featuredApps: List<OtherAppItem>, actions: AboutActions) {
     Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.about_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back_content_description)
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
+        topBar = { NovaTopBar(title = stringResource(R.string.about_title), onBack = actions::back) },
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0),
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AppHeader()
-            SpacerHeight(16.dp)
-
-            AboutItem(
-                headingText = stringResource(R.string.rate_us),
-                labelText = stringResource(R.string.rate_us_description),
-                icon = Icons.Filled.Star,
-                onClick = { IntentUtil.openRateUs(context) }
-            )
-            SpacerHeight(8.dp)
-
-            AboutItem(
-                headingText = stringResource(R.string.share_app),
-                labelText = stringResource(R.string.share_app_description),
-                icon = Icons.Filled.Share,
-                onClick = { IntentUtil.shareApp(context) }
-            )
-            SpacerHeight(8.dp)
-
-            AboutItem(
-                headingText = stringResource(R.string.report_bugs),
-                labelText = stringResource(R.string.report_bugs_description),
-                icon = Icons.Filled.BugReport,
-                onClick = { IntentUtil.sendSupportMail(context, isBug = true) }
-            )
-            SpacerHeight(8.dp)
-
-            AboutItem(
-                headingText = stringResource(R.string.follow_instagram),
-                labelText = stringResource(R.string.follow_instagram_description),
-                drawableIconRes = R.drawable.ic_instagram,
-                onClick = { IntentUtil.openInstagram(context) },
-                overrideTint = false
-            )
-            SpacerHeight(8.dp)
-
-            AboutItem(
-                headingText = stringResource(R.string.join_whatsapp),
-                labelText = stringResource(R.string.join_whatsapp_description),
-                drawableIconRes = R.drawable.ic_whatsapp,
-                onClick = { IntentUtil.openWhatsApp(context) },
-                overrideTint = false
-            )
-            SpacerHeight(8.dp)
-
-            AboutItem(
-                headingText = stringResource(R.string.app_version),
-                labelText = IntentUtil.fetchAppVersion(context),
-                icon = Icons.Filled.Info,
-                enabled = false,
-                onClick = {}
-            )
-            SpacerHeight(8.dp)
-
-            Text(
-                text = stringResource(R.string.check_other_apps),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-            )
-            SpacerHeight(8.dp)
-
-            otherApps.forEach { app ->
+            Column(Modifier.widthIn(max = 560.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                AppHeader(versionName)
+                Row(Modifier.padding(top = 8.dp)) {
+                    ActionTile(Icons.Outlined.StarRate, stringResource(R.string.rate_us), actions::rateUs, Modifier.weight(1f))
+                    ActionTile(Icons.Outlined.Share, stringResource(R.string.share_us), actions::shareApp, Modifier.weight(1f))
+                    ActionTile(Icons.Outlined.BugReport, stringResource(R.string.report_a_problem), actions::reportProblem, Modifier.weight(1f))
+                }
+                if (AppConstants.PRIVACY_POLICY_URL.isNotBlank()) {
+                    SettingsGroup(stringResource(R.string.about_title)) {
+                        SettingsRow(Icons.Filled.Policy, stringResource(R.string.privacy_policy), onClick = actions::openPrivacyPolicy)
+                    }
+                }
+                SettingsGroup(stringResource(R.string.about_section_community)) {
+                    // Brand icons keep their own colours
+                    BrandRow(R.drawable.ic_instagram, stringResource(R.string.follow_instagram), stringResource(R.string.follow_instagram_description), actions::openInstagram)
+                    BrandRow(R.drawable.ic_whatsapp, stringResource(R.string.join_whatsapp), stringResource(R.string.join_whatsapp_description), actions::openWhatsApp)
+                }
+                SectionLabel(stringResource(R.string.about_more_from), Modifier.padding(start = 6.dp, top = 12.dp, bottom = 2.dp))
+                featuredApps.forEachIndexed { index, app ->
+                    AppCard(
+                        iconRes = app.iconRes,
+                        title = stringResource(app.titleRes),
+                        description = stringResource(app.descriptionRes),
+                        onClick = { actions.openOtherApp(app.packageName) },
+                        modifier = Modifier.appearIn(index).padding(bottom = 8.dp),
+                    )
+                }
                 AppCard(
-                    onClick = { IntentUtil.openPlayStore(context, app.packageName) },
-                    title = app.title,
-                    description = app.description,
-                    iconRes = app.iconRes
+                    iconRes = R.drawable.ic_play_store,
+                    title = stringResource(R.string.more_apps_play_store),
+                    description = null,
+                    onClick = actions::openMoreApps,
                 )
-                SpacerHeight(8.dp)
+                Spacer(Modifier.height(12.dp))
             }
-
-            AppCard(
-                onClick = { IntentUtil.openDeveloperPlayConsole(context) },
-                title = stringResource(R.string.more_apps_play_store),
-                description = "",
-                iconRes = R.drawable.ic_play_store
-            )
         }
     }
 }
 
+/** The app's icon, name, version and one line, centred, as in Secret Calculator. */
 @Composable
-private fun AppHeader() {
+private fun AppHeader(versionName: String) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Image(
             painter = painterResource(R.drawable.ic_flip_to_mute),
             contentDescription = stringResource(R.string.app_icon_description),
-            modifier = Modifier.size(72.dp)
+            modifier = Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)),
         )
-        SpacerHeight(12.dp)
         Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            stringResource(R.string.app_name),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(top = 6.dp),
         )
-        SpacerHeight(4.dp)
         Text(
-            text = stringResource(R.string.about_app_description),
+            "v$versionName",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clip(RoundedCornerShape(50)).background(novaCardColor()).padding(horizontal = 10.dp, vertical = 3.dp),
+        )
+        Text(
+            stringResource(R.string.about_app_description),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
         )
     }
 }
 
+/** A row led by a brand logo (not tinted), like the settings rows. */
 @Composable
-private fun AppCard(
-    onClick: () -> Unit,
-    title: String,
-    description: String,
-    @DrawableRes iconRes: Int
-) {
-    OutlinedCard(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+private fun BrandRow(@DrawableRes iconRes: Int, title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 6.dp, horizontal = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
+        Box(Modifier.size(38.dp).background(novaTileColor(), CircleShape), contentAlignment = Alignment.Center) {
+            Icon(painterResource(iconRes), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(22.dp))
+        }
+        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun AppCard(@DrawableRes iconRes: Int, title: String, description: String?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    NovaCard(modifier = modifier, contentPadding = PaddingValues(10.dp), onClick = onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
                 painter = painterResource(iconRes),
-                contentDescription = title,
-                modifier = Modifier.size(50.dp),
-                tint = Color.Unspecified
+                contentDescription = null,
+                modifier = Modifier.size(46.dp).clip(RoundedCornerShape(12.dp)),
             )
-            SpacerWidth(8)
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-                if (description.isNotEmpty()) {
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
+            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                if (description != null) {
+                    Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
-@Composable
-private fun AboutItem(
-    headingText: String,
-    labelText: String,
-    onClick: () -> Unit,
-    icon: ImageVector? = null,
-    @DrawableRes drawableIconRes: Int? = null,
-    enabled: Boolean = true,
-    overrideTint: Boolean = true
-) {
-    val rowModifier = if (enabled) {
-        Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    } else {
-        Modifier.fillMaxWidth()
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = rowModifier
-    ) {
-        when {
-            drawableIconRes != null -> {
-                Icon(
-                    painter = painterResource(drawableIconRes),
-                    contentDescription = headingText,
-                    modifier = Modifier.padding(12.dp),
-                    tint = if (overrideTint) MaterialTheme.colorScheme.onSurface else Color.Unspecified
-                )
-            }
-
-            icon != null -> {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = headingText,
-                    modifier = Modifier.padding(12.dp),
-                    tint = if (overrideTint) MaterialTheme.colorScheme.onSurface else Color.Unspecified
-                )
-            }
-
-            else -> {
-                Spacer(modifier = Modifier.width(48.dp))
-            }
-        }
-
-        Column {
-            Text(text = headingText, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = labelText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun SpacerHeight(height: androidx.compose.ui.unit.Dp) {
-    Spacer(modifier = Modifier.height(height))
-}
-
-@Composable
-private fun SpacerWidth(width: Int) {
-    Spacer(modifier = Modifier.width(width.dp))
+internal object PreviewAboutActions : AboutActions {
+    override fun back() = Unit
+    override fun rateUs() = Unit
+    override fun shareApp() = Unit
+    override fun reportProblem() = Unit
+    override fun openPrivacyPolicy() = Unit
+    override fun openInstagram() = Unit
+    override fun openWhatsApp() = Unit
+    override fun openOtherApp(packageName: String) = Unit
+    override fun openMoreApps() = Unit
 }

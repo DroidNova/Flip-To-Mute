@@ -9,6 +9,8 @@ object AnalyticsEvents {
     const val SERVICE_INTERRUPTED = "service_interrupted"
     const val AUTO_RESUME = "auto_resume"
     const val FLIP_APPLIED = "flip_applied"
+    const val BATTERY_GUIDANCE = "battery_guidance"
+    const val RATE_US_TAPPED = "rate_us_tapped"
 
     const val PARAM_STATE = "state"
     const val PARAM_SOURCE = "source"

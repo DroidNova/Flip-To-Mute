@@ -3,6 +3,8 @@ package com.droidnova.fliptomute.ui.screens.settings
 import com.droidnova.fliptomute.data.setup.SetupAccessState
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
+import com.droidnova.fliptomute.utils.AppTheme
+import com.droidnova.fliptomute.utils.ThemeMode
 
 data class SettingsUiState(
     val selectedFlipAction: FlipAction = FlipAction.SILENT,
@@ -15,6 +17,11 @@ data class SettingsUiState(
     val flipToLockEnabled: Boolean = false,
     val deviceAdminAvailability: DeviceAdminAvailability = DeviceAdminAvailability.INACTIVE,
     val accessState: SetupAccessState = SetupAccessState(),
+    /** True when Android may stop Flip to Mute to save battery; null when the phone cannot tell. */
+    val batteryRestricted: Boolean? = null,
+    val tileAdded: Boolean = false,
+    val appTheme: AppTheme = AppTheme.BLUE,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
 )
 
 enum class SettingsMessage {

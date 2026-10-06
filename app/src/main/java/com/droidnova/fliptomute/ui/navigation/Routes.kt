@@ -5,7 +5,6 @@ object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val ABOUT = "about"
-    const val SENSOR_TEST = "sensor_test"
-    const val CALL_STATE_TEST = "call_state_test"
-    const val SOUND_CONTROL_TEST = "sound_control_test"
+    const val KEEP_RUNNING = "keep_running"
+    const val CHECK_SETUP = "check_setup"
 }

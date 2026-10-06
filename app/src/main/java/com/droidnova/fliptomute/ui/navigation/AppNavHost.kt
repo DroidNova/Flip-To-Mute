@@ -14,12 +14,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
-import com.droidnova.fliptomute.ui.screens.about.AboutScreen
-import com.droidnova.fliptomute.ui.screens.call_state_test.CallStateTestScreen
+import com.droidnova.fliptomute.ui.screens.about.AboutRoute
+import com.droidnova.fliptomute.ui.screens.check_setup.CheckSetupRoute
 import com.droidnova.fliptomute.ui.screens.home.HomeRoute
-import com.droidnova.fliptomute.ui.screens.sensor_test.SensorTestScreen
+import com.droidnova.fliptomute.ui.screens.keep_running.KeepRunningRoute
 import com.droidnova.fliptomute.ui.screens.settings.SettingsRoute
-import com.droidnova.fliptomute.ui.screens.sound_control_test.SoundControlTestScreen
 
 /** Navigates, ignoring repeated taps that would stack the same screen twice (from Secret Calculator). */
 private fun NavHostController.go(route: String) {
@@ -38,6 +37,12 @@ fun AppNavHost(
     onExternalMonitoringRequestConsumed: () -> Unit,
     /** Opens the Access step (OnboardingActivity in access-only mode), replacing the 1.x setup screen. */
     onOpenAccess: () -> Unit,
+    /** The support email; the text is the "Check my setup" summary when there is one (M6-04). */
+    onReportProblem: (summary: String?) -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
+    onRateUsTapped: () -> Unit,
+    /** Home is calm: the activity may show the review prompt (M6-07). */
+    onHomeCalm: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // A tile or notification asked to turn Flip to Mute on: show Home, where the request is handled
@@ -64,38 +69,38 @@ fun AppNavHost(
             HomeRoute(
                 onSettingsClick = { navController.go(Routes.SETTINGS) },
                 onOpenAccess = onOpenAccess,
-                // The guided "Check my setup" arrives in M6; the sensor test is the closest step until then
-                onCheckSetup = { navController.go(Routes.SENSOR_TEST) },
+                onCheckSetup = { navController.go(Routes.CHECK_SETUP) },
+                onCalm = onHomeCalm,
                 externalMonitoringRequest = externalMonitoringRequest,
                 onExternalMonitoringRequestConsumed = onExternalMonitoringRequestConsumed,
             )
         }
         composable(Routes.ABOUT) { entry ->
-            AboutScreen(onBack = { navController.back(entry) })
+            AboutRoute(
+                onBack = { navController.back(entry) },
+                onReportProblem = { onReportProblem(null) },
+                onRateUsTapped = onRateUsTapped,
+            )
         }
         composable(Routes.SETTINGS) { entry ->
             SettingsRoute(
                 onBack = { navController.back(entry) },
-                onOpenSetup = onOpenAccess,
-                onCallStateTest = { navController.go(Routes.CALL_STATE_TEST) },
-                onSensorTest = { navController.go(Routes.SENSOR_TEST) },
-                onSoundControlTest = { navController.go(Routes.SOUND_CONTROL_TEST) },
+                onOpenKeepRunning = { navController.go(Routes.KEEP_RUNNING) },
+                onOpenCheckSetup = { navController.go(Routes.CHECK_SETUP) },
+                onReportProblem = { onReportProblem(null) },
                 onAbout = { navController.go(Routes.ABOUT) },
+                onOpenPrivacyPolicy = onOpenPrivacyPolicy,
             )
         }
-        composable(Routes.SENSOR_TEST) { entry ->
-            SensorTestScreen(onBack = { navController.back(entry) })
+        composable(Routes.KEEP_RUNNING) { entry ->
+            KeepRunningRoute(onBack = { navController.back(entry) })
         }
-        composable(Routes.CALL_STATE_TEST) { entry ->
-            CallStateTestScreen(
+        composable(Routes.CHECK_SETUP) { entry ->
+            CheckSetupRoute(
                 onBack = { navController.back(entry) },
-                onOpenSetup = onOpenAccess,
-            )
-        }
-        composable(Routes.SOUND_CONTROL_TEST) { entry ->
-            SoundControlTestScreen(
-                onBack = { navController.back(entry) },
-                onOpenSetup = onOpenAccess,
+                onOpenAccess = onOpenAccess,
+                onOpenKeepRunning = { navController.go(Routes.KEEP_RUNNING) },
+                onSendReport = onReportProblem,
             )
         }
     }

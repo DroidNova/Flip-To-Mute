@@ -18,7 +18,7 @@ This is the working document. Update it in every session.
 | M3 | Design system from Secret Calculator | Blocked | 8 of 9 | 7 days |
 | M4 | First run and access | Blocked | 9 of 9 | 7 days |
 | M5 | Home | Blocked | 13 of 13 | 10 days |
-| M6 | Settings, help, about, review | Not started | 0 of 12 | 10 days |
+| M6 | Settings, help, about, review | Done except M6-06 (blocked on D7) | 11 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | Not started | 0 of 11 | 7 days, plus 2 for stretch items |
 | M8 | Test, beta and release | Not started | 0 of 9 | 7 days of work, plus beta and rollout waiting time |
 
@@ -212,7 +212,7 @@ Exit criteria:
 - [ ] A timed pause ends on time while idle, and immediately when a call arrives after the end time.
 - [ ] The counter increases only when a flip action is actually applied.
 - [ ] A TalkBack walk through of Home is fully understandable.
-- [ ] The word "monitoring" appears nowhere in the interface. (Home is clean; the remaining uses are in Settings and the call test, both replaced in M6.)
+- [x] The word "monitoring" appears nowhere in the interface. (Settings and the old test screens were replaced in M6.)
 
 ---
 
@@ -222,26 +222,26 @@ Goal: every remaining screen in the new design, and the rating flow.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
-| [ ] | M6-01 | Rebuild Settings with Secret Calculator's `SettingsGroup`, `SettingsRow`, `SwitchRow` and `ChoicePill` | M | U7, A10 |
-| [ ] | M6-02 | Keep it running screen | M | R4 |
-| [ ] | M6-03 | Check my setup guided flow, reusing the three test view models | L | U8 |
-| [ ] | M6-04 | Report a problem: support email with an automatic summary, through `IntentUtil.sendSupportMail` | S | U10 |
-| [ ] | M6-05 | About screen in the Secret Calculator layout: header, action tiles, community, other apps | M | U7 |
-| [ ] | M6-06 | Privacy policy link | S | R14, D7 |
-| [ ] | M6-07 | Rating: keep "Rate us" in About unchanged. Add `InAppReview` and `ReviewPolicy` from Secret Calculator, with Flip to Mute value moments. | M | T4, A18, D1 |
-| [ ] | M6-08 | Appearance group: theme mode and colour theme pills | S | A8 |
-| [ ] | M6-09 | Flip to lock: explain dialog first, switch turns on only after device admin is granted | S | T3, A11 |
-| [ ] | M6-10 | Remove old screens, clean strings, move hardcoded text into resources | M | U7, U13 |
-| [ ] | M6-11 | Copy `ReviewPolicyTest` and add tests for the value moments | S | A18 |
-| [ ] | M6-12 | Unit tests and Compose tests for the new screens | M | R10 |
+| [x] | M6-01 | Rebuild Settings with Secret Calculator's `SettingsGroup`, `SettingsRow`, `SwitchRow` and `ChoicePill` | M | U7, A10 |
+| [x] | M6-02 | Keep it running screen | M | R4 |
+| [x] | M6-03 | Check my setup guided flow, reusing the three test view models | L | U8 |
+| [x] | M6-04 | Report a problem: support email with an automatic summary, through `IntentUtil.sendSupportMail` | S | U10 |
+| [x] | M6-05 | About screen in the Secret Calculator layout: header, action tiles, community, other apps | M | U7 |
+| Blocked | M6-06 | Privacy policy link. The row and `IntentUtil.openUrl` are in place; both stay hidden until `AppConstants.PRIVACY_POLICY_URL` is set (decision D7). | S | R14, D7 |
+| [x] | M6-07 | Rating: keep "Rate us" in About unchanged. Add `InAppReview` and `ReviewPolicy` from Secret Calculator, with Flip to Mute value moments. | M | T4, A18, D1 |
+| [x] | M6-08 | Appearance group: theme mode and colour theme pills | S | A8 |
+| [x] | M6-09 | Flip to lock: explain dialog first, switch turns on only after device admin is granted | S | T3, A11 |
+| [x] | M6-10 | Remove old screens, clean strings, move hardcoded text into resources | M | U7, U13 |
+| [x] | M6-11 | Copy `ReviewPolicyTest` and add tests for the value moments | S | A18 |
+| [x] | M6-12 | Unit tests and Compose tests for the new screens | M | R10 |
 
 Exit criteria:
 
-- [ ] No screen from 1.7 remains in the old style.
+- [x] No screen from 1.7 remains in the old style.
 - [ ] "Rate us" opens the Play Store exactly as 1.7 does, verified on a device.
 - [ ] The review sheet is requested only when `ReviewPolicy` allows it, verified with Play's internal app sharing.
-- [ ] The version shown equals the installed package version.
-- [ ] Lint reports no unused resources and no hardcoded text.
+- [x] The version shown equals the installed package version (read from the package manager).
+- [ ] Lint reports no unused resources and no hardcoded text. (Only the three 1.x launcher icon files remain, kept until the new icon lands in M3-06.)
 
 ---
 
@@ -342,6 +342,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-06 | M6 | M6-01 to M6-05 and M6-07 to M6-12: Settings rebuilt in groups (flip, gestures, keep it running, appearance, help and about) with theme and colour pills and the explain-first flip to lock; Keep it running screen with brand steps and battery status; Check my setup guided flow reusing the sensor, sound and call view models, with a report summary sent in the support email; About in the Secret Calculator layout with "Rate us" unchanged; `ReviewStore` and `InAppReview` with `ReviewPolicy`, counting launches, applied flips and clean setup checks, asked only when Home is on with nothing to fix; old test screens deleted; other apps and support email text moved to resources; 108 unused strings removed. `M6Snapshots` renders the new screens. 302 tests, lint and release build pass. | M6-06 waits for the privacy URL (D7); device checks for Rate us and the review sheet. Start M7 |
 | 2026-10-06 | M5 | M5-01 to M5-13: new Home built on the design kit (power control, status headline per state, Silence or Vibrate, attention card per failure, battery card, stats card, one discovery card, pause sheet, update and what's new dialogs); timed pause in the service (stays running, coordinator ignores calls until the end time by the clock, notification and tile show "Paused until", survives a process restart, health check leaves it alone); `FlipStatsStore`, `HintStore`, `AppVersion`, `UpdateAvailability` (false until M7-04); pure rules for status, cards, discovery and attention with tests; Home tests on Robolectric; About moved into Settings; 80 unused 1.x strings removed. `HomeSnapshots` renders six Home states. 278 tests, lint and release build pass. | Exit criteria need a phone (timed pause end, TalkBack). Start M6 |
 | 2026-10-06 | M4 | M4-01 to M4-09: `OnboardingActivity` with Welcome, Access and Try it, built like Secret Calculator's onboarding; one primary button names the next missing access, permanent denial opens settings, sound control shows a hint sheet first, the step advances by itself on return; Try it uses the real sensor with a buzz, a 20 s hint and Skip; `OnboardingGate` keeps updating users out; Home, Settings and the test screens open the Access step in access-only mode; the 1.x setup screen and its components are deleted. `OnboardingFlowComposeTest` walks the whole first run and saves each step as a PNG. 243 tests, lint and release build pass. | Exit criteria need a phone (timing, Android 12 and 13 denial). Start M5 |
 | 2026-10-06 | M3 | M3-01 to M3-05 and M3-07 to M3-09: Secret Calculator's design kit copied as `NovaDesign`, `States`, `TopBars`; its Blue, Teal and Sunset schemes, `Appearance`, `AppTheme`, `ThemeMode` and Outfit typography; state colours with contrast checked (all pass); DayNight window background; `PhoneFlipIllustration` and `PhoneFlipDemo`; `FlipPowerControl`, `ActionSelector`, `AttentionCard`, `StatsCard`. `ComponentSnapshots` renders them to `app/build/snapshots` under Robolectric, checked in four themes. App now uses the Blue theme instead of wallpaper colours. | M3-06 needs icon artwork. Start M4 |

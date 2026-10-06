@@ -1,96 +1,118 @@
 package com.droidnova.fliptomute.ui.screens.settings
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.ScreenRotation
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Icon
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.FactCheck
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockReset
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.droidnova.fliptomute.R
+import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddRequester
 import com.droidnova.fliptomute.quicksettings.QuickSettingsTileAddResult
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.droidnova.fliptomute.R
-import com.droidnova.fliptomute.ui.components.AppTopBar
-import com.droidnova.fliptomute.ui.components.FlipActionOption
-import com.droidnova.fliptomute.ui.components.SettingsItem
-import com.droidnova.fliptomute.ui.components.LegacySettingsGroup
-import com.droidnova.fliptomute.ui.components.SettingsGroupDivider
+import com.droidnova.fliptomute.ui.components.ActionSelector
+import com.droidnova.fliptomute.ui.components.ChoicePill
+import com.droidnova.fliptomute.ui.components.FlipChoice
+import com.droidnova.fliptomute.ui.components.NovaTopBar
+import com.droidnova.fliptomute.ui.components.SettingsGroup
+import com.droidnova.fliptomute.ui.components.SettingsRow
+import com.droidnova.fliptomute.ui.components.SwitchRow
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
-import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
-import com.droidnova.fliptomute.data.setup.SetupAccessStatus
+import com.droidnova.fliptomute.ui.theme.BlueLightColorScheme
+import com.droidnova.fliptomute.ui.theme.SunsetLightColorScheme
+import com.droidnova.fliptomute.ui.theme.TealLightColorScheme
 import com.droidnova.fliptomute.ui.util.RefreshOnResume
-import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
+import com.droidnova.fliptomute.utils.AppTheme
+import com.droidnova.fliptomute.utils.ThemeMode
+import com.droidnova.fliptomute.utils.about_utils.AppConstants
+import kotlinx.coroutines.launch
+
+/** Everything Settings can ask for (design spec 4.6), as Secret Calculator's SettingsActions. */
+interface SettingsActions {
+    fun back()
+    fun selectFlipChoice(choice: FlipChoice)
+    fun setFlatOnly(enabled: Boolean)
+    fun setPocketProtection(enabled: Boolean)
+    fun setFeedback(enabled: Boolean)
+    fun setFlipToLock(enabled: Boolean)
+    fun removeScreenLockAccess()
+    fun setStartAfterRestart(enabled: Boolean)
+    fun openKeepRunning()
+    fun addTile()
+    fun selectThemeMode(mode: ThemeMode)
+    fun selectTheme(theme: AppTheme)
+    fun openCheckSetup()
+    fun reportProblem()
+    fun openAbout()
+    fun openPrivacyPolicy()
+}
 
 @Composable
 fun SettingsRoute(
     onBack: () -> Unit,
-    onOpenSetup: () -> Unit,
-    onCallStateTest: () -> Unit,
-    onSensorTest: () -> Unit,
-    onSoundControlTest: () -> Unit,
-    onAbout: () -> Unit = {},
+    onOpenKeepRunning: () -> Unit,
+    onOpenCheckSetup: () -> Unit,
+    onReportProblem: () -> Unit,
+    onAbout: () -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val viewModel: SettingsViewModel = hiltViewModel()
     RefreshOnResume {
         viewModel.refreshAccessState()
         viewModel.refreshDeviceAdminState()
     }
-    val state = viewModel.uiState.collectAsStateWithLifecycle().value
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current ?: return
     val addRequester = remember(activity) { QuickSettingsTileAddRequester(activity) }
     val snackbar = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     var showManualInstructions by remember { mutableStateOf(false) }
     var showAdminExplanation by remember { mutableStateOf(false) }
     var showRemoveAdminConfirmation by remember { mutableStateOf(false) }
+    // The switch turns on only after Android grants screen-lock access (architecture A11)
     val adminLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.onDeviceAdminActivationResult()
     }
@@ -109,545 +131,270 @@ fun SettingsRoute(
             }
         }
     }
-    val onAddTile = {
-        addRequester.request { result ->
-            if (result == QuickSettingsTileAddResult.ManualInstructionsRequired) {
-                showManualInstructions = true
-            } else {
-                val message = activity.getString(result.messageResource())
-                coroutineScope.launch { snackbar.showSnackbar(message) }
-            }
-        }
-    }
     SettingsScreen(
         state = state,
-        onBack = onBack,
-        onOpenSetup = onOpenSetup,
-        onCallStateTest = onCallStateTest,
-        onSensorTest = onSensorTest,
-        onSoundControlTest = onSoundControlTest,
-        onAbout = onAbout,
-        onFlipActionSelected = viewModel::onFlipActionSelected,
-        onDetectionFeedbackChanged = viewModel::onDetectionFeedbackChanged,
-        onRequireFlatSurfaceBeforeFlipChanged = viewModel::onRequireFlatSurfaceBeforeFlipChanged,
-        onPocketProtectionChanged = viewModel::onPocketProtectionChanged,
-        onStartAfterPhoneRestartChanged = viewModel::onStartAfterPhoneRestartChanged,
-        onFlipToLockChanged = viewModel::onFlipToLockChanged,
-        onRemoveDeviceAdmin = { showRemoveAdminConfirmation = true },
-        onAddQuickSettingsTile = onAddTile,
         snackbarHostState = snackbar,
-        showManualTileInstructions = showManualInstructions,
-        onDismissManualTileInstructions = { showManualInstructions = false },
-        showAdminExplanation = showAdminExplanation,
-        onDismissAdminExplanation = { showAdminExplanation = false },
-        onContinueAdminExplanation = {
-            showAdminExplanation = false
-            adminLauncher.launch(viewModel.createDeviceAdminActivationIntent())
-        },
-        showRemoveAdminConfirmation = showRemoveAdminConfirmation,
-        onDismissRemoveAdmin = { showRemoveAdminConfirmation = false },
-        onConfirmRemoveAdmin = {
-            showRemoveAdminConfirmation = false
-            viewModel.onRemoveDeviceAdminConfirmed()
+        actions = object : SettingsActions {
+            override fun back() = onBack()
+            override fun selectFlipChoice(choice: FlipChoice) = viewModel.onFlipActionSelected(
+                if (choice == FlipChoice.VIBRATE) FlipAction.VIBRATE else FlipAction.SILENT,
+            )
+            override fun setFlatOnly(enabled: Boolean) = viewModel.onRequireFlatSurfaceBeforeFlipChanged(enabled)
+            override fun setPocketProtection(enabled: Boolean) = viewModel.onPocketProtectionChanged(enabled)
+            override fun setFeedback(enabled: Boolean) = viewModel.onDetectionFeedbackChanged(enabled)
+            override fun setFlipToLock(enabled: Boolean) = viewModel.onFlipToLockChanged(enabled)
+            override fun removeScreenLockAccess() { showRemoveAdminConfirmation = true }
+            override fun setStartAfterRestart(enabled: Boolean) = viewModel.onStartAfterPhoneRestartChanged(enabled)
+            override fun openKeepRunning() = onOpenKeepRunning()
+            override fun addTile() {
+                addRequester.request { result ->
+                    if (result == QuickSettingsTileAddResult.ManualInstructionsRequired) {
+                        showManualInstructions = true
+                    } else {
+                        val message = activity.getString(result.messageResource())
+                        scope.launch { snackbar.showSnackbar(message) }
+                    }
+                }
+            }
+            override fun selectThemeMode(mode: ThemeMode) = viewModel.selectThemeMode(mode)
+            override fun selectTheme(theme: AppTheme) = viewModel.selectTheme(theme)
+            override fun openCheckSetup() = onOpenCheckSetup()
+            override fun reportProblem() = onReportProblem()
+            override fun openAbout() = onAbout()
+            override fun openPrivacyPolicy() = onOpenPrivacyPolicy()
         },
     )
-}
-
-@Composable
-fun SettingsScreen(
-    state: SettingsUiState,
-    onBack: () -> Unit,
-    onOpenSetup: () -> Unit,
-    onCallStateTest: () -> Unit,
-    onSensorTest: () -> Unit,
-    onSoundControlTest: () -> Unit,
-    onAbout: () -> Unit = {},
-    onFlipActionSelected: (FlipAction) -> Unit,
-    onDetectionFeedbackChanged: (Boolean) -> Unit,
-    onRequireFlatSurfaceBeforeFlipChanged: (Boolean) -> Unit,
-    onPocketProtectionChanged: (Boolean) -> Unit,
-    onStartAfterPhoneRestartChanged: (Boolean) -> Unit,
-    onFlipToLockChanged: (Boolean) -> Unit,
-    onRemoveDeviceAdmin: () -> Unit,
-    onAddQuickSettingsTile: () -> Unit,
-    snackbarHostState: SnackbarHostState,
-    showManualTileInstructions: Boolean,
-    onDismissManualTileInstructions: () -> Unit,
-    showAdminExplanation: Boolean,
-    onDismissAdminExplanation: () -> Unit,
-    onContinueAdminExplanation: () -> Unit,
-    showRemoveAdminConfirmation: Boolean,
-    onDismissRemoveAdmin: () -> Unit,
-    onConfirmRemoveAdmin: () -> Unit,
-) {
-    if (showManualTileInstructions) {
+    if (showManualInstructions) {
         AlertDialog(
-            onDismissRequest = onDismissManualTileInstructions,
+            onDismissRequest = { showManualInstructions = false },
             title = { Text(stringResource(R.string.add_quick_settings_tile_title)) },
             text = { Text(stringResource(R.string.add_quick_settings_tile_instructions)) },
-            confirmButton = {
-                TextButton(onClick = onDismissManualTileInstructions) { Text(stringResource(R.string.got_it)) }
-            },
+            confirmButton = { TextButton(onClick = { showManualInstructions = false }) { Text(stringResource(R.string.got_it)) } },
         )
     }
+    // Explain before asking for special access, as Secret Calculator does (design spec 4.6)
     if (showAdminExplanation) {
         AlertDialog(
-            onDismissRequest = onDismissAdminExplanation,
+            onDismissRequest = { showAdminExplanation = false },
             title = { Text(stringResource(R.string.allow_screen_locking_title)) },
             text = { Text(stringResource(R.string.allow_screen_locking_message)) },
             confirmButton = {
-                TextButton(onClick = onContinueAdminExplanation) { Text(stringResource(R.string.continue_action)) }
+                TextButton(onClick = {
+                    showAdminExplanation = false
+                    adminLauncher.launch(viewModel.createDeviceAdminActivationIntent())
+                }) { Text(stringResource(R.string.continue_action)) }
             },
-            dismissButton = {
-                TextButton(onClick = onDismissAdminExplanation) { Text(stringResource(R.string.cancel_action)) }
-            },
+            dismissButton = { TextButton(onClick = { showAdminExplanation = false }) { Text(stringResource(R.string.cancel_action)) } },
         )
     }
     if (showRemoveAdminConfirmation) {
         AlertDialog(
-            onDismissRequest = onDismissRemoveAdmin,
+            onDismissRequest = { showRemoveAdminConfirmation = false },
             title = { Text(stringResource(R.string.remove_screen_lock_access_title)) },
             text = { Text(stringResource(R.string.remove_screen_lock_access_message)) },
             confirmButton = {
-                TextButton(onClick = onConfirmRemoveAdmin) { Text(stringResource(R.string.remove_action)) }
+                TextButton(onClick = {
+                    showRemoveAdminConfirmation = false
+                    viewModel.onRemoveDeviceAdminConfirmed()
+                }) { Text(stringResource(R.string.remove_action)) }
             },
-            dismissButton = {
-                TextButton(onClick = onDismissRemoveAdmin) { Text(stringResource(R.string.cancel_action)) }
-            },
+            dismissButton = { TextButton(onClick = { showRemoveAdminConfirmation = false }) { Text(stringResource(R.string.cancel_action)) } },
         )
     }
+}
+
+@Composable
+fun SettingsScreen(state: SettingsUiState, actions: SettingsActions, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     Scaffold(
+        topBar = { NovaTopBar(stringResource(R.string.settings_title), onBack = actions::back) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = { AppTopBar(stringResource(R.string.settings_title), onBack) },
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0),
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            item {
-                SettingsSection(stringResource(R.string.behaviour_section)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onRequireFlatSurfaceBeforeFlipChanged(!state.requireFlatSurfaceBeforeFlip)
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SettingText(
-                            title = stringResource(R.string.only_when_lying_flat),
-                            description = stringResource(R.string.only_when_lying_flat_description),
-                            modifier = Modifier.weight(1f),
-                        )
-                        Checkbox(checked = state.requireFlatSurfaceBeforeFlip, onCheckedChange = null)
-                    }
-                    SettingsGroupDivider()
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = state.isProximitySensorAvailable) {
-                                onPocketProtectionChanged(!state.pocketProtectionEnabled)
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SettingText(
-                            title = stringResource(R.string.pocket_protection),
-                            description = stringResource(
-                                if (state.isProximitySensorAvailable) {
-                                    R.string.pocket_protection_description
-                                } else {
-                                    R.string.pocket_protection_unavailable
-                                },
-                            ),
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(
-                            checked = state.pocketProtectionEnabled && state.isProximitySensorAvailable,
-                            enabled = state.isProximitySensorAvailable,
-                            onCheckedChange = null,
-                        )
-                    }
-                    SettingsGroupDivider()
-                    Text(
-                        text = stringResource(R.string.selected_flip_action),
-                        modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium,
-                    )
-                    FlipActionOption(
-                        title = stringResource(R.string.silent_title),
-                        description = stringResource(R.string.silent_description),
-                        icon = Icons.Default.VolumeOff,
-                        selected = state.selectedFlipAction == FlipAction.SILENT,
-                        onClick = { onFlipActionSelected(FlipAction.SILENT) },
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    FlipActionOption(
-                        title = stringResource(R.string.vibrate_title),
-                        description = stringResource(R.string.vibrate_description),
-                        icon = Icons.Default.Vibration,
-                        selected = state.selectedFlipAction == FlipAction.VIBRATE,
-                        onClick = { onFlipActionSelected(FlipAction.VIBRATE) },
-                    )
-                    SettingsGroupDivider(Modifier.padding(top = 8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SettingText(
-                            title = stringResource(R.string.detection_feedback),
-                            description = stringResource(R.string.detection_feedback_description),
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(
-                            checked = state.detectionFeedbackEnabled,
-                            onCheckedChange = onDetectionFeedbackChanged,
-                        )
-                    }
-                }
+            item(key = "flip") { FlipBehaviourGroup(state, actions) }
+            if (state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED) {
+                item(key = "gestures") { GesturesGroup(state, actions) }
             }
-            item {
-                SettingsSection(stringResource(R.string.extra_gestures_section)) {
-                    val supported = state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = supported) { onFlipToLockChanged(!state.flipToLockEnabled) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Text(
-                                stringResource(R.string.flip_to_lock_title),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            Text(
-                                stringResource(R.string.flip_to_lock_supporting_text),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                stringResource(R.string.flip_to_lock_secondary_text),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            when {
-                                !supported -> SecondaryText(stringResource(R.string.screen_locking_unavailable))
-                                state.flipToLockEnabled &&
-                                    state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE ->
-                                    SecondaryText(stringResource(R.string.screen_lock_access_allowed))
-                            }
-                            if (!state.flipToLockEnabled &&
-                                state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE
-                            ) {
-                                TextButton(onClick = onRemoveDeviceAdmin) {
-                                    Text(stringResource(R.string.remove_screen_lock_access))
-                                }
-                            }
-                        }
-                        Switch(
-                            checked = state.flipToLockEnabled,
-                            enabled = supported,
-                            onCheckedChange = null,
-                        )
-                    }
-                }
-            }
-            item {
-                SettingsSection(stringResource(R.string.convenience_section)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onStartAfterPhoneRestartChanged(!state.startAfterPhoneRestart) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SettingText(
-                            title = stringResource(R.string.start_after_phone_restart),
-                            description = stringResource(R.string.start_after_phone_restart_description),
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(checked = state.startAfterPhoneRestart, onCheckedChange = null)
-                    }
-                    SettingsGroupDivider()
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onAddQuickSettingsTile)
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SettingText(
-                            title = stringResource(R.string.quick_settings_tile_title),
-                            description = stringResource(R.string.quick_settings_tile_description),
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = onAddQuickSettingsTile) {
-                            Text(stringResource(R.string.add_tile))
-                        }
-                    }
-                }
-            }
-            item {
-                SettingsSection(stringResource(R.string.monitoring_section)) {
-                    SettingsItem(
-                        stringResource(R.string.monitoring_status),
-                        stringResource(
-                            if (state.monitoringEnabled) R.string.setting_enabled
-                            else R.string.setting_disabled,
-                        ),
-                    )
-                }
-            }
-            item {
-                SettingsSection(stringResource(R.string.setup_section)) {
-                    StatusSettingRow(
-                        stringResource(R.string.phone_access_title),
-                        accessStatusText(state.accessState.phoneStateStatus),
-                    )
-                    SettingsGroupDivider()
-                    StatusSettingRow(
-                        stringResource(R.string.sound_access_title),
-                        accessStatusText(state.accessState.soundControlStatus),
-                    )
-                    SettingsGroupDivider()
-                    StatusSettingRow(
-                        stringResource(R.string.notifications_title),
-                        accessStatusText(state.accessState.notificationStatus),
-                    )
-                    FilledTonalButton(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.open_app_setup))
-                    }
-                    SettingsGroupDivider(Modifier.padding(top = 8.dp))
-                    SettingsItem(
-                        stringResource(R.string.notifications_title),
-                        stringResource(R.string.monitoring_notification_description),
-                    )
-                }
-            }
-            item {
-                SettingsSection(
-                    title = stringResource(R.string.diagnostics_section),
-                    description = stringResource(R.string.diagnostics_description),
-                ) {
-                    DiagnosticActionRow(
-                        icon = Icons.Default.ScreenRotation,
-                        title = stringResource(R.string.test_flip_title),
-                        description = stringResource(R.string.test_flip_description),
-                        onClick = onSensorTest,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    DiagnosticActionRow(
-                        icon = Icons.Default.Call,
-                        title = stringResource(R.string.test_call_detection),
-                        description = stringResource(R.string.test_call_detection_description),
-                        onClick = onCallStateTest,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    DiagnosticActionRow(
-                        icon = Icons.Default.VolumeUp,
-                        title = stringResource(R.string.test_sound_control),
-                        description = stringResource(R.string.test_sound_control_description),
-                        onClick = onSoundControlTest,
-                    )
-                }
-            }
-            item {
-                SettingsSection(stringResource(R.string.about_section)) {
-                    SettingsItem(
-                        stringResource(R.string.privacy_policy),
-                        stringResource(R.string.privacy_policy_unavailable),
-                    )
-                    SettingsGroupDivider()
-                    SettingsItem(
-                        stringResource(R.string.app_version),
-                        stringResource(R.string.app_version_value),
-                    )
-                    SettingsGroupDivider()
-                    // About moved here from the removed Home overflow menu (M5); Settings is rebuilt in M6
-                    SettingsItem(
-                        stringResource(R.string.about_app),
-                        stringResource(R.string.about_app_description),
-                        modifier = Modifier.clickable(onClick = onAbout),
-                    )
-                }
-            }
+            item(key = "keep") { KeepRunningGroup(state, actions) }
+            item(key = "appearance") { AppearanceGroup(state, actions) }
+            item(key = "help") { HelpGroup(actions) }
         }
     }
 }
 
 @Composable
-private fun SettingText(
-    title: String,
-    description: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
+private fun FlipBehaviourGroup(state: SettingsUiState, actions: SettingsActions) {
+    SettingsGroup(stringResource(R.string.settings_group_flip), Modifier.widthIn(max = 560.dp)) {
         Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
+            stringResource(R.string.home_when_i_flip),
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 4.dp),
         )
-        Text(
-            description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        ActionSelector(
+            selected = if (state.selectedFlipAction == FlipAction.VIBRATE) FlipChoice.VIBRATE else FlipChoice.SILENCE,
+            onSelect = actions::selectFlipChoice,
+            modifier = Modifier.padding(bottom = 6.dp),
+        )
+        SwitchRow(
+            Icons.Filled.Layers,
+            stringResource(R.string.only_when_lying_flat),
+            state.requireFlatSurfaceBeforeFlip,
+            actions::setFlatOnly,
+            summary = stringResource(R.string.only_when_lying_flat_description),
+        )
+        SwitchRow(
+            Icons.Filled.Sensors,
+            stringResource(R.string.pocket_protection),
+            state.pocketProtectionEnabled && state.isProximitySensorAvailable,
+            actions::setPocketProtection,
+            summary = stringResource(
+                if (state.isProximitySensorAvailable) R.string.pocket_protection_description else R.string.pocket_protection_unavailable,
+            ),
+            enabled = state.isProximitySensorAvailable,
+        )
+        SwitchRow(
+            Icons.Filled.Vibration,
+            stringResource(R.string.detection_feedback),
+            state.detectionFeedbackEnabled,
+            actions::setFeedback,
+            summary = stringResource(R.string.detection_feedback_description),
         )
     }
 }
 
 @Composable
-private fun SecondaryText(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-@Composable
-private fun StatusSettingRow(title: String, status: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
+private fun GesturesGroup(state: SettingsUiState, actions: SettingsActions) {
+    SettingsGroup(stringResource(R.string.extra_gestures_section), Modifier.widthIn(max = 560.dp)) {
+        SwitchRow(
+            Icons.Filled.Lock,
+            stringResource(R.string.flip_to_lock_title),
+            state.flipToLockEnabled,
+            actions::setFlipToLock,
+            summary = stringResource(R.string.flip_to_lock_supporting_text),
         )
-        SecondaryText(status)
-    }
-}
-
-@Composable
-private fun DiagnosticActionRow(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    onClick: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = MaterialTheme.shapes.small,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        if (state.deviceAdminAvailability == DeviceAdminAvailability.ACTIVE) {
+            SettingsRow(
+                Icons.Filled.LockReset,
+                stringResource(R.string.remove_screen_lock_access),
+                onClick = actions::removeScreenLockAccess,
+                summary = stringResource(R.string.screen_lock_access_allowed),
             )
         }
     }
 }
 
 @Composable
-private fun SettingsSection(
-    title: String,
-    description: String? = null,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
-) {
-    Column(
-        modifier = Modifier.padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 18.sp,
+private fun KeepRunningGroup(state: SettingsUiState, actions: SettingsActions) {
+    SettingsGroup(stringResource(R.string.settings_group_keep_running), Modifier.widthIn(max = 560.dp)) {
+        SwitchRow(
+            Icons.Filled.RestartAlt,
+            stringResource(R.string.start_after_phone_restart),
+            state.startAfterPhoneRestart,
+            actions::setStartAfterRestart,
+            summary = stringResource(R.string.start_after_phone_restart_description),
         )
-        description?.let { SecondaryText(it) }
-        LegacySettingsGroup(content = content)
+        SettingsRow(
+            Icons.Filled.BatteryChargingFull,
+            stringResource(R.string.battery_restrictions),
+            onClick = actions::openKeepRunning,
+            summary = stringResource(
+                when (state.batteryRestricted) {
+                    true -> R.string.battery_restricted
+                    false -> R.string.battery_not_restricted
+                    null -> R.string.battery_unknown
+                },
+            ),
+        )
+        SettingsRow(
+            Icons.Filled.Dashboard,
+            stringResource(R.string.quick_settings_tile_title),
+            onClick = if (state.tileAdded) null else actions::addTile,
+            summary = stringResource(if (state.tileAdded) R.string.tile_added else R.string.quick_settings_tile_description),
+            trailing = if (state.tileAdded) null else ({ TextButton(onClick = actions::addTile) { Text(stringResource(R.string.add_tile)) } }),
+        )
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-private fun SettingsScreenPreview() {
-    FlipToMuteTheme() {
-        SettingsScreen(
-            state = SettingsUiState(),
-            onBack = {},
-            onOpenSetup = {},
-            onCallStateTest = {},
-            onSensorTest = {},
-            onSoundControlTest = {},
-            onFlipActionSelected = {},
-            onDetectionFeedbackChanged = {},
-            onRequireFlatSurfaceBeforeFlipChanged = {},
-            onPocketProtectionChanged = {},
-            onStartAfterPhoneRestartChanged = {},
-            onFlipToLockChanged = {},
-            onRemoveDeviceAdmin = {},
-            onAddQuickSettingsTile = {},
-            snackbarHostState = remember { SnackbarHostState() },
-            showManualTileInstructions = false,
-            onDismissManualTileInstructions = {},
-            showAdminExplanation = false,
-            onDismissAdminExplanation = {},
-            onContinueAdminExplanation = {},
-            showRemoveAdminConfirmation = false,
-            onDismissRemoveAdmin = {},
-            onConfirmRemoveAdmin = {},
+private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
+    SettingsGroup(stringResource(R.string.settings_section_appearance), Modifier.widthIn(max = 560.dp)) {
+        Text(
+            stringResource(R.string.theme_mode_label),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 4.dp, top = 6.dp),
         )
+        FlowRow(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ThemeMode.entries.forEach { mode ->
+                ChoicePill(
+                    label = stringResource(mode.labelRes()),
+                    selected = state.themeMode == mode,
+                    onClick = { actions.selectThemeMode(mode) },
+                    leadingIcon = mode.icon(),
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.colour_theme_label),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+        FlowRow(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppTheme.entries.forEach { theme ->
+                ChoicePill(
+                    label = stringResource(theme.labelRes()),
+                    selected = state.appTheme == theme,
+                    onClick = { actions.selectTheme(theme) },
+                    dotColor = theme.dotColor(),
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun HelpGroup(actions: SettingsActions) {
+    SettingsGroup(stringResource(R.string.settings_group_help), Modifier.widthIn(max = 560.dp)) {
+        SettingsRow(Icons.Filled.FactCheck, stringResource(R.string.attention_check_setup), onClick = actions::openCheckSetup)
+        SettingsRow(Icons.Filled.BugReport, stringResource(R.string.report_a_problem), onClick = actions::reportProblem)
+        SettingsRow(Icons.Filled.Info, stringResource(R.string.about_title), onClick = actions::openAbout)
+        // Shown once the privacy policy address is set (decision D7, M6-06)
+        if (AppConstants.PRIVACY_POLICY_URL.isNotBlank()) {
+            SettingsRow(Icons.Filled.Policy, stringResource(R.string.privacy_policy), onClick = actions::openPrivacyPolicy)
+        }
+    }
+}
+
+private fun ThemeMode.labelRes(): Int = when (this) {
+    ThemeMode.SYSTEM -> R.string.theme_system
+    ThemeMode.LIGHT -> R.string.theme_light
+    ThemeMode.DARK -> R.string.theme_dark
+}
+
+private fun ThemeMode.icon() = when (this) {
+    ThemeMode.SYSTEM -> Icons.Filled.SettingsBrightness
+    ThemeMode.LIGHT -> Icons.Filled.LightMode
+    ThemeMode.DARK -> Icons.Filled.DarkMode
+}
+
+private fun AppTheme.labelRes(): Int = when (this) {
+    AppTheme.BLUE -> R.string.theme_blue
+    AppTheme.TEAL -> R.string.theme_teal
+    AppTheme.SUNSET -> R.string.theme_sunset
+}
+
+/** The light primary of each theme, as Secret Calculator shows a dot per theme. */
+private fun AppTheme.dotColor(): Color = when (this) {
+    AppTheme.BLUE -> BlueLightColorScheme.primary
+    AppTheme.TEAL -> TealLightColorScheme.primary
+    AppTheme.SUNSET -> SunsetLightColorScheme.primary
 }
 
 private fun QuickSettingsTileAddResult.messageResource() = when (this) {
@@ -659,11 +406,21 @@ private fun QuickSettingsTileAddResult.messageResource() = when (this) {
     QuickSettingsTileAddResult.ManualInstructionsRequired -> R.string.quick_settings_tile_add_failed
 }
 
-@Composable
-private fun accessStatusText(status: SetupAccessStatus) = stringResource(
-    when (status) {
-        SetupAccessStatus.GRANTED -> R.string.allowed
-        SetupAccessStatus.NOT_GRANTED -> R.string.not_allowed
-        SetupAccessStatus.NOT_SUPPORTED -> R.string.not_supported
-    },
-)
+internal object PreviewSettingsActions : SettingsActions {
+    override fun back() = Unit
+    override fun selectFlipChoice(choice: FlipChoice) = Unit
+    override fun setFlatOnly(enabled: Boolean) = Unit
+    override fun setPocketProtection(enabled: Boolean) = Unit
+    override fun setFeedback(enabled: Boolean) = Unit
+    override fun setFlipToLock(enabled: Boolean) = Unit
+    override fun removeScreenLockAccess() = Unit
+    override fun setStartAfterRestart(enabled: Boolean) = Unit
+    override fun openKeepRunning() = Unit
+    override fun addTile() = Unit
+    override fun selectThemeMode(mode: ThemeMode) = Unit
+    override fun selectTheme(theme: AppTheme) = Unit
+    override fun openCheckSetup() = Unit
+    override fun reportProblem() = Unit
+    override fun openAbout() = Unit
+    override fun openPrivacyPolicy() = Unit
+}

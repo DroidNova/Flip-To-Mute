@@ -49,23 +49,32 @@ object IntentUtil {
         )
     }
 
-    fun sendSupportMail(context: Context, isBug: Boolean) {
+    /**
+     * The support email. [summary] is the automatic part (M6-04): one line per "Check my setup"
+     * step, so a report arrives with what support needs to answer it.
+     */
+    fun sendSupportMail(context: Context, isBug: Boolean, summary: String? = null) {
         val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
         val versionName = fetchAppVersion(context)
         val deviceBrand = Build.BRAND.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
         }
-        val subject = if (isBug) {
-            "Bug report - $appName v$versionName"
-        } else {
-            "Feedback - $appName v$versionName"
+        val subject = context.getString(
+            if (isBug) R.string.support_subject_bug else R.string.support_subject_feedback,
+            appName,
+            versionName,
+        )
+        val body = buildString {
+            appendLine(context.getString(R.string.support_device, deviceBrand, Build.MODEL))
+            appendLine(context.getString(R.string.support_android, Build.VERSION.RELEASE, Build.VERSION.SDK_INT))
+            if (!summary.isNullOrBlank()) {
+                appendLine()
+                appendLine(context.getString(R.string.support_check_results))
+                appendLine(summary)
+            }
+            appendLine()
+            append(context.getString(if (isBug) R.string.support_describe_issue else R.string.support_your_feedback))
         }
-        val body = """
-            Device: $deviceBrand ${Build.MODEL}
-            Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})
-
-            ${if (isBug) "Describe the issue:" else "Your feedback:"}
-        """.trimIndent()
 
         val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
             data = Uri.parse("mailto:")
@@ -80,6 +89,12 @@ object IntentUtil {
             null
         }
         startFirstAvailable(context, *listOfNotNull(gmailIntent, emailIntent).toTypedArray(), failureMessage = R.string.no_email_app)
+    }
+
+    /** A web page, such as the privacy policy. A blank URL does nothing. */
+    fun openUrl(context: Context, url: String) {
+        if (url.isBlank()) return
+        startFirstAvailable(context, viewIntent(url))
     }
 
     fun fetchAppVersion(context: Context): String {

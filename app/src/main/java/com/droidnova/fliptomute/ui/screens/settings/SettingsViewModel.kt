@@ -15,6 +15,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.droidnova.fliptomute.data.reliability.BatteryOptimizationStatus
+import com.droidnova.fliptomute.ui.common.HintStore
+import com.droidnova.fliptomute.ui.theme.Appearance
+import com.droidnova.fliptomute.utils.AppTheme
+import com.droidnova.fliptomute.utils.ThemeMode
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,15 +32,26 @@ class SettingsViewModel @Inject constructor(
         override val isAvailable = true
     },
     private val deviceAdminRepository: DeviceAdminCapabilityRepository = InactiveDeviceAdminCapabilityRepository,
+    private val batteryOptimizationStatus: BatteryOptimizationStatus = BatteryOptimizationStatus { null },
+    /** Null in plain JVM tests; Hilt always provides it. */
+    private val hintStore: HintStore? = null,
 ) : ViewModel() {
     private val mutableEvents = MutableSharedFlow<SettingsUiEvent>(extraBufferCapacity = 1)
     val events = mutableEvents.asSharedFlow()
+
+    /** Device facts that change outside the app; re-read whenever Settings comes back to the front. */
+    private val device = MutableStateFlow(readDevice())
+
+    /** As Secret Calculator's SettingsViewModel: the choice as a flow, applied app-wide through Appearance. */
+    private val appearance = MutableStateFlow(Appearance.appTheme to Appearance.themeMode)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         preferencesRepository.preferences,
         setupAccessRepository.accessState,
         deviceAdminRepository.availability,
-    ) { preferences, accessState, adminAvailability ->
+        device,
+        appearance,
+    ) { preferences, accessState, adminAvailability, d, (theme, mode) ->
         SettingsUiState(
             selectedFlipAction = preferences.selectedFlipAction,
             detectionFeedbackEnabled = preferences.detectionFeedbackEnabled,
@@ -46,6 +63,10 @@ class SettingsViewModel @Inject constructor(
             flipToLockEnabled = preferences.flipToLockEnabled && adminAvailability != DeviceAdminAvailability.UNSUPPORTED,
             deviceAdminAvailability = adminAvailability,
             accessState = accessState,
+            batteryRestricted = d.batteryRestricted,
+            tileAdded = d.tileAdded,
+            appTheme = theme,
+            themeMode = mode,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), SettingsUiState())
 
@@ -113,7 +134,27 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun refreshAccessState() = setupAccessRepository.refresh()
+    fun refreshAccessState() {
+        setupAccessRepository.refresh()
+        device.value = readDevice()
+    }
+
+    fun selectTheme(theme: AppTheme) {
+        Appearance.updateTheme(theme)
+        appearance.value = theme to appearance.value.second
+    }
+
+    fun selectThemeMode(mode: ThemeMode) {
+        Appearance.updateThemeMode(mode)
+        appearance.value = appearance.value.first to mode
+    }
+
+    private fun readDevice() = Device(
+        batteryRestricted = batteryOptimizationStatus.isIgnoringBatteryOptimizations()?.not(),
+        tileAdded = hintStore?.tileAdded ?: false,
+    )
+
+    private data class Device(val batteryRestricted: Boolean?, val tileAdded: Boolean)
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L

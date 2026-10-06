@@ -20,26 +20,32 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.droidnova.fliptomute.utils.ads.CollapsibleBannerAd
+import com.droidnova.fliptomute.data.analytics.AnalyticsEvents
+import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
 import com.droidnova.fliptomute.data.analytics.Funnel
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.review.InAppReview
+import com.droidnova.fliptomute.data.review.ReviewStore
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
-import com.droidnova.fliptomute.ui.activities.OnboardingActivity
-import com.droidnova.fliptomute.ui.screens.onboarding.OnboardingGate
-import com.droidnova.fliptomute.ui.screens.onboarding.StartDestination
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
+import com.droidnova.fliptomute.ui.activities.OnboardingActivity
 import com.droidnova.fliptomute.ui.navigation.AppNavHost
+import com.droidnova.fliptomute.ui.screens.onboarding.OnboardingGate
+import com.droidnova.fliptomute.ui.screens.onboarding.StartDestination
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
+import com.droidnova.fliptomute.utils.about_utils.AppConstants
+import com.droidnova.fliptomute.utils.about_utils.IntentUtil
+import com.droidnova.fliptomute.utils.ads.CollapsibleBannerAd
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * The single activity, built like Secret Calculator's AppActivity (architecture A3): one root column
@@ -50,7 +56,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
  */
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    @Inject lateinit var analytics: AnalyticsLogger
     @Inject lateinit var funnel: Funnel
+    @Inject lateinit var inAppReview: InAppReview
+    @Inject lateinit var reviewStore: ReviewStore
     @Inject lateinit var preferencesRepository: AppPreferencesRepository
     @Inject lateinit var setupAccessRepository: SetupAccessRepository
 
@@ -81,6 +90,7 @@ class MainActivity : AppCompatActivity() {
             }
             consumeLaunchRequest(intent)
             funnel.appOpened()
+            reviewStore.recordLaunch()
             showContent()
         }
     }
@@ -111,6 +121,10 @@ class MainActivity : AppCompatActivity() {
                             externalMonitoringRequest = monitoringRequest,
                             onExternalMonitoringRequestConsumed = ::clearLaunchRequest,
                             onOpenAccess = { startActivity(OnboardingActivity.accessIntent(this@MainActivity)) },
+                            onReportProblem = { summary -> IntentUtil.sendSupportMail(this@MainActivity, isBug = true, summary = summary) },
+                            onOpenPrivacyPolicy = { IntentUtil.openUrl(this@MainActivity, AppConstants.PRIVACY_POLICY_URL) },
+                            onRateUsTapped = { analytics.log(AnalyticsEvents.RATE_US_TAPPED, emptyMap()) },
+                            onHomeCalm = { inAppReview.maybeAsk(this@MainActivity) },
                             modifier = Modifier.weight(1f),
                         )
                         CollapsibleBannerAd()

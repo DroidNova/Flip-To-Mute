@@ -12,6 +12,7 @@ import com.droidnova.fliptomute.audio.IncomingCallVibrationControllerFactory
 import com.droidnova.fliptomute.audio.RingerModeControllerFactory
 import com.droidnova.fliptomute.data.analytics.AnalyticsLogger
 import com.droidnova.fliptomute.data.analytics.Funnel
+import com.droidnova.fliptomute.data.review.ReviewStore
 import com.droidnova.fliptomute.data.stats.FlipStatsStore
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
@@ -59,6 +60,7 @@ class FlipMonitoringService : Service() {
     @Inject lateinit var monitoringStateRepository: MonitoringStateRepository
     @Inject lateinit var proximityMonitorFactory: ProximityMonitorFactory
     @Inject lateinit var quickSettingsTileUpdateRequester: QuickSettingsTileUpdateRequester
+    @Inject lateinit var reviewStore: ReviewStore
     @Inject lateinit var ringerModeControllerFactory: RingerModeControllerFactory
     @Inject lateinit var screenLockController: ScreenLockController
     @Inject lateinit var screenStateRepository: ScreenStateRepository
@@ -629,6 +631,8 @@ class FlipMonitoringService : Service() {
         try {
             flipStatsStore.recordFlip()
             funnel.flipApplied()
+            // A call silenced or vibrated by a flip: the moment the review policy counts (M6-07)
+            reviewStore.recordValueMoment()
         } catch (error: RuntimeException) {
             MonitoringLog.failure(this, "Funnel update failed", error)
         }

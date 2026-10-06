@@ -10,3 +10,7 @@
 -keepattributes SourceFile,LineNumberTable
 # Keep custom exception names readable in crash reports.
 -keep public class * extends java.lang.Exception
+
+# Play In-App Review (review-ktx) references this annotation, which is not shipped; it is only a
+# marker. Same rule as Secret Calculator (its commit c7d7470 fixed the release build with it).
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite
