@@ -91,7 +91,7 @@ constructor so M2 can hand them to Hilt without changes.
 | [x] | M1-11 | Use `SENSOR_DELAY_UI` while a call is ringing | S | R11 |
 | [x] | M1-12 | Log `service_state_changed`, `service_interrupted`, `auto_resume` and `flip_applied` | S | R5 |
 | [x] | M1-13 | Unit tests for every start source and failure path, and for the update receiver | M | R10 |
-| [ ] | M1-14 | Device tests: reboot, `adb install -r`, process kill, force stop. Fill in the device matrix. **Blocked: no phone connected to the build computer.** | M | R1, R2, R3 |
+| [ ] | M1-14 | Device tests: reboot, `adb install -r`, process kill, force stop. Fill in the device matrix. **Started 2026-10-06 on a Samsung A21s:** update and process kill pass; reboot, force stop and the other devices remain. | M | R1, R2, R3 |
 | [ ] | M1-15 | Owner decision: continue to M2, or ship M0 and M1 as version 1.8 | S | Plan section 15 |
 
 Exit criteria:
@@ -306,7 +306,7 @@ the alert behaviour that was observed.
 | Device | Android | Returns after reboot | Returns after update | Returns after process kill | Survives overnight idle | Flip silences a call | Notes |
 |--------|---------|----------------------|----------------------|----------------------------|-------------------------|----------------------|-------|
 | Pixel or emulator | 16 | | | | | | |
-| Samsung | | | | | | | |
+| Samsung Galaxy A21s (SM-A217F) | 12 | Not checked yet: the phone did not reconnect after the reboot | Pass: the update receiver restarted the service about 10 s after `adb install -r` | Pass: Android restarted the service in about 4 s (`am crash`; `kill` is blocked on this phone) | | | 2026-10-06, debug build. First run passed. Samsung opens the full Do not disturb list, not a page for this app. |
 | Xiaomi, Redmi or POCO | | | | | | | |
 | Oppo, Vivo or Realme | | | | | | | |
 | Oldest available | 8 to 10 | | | | | | |
@@ -342,6 +342,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-06 | M1 | M1-14 started on a Samsung Galaxy A21s (Android 12): first run completes, the service returns after a process death (about 4 s) and after `adb install -r` (about 10 s). 1.7 built from `master` in `../FlipToMute-v17` for the cold start and upgrade tests. | Reboot result, force stop, cold start against 1.7, upgrade from 1.7 |
 | 2026-10-06 | M6, M7 | Owner answers: privacy URL set (M6-06 done), banner on every screen (D4). M7-09: Play in-app update from the Home update dialog with a restart prompt. | App ID (D2) still needed |
 | 2026-10-06 | M7 | M7-10: compile and target SDK 37.1 as its own commit; 313 tests, lint and release build pass. Release APK 3.68 MB, 0.86 MB above 1.7. | Device matrix, cold start, pre-launch report and M8 need a phone or the owner |
 | 2026-10-06 | M7 | M7-02 to M7-06 and M7-08: consent through the User Messaging Platform before any ad request, with "Privacy options" in Settings where required; ads initialised off the main thread after consent; one activity-owned banner with three load attempts and Google's sample unit on debug builds; `RemoteAdGate` brought back with a switch per banner placement and the latest version code, which now drives the Home update dialog; text wraps at 200% font, pills have 48 dp touch areas, Settings centres on tablets; `AdaptiveSnapshots` checks 200% font, touch targets, 320 dp, landscape and tablet; six dead 1.x components removed. 313 tests, lint and release build pass. | M7-01 waits for the App ID (D2). Then M7-10 |
