@@ -213,10 +213,12 @@ class MainActivity : AppCompatActivity(), PremiumController {
                         val premium by premiumUi.collectAsStateWithLifecycle()
                         // Read here so the switches are read again once Remote Config arrives
                         val remoteReady = remoteConfigReady
-                        LaunchedEffect(currentRoute, adsReady, remoteReady, premium.isPremium) {
+                        val flipStats by flipStatsStore.stats.collectAsStateWithLifecycle()
+                        LaunchedEffect(currentRoute, adsReady, remoteReady, premium.isPremium, flipStats.total > 0) {
                             loadActivityNativeAd(remoteReady)
                         }
-                        val nativeAd = activityNativeAd.takeUnless { premium.isPremium }
+                        // The empty "Your flips" screen has no place for the native ad: the banner stays there
+                        val nativeAd = activityNativeAd.takeUnless { premium.isPremium || flipStats.total == 0 }
                         AppNavHost(
                             navController = navController,
                             externalMonitoringRequest = monitoringRequest,
@@ -435,6 +437,7 @@ class MainActivity : AppCompatActivity(), PremiumController {
     private fun loadActivityNativeAd(remoteReady: Boolean) {
         val wanted = shouldLoadNativeAd(
             onActivityScreen = currentRoute == Routes.ACTIVITY,
+            hasFlips = flipStatsStore.stats.value.total > 0,
             adsReady = adsReady,
             remoteEnabled = remoteReady && RemoteAdGate.isNativeActivityEnabled(),
             adsRemoved = isPremiumPurchased(),

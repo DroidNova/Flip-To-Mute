@@ -64,7 +64,7 @@ Exit criteria:
 - [ ] All unit tests pass on Windows and in CI (191 locally after M0-09).
 - [ ] CI runs on pull requests and is green.
 - [ ] A debug build reaches the tester group through App Distribution.
-- [ ] A release build installs and opens on a real phone.
+- [x] A release build installs and opens on a real phone. (Realme RMX3031, 2026-10-07, signed with the debug key for the test.)
 - [ ] Decisions D1 to D10 are answered or have their default accepted.
 - [ ] v2.0 scope is frozen. New ideas go to `FUTURE_FEATURES.md`.
 
@@ -133,7 +133,7 @@ Exit criteria:
 - [ ] `AppContainer` and `ViewModelFactories` are gone.
 - [ ] Every structural rule in `ARCHITECTURE.md` section 2 marked M2 is met, or a deviation is written in section 3.
 - [ ] All unit tests pass. The regression script passes with no behaviour change from 1.7.
-- [ ] A release build with R8 opens every screen without a crash.
+- [x] A release build with R8 opens every screen without a crash. (Realme RMX3031, 2026-10-07: Home, Settings, About, Your flips, the shortcut actions. Not exercised on the release build: a real call, the rewarded ad and Check my setup.)
 
 ---
 
@@ -419,6 +419,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-07 | M8 | Checkpoint `release10`: version code 10, pushed to `master`. The release build (R8) was installed over the debug build on the Realme and opened every screen without a crash; the production banner unit served (the phone is an AdMob test device). Fixed on the way: on "Your flips" with no flips yet, the native ad was requested with nowhere to show and the banner was hidden; now the banner shows there and the native ad waits for the first flip. Owner builds the signed bundle. | A real call with a flip on this build (M9-07). Data safety form, store listing, internal track and pre-launch report (M7-11), staged rollout |
 | 2026-10-07 | M7, M8, M9 | `feature/v2.1-engagement` merged into `release/v2.0` (owner: ship M9 in 2.0). Device pass on a Realme RMX3031 upgraded from 1.7: upgrade path, process kill, cold start (M7-07 done), Settings, About, "Your flips" with test flips, native ad (AdMob validator: no issues), banner hidden beside it, interstitial once and then held back by its cooldown, rewarded ad unlocking Midnight, launcher shortcut actions, share sheet with the picture. Fixed: after an upgrade from 1.7 with "mute and vibrate" both ticked, Settings showed Silence while Home showed Vibrate. Found, not changed: the collapsible banner opens expanded on every launch and covers the lower half of Home until closed (1.7 does the same). **Owner, 2026-10-07: keep it as it is.** | Real call and flip (M9-07), reboot, TalkBack, Samsung rerun |
 | 2026-10-07 | M7, M9 | Owner supplied the AdMob App ID (M7-01, on `release/v2.0`) and the rewarded and native unit IDs, and asked for the purchase to be switched off. M9-08 native ad. Owner's four release points: review cooldown (M9-25), About on All File Reader's layout with other apps in Settings too (M9-24), `docs/AD_OPPORTUNITIES.md` and the interstitial (M9-23), Premium sheet and themes behind `PREMIUM_ENABLED = false` (M9-22). 414 tests, lint with no new warnings, release build passes at 4.04 MB unsigned. Nothing in M9 has run on a phone. | Interstitial unit ID. Decision on merging M9. Then the device pass |
 | 2026-10-07 | M9 | M9-15 to M9-22: three earned themes with a rewarded ad as the short cut, schedule, flip to pause media, ring again when turned face up, sensitivity, launcher shortcuts, share card, remove ads purchase. 402 tests (one address check skipped on Windows), lint with no new warnings, release build passes. Release APK 4.06 MB unsigned, up from 3.71 MB, mostly Play Billing. Nothing in M9 has run on a phone. | Owner items in the M9 table. Then the device pass, M9-08 and the Flip to Focus spike |

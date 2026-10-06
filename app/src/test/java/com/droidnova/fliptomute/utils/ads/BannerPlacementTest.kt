@@ -29,14 +29,17 @@ class BannerPlacementTest {
     @Test fun nativeAdIsAskedForOnlyOnTheActivityScreen_afterConsent_once_andNeverForBuyers() {
         fun wanted(
             onScreen: Boolean = true,
+            hasFlips: Boolean = true,
             adsReady: Boolean = true,
             remote: Boolean = true,
             removed: Boolean = false,
             requested: Boolean = false,
-        ) = shouldLoadNativeAd(onScreen, adsReady, remote, removed, requested)
+        ) = shouldLoadNativeAd(onScreen, hasFlips, adsReady, remote, removed, requested)
 
         assertTrue(wanted())
         assertFalse(wanted(onScreen = false))
+        // The empty screen has no place for it, so it is not asked for
+        assertFalse(wanted(hasFlips = false))
         assertFalse(wanted(adsReady = false))
         assertFalse(wanted(remote = false))
         assertFalse(wanted(removed = true))

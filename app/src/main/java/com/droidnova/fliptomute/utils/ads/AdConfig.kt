@@ -60,16 +60,18 @@ enum class BannerPlacement(val route: String, val remoteKey: String) {
 }
 
 /**
- * Whether to ask for the activity screen's native ad now: only on that screen, after consent and
- * the remote switches, never for someone who removed ads, and one request at a time.
+ * Whether to ask for the activity screen's native ad now: only on that screen and only when it has
+ * flips to show (the empty screen has no place for the ad), after consent and the remote switches,
+ * never for someone who removed ads, and one request at a time.
  */
 fun shouldLoadNativeAd(
     onActivityScreen: Boolean,
+    hasFlips: Boolean,
     adsReady: Boolean,
     remoteEnabled: Boolean,
     adsRemoved: Boolean,
     alreadyRequested: Boolean,
-): Boolean = onActivityScreen && adsReady && remoteEnabled && !adsRemoved && !alreadyRequested
+): Boolean = onActivityScreen && hasFlips && adsReady && remoteEnabled && !adsRemoved && !alreadyRequested
 
 /** Whether the banner shows now. Pure, so the rule is tested without the ads SDK. */
 fun shouldShowBanner(
