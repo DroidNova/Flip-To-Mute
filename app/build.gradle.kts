@@ -21,7 +21,7 @@ val localProperties = Properties().apply {
 android {
     namespace = "com.droidnova.fliptomute"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }
@@ -29,7 +29,7 @@ android {
     defaultConfig {
         applicationId = "com.droidnova.fliptomute"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 9
         versionName = "2.0.0"
     }
