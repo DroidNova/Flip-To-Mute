@@ -16,7 +16,7 @@ This is the working document. Update it in every session.
 | M1 | Reliability fixes on today's code | Blocked | 13 of 15 | 12 days |
 | M2 | Architecture migration, behaviour unchanged | Blocked | 13 of 14 | 10 days |
 | M3 | Design system from Secret Calculator | Blocked | 8 of 9 | 7 days |
-| M4 | First run and access | Not started | 0 of 9 | 7 days |
+| M4 | First run and access | Blocked | 9 of 9 | 7 days |
 | M5 | Home | Not started | 0 of 13 | 10 days |
 | M6 | Settings, help, about, review | Not started | 0 of 12 | 10 days |
 | M7 | Ads, consent, remote switches, polish | Not started | 0 of 11 | 7 days, plus 2 for stretch items |
@@ -167,15 +167,15 @@ Goal: a new user is protected within one minute.
 
 | Done | ID | Task | Size | Refs |
 |------|----|------|------|------|
-| [ ] | M4-01 | `OnboardingActivity` and `OnboardingViewModel` with an `OnboardingStep` enum, following Secret Calculator's onboarding | M | A4 |
-| [ ] | M4-02 | Start rule: open onboarding when `onboardingCompleted` is false and setup is not complete. Existing users skip it. | S | R12 |
-| [ ] | M4-03 | Welcome step | M | U1 |
-| [ ] | M4-04 | Access step: one button that walks through the steps, permanent denial handling, automatic advance on resume | L | U2 |
-| [ ] | M4-05 | Hint sheet shown before the Sound control settings page | S | U2 |
-| [ ] | M4-06 | Try it step: buzz on detection, hint after 20 seconds, skip | M | U1 |
-| [ ] | M4-07 | Log the onboarding funnel through `Funnel` | S | A14 |
-| [ ] | M4-08 | View model unit tests and one Compose test of the full first run | M | R10 |
-| [ ] | M4-09 | Remove the old permissions screen and bottom sheet | S | |
+| [x] | M4-01 | `OnboardingActivity` and `OnboardingViewModel` with an `OnboardingStep` enum, following Secret Calculator's onboarding | M | A4 |
+| [x] | M4-02 | Start rule: open onboarding when `onboardingCompleted` is false and setup is not complete. Existing users skip it. | S | R12 |
+| [x] | M4-03 | Welcome step | M | U1 |
+| [x] | M4-04 | Access step: one button that walks through the steps, permanent denial handling, automatic advance on resume | L | U2 |
+| [x] | M4-05 | Hint sheet shown before the Sound control settings page | S | U2 |
+| [x] | M4-06 | Try it step: buzz on detection, hint after 20 seconds, skip | M | U1 |
+| [x] | M4-07 | Log the onboarding funnel through `Funnel` | S | A14 |
+| [x] | M4-08 | View model unit tests and one Compose test of the full first run | M | R10 |
+| [x] | M4-09 | Remove the old permissions screen and bottom sheet | S | |
 
 Exit criteria:
 
@@ -342,6 +342,7 @@ Newest entry first. One line per session.
 
 | Date | Milestone | What was done | Next |
 |------|-----------|---------------|------|
+| 2026-10-06 | M4 | M4-01 to M4-09: `OnboardingActivity` with Welcome, Access and Try it, built like Secret Calculator's onboarding; one primary button names the next missing access, permanent denial opens settings, sound control shows a hint sheet first, the step advances by itself on return; Try it uses the real sensor with a buzz, a 20 s hint and Skip; `OnboardingGate` keeps updating users out; Home, Settings and the test screens open the Access step in access-only mode; the 1.x setup screen and its components are deleted. `OnboardingFlowComposeTest` walks the whole first run and saves each step as a PNG. 243 tests, lint and release build pass. | Exit criteria need a phone (timing, Android 12 and 13 denial). Start M5 |
 | 2026-10-06 | M3 | M3-01 to M3-05 and M3-07 to M3-09: Secret Calculator's design kit copied as `NovaDesign`, `States`, `TopBars`; its Blue, Teal and Sunset schemes, `Appearance`, `AppTheme`, `ThemeMode` and Outfit typography; state colours with contrast checked (all pass); DayNight window background; `PhoneFlipIllustration` and `PhoneFlipDemo`; `FlipPowerControl`, `ActionSelector`, `AttentionCard`, `StatsCard`. `ComponentSnapshots` renders them to `app/build/snapshots` under Robolectric, checked in four themes. App now uses the Blue theme instead of wallpaper colours. | M3-06 needs icon artwork. Start M4 |
 | 2026-10-06 | M2 | M2-01 to M2-13: AGP 9.3.1, Kotlin 2.4.10, KSP, Hilt 2.60.1; `AppModule` reproduces the old container exactly; service and tile `@AndroidEntryPoint`, receivers and worker through `BackgroundEntryPoint`; `@HiltViewModel` everywhere; `AppContainer` and `ViewModelFactories` deleted; `MainActivity` is an `AppCompatActivity` with the Secret Calculator shell; `Routes` and `AppNavHost` with `go`, `back(entry)` and 280 ms transitions; packages moved to `utils`, `utils/ads`, `utils/about_utils`; funnel `app_opened` and first-time `setup_complete` wired; `ObjectGraphTest` proves the shared state. Deviations X12 to X14 recorded. 223 tests, lint and clean release build pass. | M2-14 needs a phone. Start M3 |
 | 2026-10-06 | M1 | M1-01 to M1-13 built and unit tested on today's code: start sources and `InterruptionPolicy`; restart setting on by default; `PackageReplacedReceiver`; automatic failures keep the saved choice and post the "stopped" alert (Alerts channel, once per interruption, tap turns it back on); `HealthCheckWorker` every 6 hours (WorkManager 2.10.1); battery status and brand steps; guarded `IntentUtil`; flip buzz; backup off including device transfer; sensor at UI rate; analytics for state, interruptions, auto resume and flips. 216 tests, lint and release build pass. Home now shows an interrupted session as off with "Try again". | M1-14 needs a phone; M1-15 is the owner's 1.8 decision; start M2 meanwhile |

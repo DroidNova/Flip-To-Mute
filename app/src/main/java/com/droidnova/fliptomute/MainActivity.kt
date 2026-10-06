@@ -24,6 +24,14 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.droidnova.fliptomute.utils.ads.CollapsibleBannerAd
 import com.droidnova.fliptomute.data.analytics.Funnel
+import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.setup.SetupAccessRepository
+import com.droidnova.fliptomute.ui.activities.OnboardingActivity
+import com.droidnova.fliptomute.ui.screens.onboarding.OnboardingGate
+import com.droidnova.fliptomute.ui.screens.onboarding.StartDestination
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequest
 import com.droidnova.fliptomute.quicksettings.MainActivityLaunchRequestParser
@@ -43,6 +51,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     @Inject lateinit var funnel: Funnel
+    @Inject lateinit var preferencesRepository: AppPreferencesRepository
+    @Inject lateinit var setupAccessRepository: SetupAccessRepository
 
     private val externalMonitoringRequest = MutableStateFlow(MainActivityLaunchEvent())
 
@@ -52,10 +62,30 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (savedInstanceState == null) {
+        if (savedInstanceState != null) {
+            showContent()
+            return
+        }
+        // Decide between the first run and Home before drawing; the themed window background shows meanwhile
+        lifecycleScope.launch {
+            val preferences = preferencesRepository.preferences.first()
+            val setupComplete = setupAccessRepository.refreshAndGet().isSetupComplete
+            if (OnboardingGate.shouldMarkCompleted(preferences.onboardingCompleted, preferences.monitoringEnabled, setupComplete)) {
+                preferencesRepository.setOnboardingCompleted(true)
+            }
+            val destination = OnboardingGate.decide(preferences.onboardingCompleted, preferences.monitoringEnabled, setupComplete)
+            if (destination == StartDestination.ONBOARDING) {
+                startActivity(Intent(this@MainActivity, OnboardingActivity::class.java))
+                finish()
+                return@launch
+            }
             consumeLaunchRequest(intent)
             funnel.appOpened()
+            showContent()
         }
+    }
+
+    private fun showContent() {
         setContent {
             FlipToMuteTheme {
                 // The root is a plain Column, as in Secret Calculator: give text a readable default colour
@@ -80,6 +110,7 @@ class MainActivity : AppCompatActivity() {
                             navController = navController,
                             externalMonitoringRequest = monitoringRequest,
                             onExternalMonitoringRequestConsumed = ::clearLaunchRequest,
+                            onOpenAccess = { startActivity(OnboardingActivity.accessIntent(this@MainActivity)) },
                             modifier = Modifier.weight(1f),
                         )
                         CollapsibleBannerAd()

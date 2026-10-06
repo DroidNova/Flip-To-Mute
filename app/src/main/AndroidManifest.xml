@@ -48,6 +48,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ui.activities.OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FlipToMute" />
         <service
             android:name=".service.FlipMonitoringService"
             android:exported="false"

@@ -17,7 +17,6 @@ import com.droidnova.fliptomute.quicksettings.MainActivityLaunchEvent
 import com.droidnova.fliptomute.ui.screens.about.AboutScreen
 import com.droidnova.fliptomute.ui.screens.call_state_test.CallStateTestScreen
 import com.droidnova.fliptomute.ui.screens.home.HomeRoute
-import com.droidnova.fliptomute.ui.screens.permissions.PermissionsRoute
 import com.droidnova.fliptomute.ui.screens.sensor_test.SensorTestScreen
 import com.droidnova.fliptomute.ui.screens.settings.SettingsRoute
 import com.droidnova.fliptomute.ui.screens.sound_control_test.SoundControlTestScreen
@@ -37,6 +36,8 @@ fun AppNavHost(
     navController: NavHostController,
     externalMonitoringRequest: MainActivityLaunchEvent,
     onExternalMonitoringRequestConsumed: () -> Unit,
+    /** Opens the Access step (OnboardingActivity in access-only mode), replacing the 1.x setup screen. */
+    onOpenAccess: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // A tile or notification asked to turn Flip to Mute on: show Home, where the request is handled
@@ -63,7 +64,7 @@ fun AppNavHost(
             HomeRoute(
                 onSettingsClick = { navController.go(Routes.SETTINGS) },
                 onAboutClick = { navController.go(Routes.ABOUT) },
-                onPermissionsClick = { navController.go(Routes.PERMISSIONS) },
+                onPermissionsClick = onOpenAccess,
                 externalMonitoringRequest = externalMonitoringRequest,
                 onExternalMonitoringRequestConsumed = onExternalMonitoringRequestConsumed,
             )
@@ -71,13 +72,10 @@ fun AppNavHost(
         composable(Routes.ABOUT) { entry ->
             AboutScreen(onBack = { navController.back(entry) })
         }
-        composable(Routes.PERMISSIONS) { entry ->
-            PermissionsRoute(onBack = { navController.back(entry) })
-        }
         composable(Routes.SETTINGS) { entry ->
             SettingsRoute(
                 onBack = { navController.back(entry) },
-                onOpenSetup = { navController.go(Routes.PERMISSIONS) },
+                onOpenSetup = onOpenAccess,
                 onCallStateTest = { navController.go(Routes.CALL_STATE_TEST) },
                 onSensorTest = { navController.go(Routes.SENSOR_TEST) },
                 onSoundControlTest = { navController.go(Routes.SOUND_CONTROL_TEST) },
@@ -89,13 +87,13 @@ fun AppNavHost(
         composable(Routes.CALL_STATE_TEST) { entry ->
             CallStateTestScreen(
                 onBack = { navController.back(entry) },
-                onOpenSetup = { navController.go(Routes.PERMISSIONS) },
+                onOpenSetup = onOpenAccess,
             )
         }
         composable(Routes.SOUND_CONTROL_TEST) { entry ->
             SoundControlTestScreen(
                 onBack = { navController.back(entry) },
-                onOpenSetup = { navController.go(Routes.PERMISSIONS) },
+                onOpenSetup = onOpenAccess,
             )
         }
     }
