@@ -24,7 +24,7 @@ show, and how often. Change the limits here and in `InterstitialPolicy`, `AdConf
 |-----------|--------|-------|----------------------|---------|
 | Bottom banner | Adaptive banner, collapsible | Under every screen of `MainActivity` | `ad_banner_<screen>_enabled`, one per screen | Set |
 | Your flips | Native | After the milestones card, before the recent flips | `ad_native_activity_enabled` | Set |
-| Natural break | Interstitial | Going back to Home from "Your flips" or "Check my setup" | `ad_interstitial_enabled`, `ad_interstitial_cooldown_hours` | **Not created yet.** Release builds show none until `AdConfig.PROD_INTERSTITIAL` is filled in. |
+| Natural break | Interstitial | Going back to Home from "Your flips" or "Check my setup" | `ad_interstitial_enabled`, `ad_interstitial_cooldown_hours` | Set |
 | Earned theme | Rewarded | Settings, on a locked theme, after "Watch ad" | `ad_rewarded_theme_enabled` | Set |
 
 Debug builds use Google's sample units for every format, so testers never click real ads.

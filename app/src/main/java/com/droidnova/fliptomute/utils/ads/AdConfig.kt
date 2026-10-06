@@ -13,9 +13,7 @@ object AdConfig {
 
     private const val PROD_REWARDED_THEME = "ca-app-pub-4788231589271799/3830345974"
     private const val PROD_NATIVE_ACTIVITY = "ca-app-pub-4788231589271799/4080618252"
-
-    /** Empty until the owner creates an interstitial unit in AdMob; a release build then shows none. */
-    private const val PROD_INTERSTITIAL = ""
+    private const val PROD_INTERSTITIAL = "ca-app-pub-4788231589271799/2273721729"
 
     /** Google's sample rewarded and native ads. */
     private const val TEST_REWARDED = "ca-app-pub-3940256099942544/5224354917"

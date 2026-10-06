@@ -330,7 +330,7 @@ without it. The owner decides whether it merges into v2.0 or ships as v2.1.
 | [x] | M9-20 | App shortcuts on the launcher icon: Pause 1 hour, Turn on, Turn off, Your flips. Each opens the app, which then acts, because Android lets a shortcut start only an activity. | S | F12 |
 | [x] | M9-21 | Share card: a share button on the activity screen sends a square picture ("50 calls silenced with a flip of my phone") with a line of text and the Play link. Uses a `FileProvider` limited to `cache/share`. | S | F38 |
 | [x] | M9-22 | Flip to Mute Premium, one purchase: no ads and every colour theme at once. Secret Calculator's billing files (deviation X15), a Premium row in Settings, a sheet that lists the benefits and what stays free, a thank-you dialog. Debug builds unlock for the session without the store. **Switched off by the owner on 2026-10-07** (`AppConstants.PREMIUM_ENABLED = false`): no row, no connection to Play Billing, and the extra themes are earned or opened by a rewarded ad. | M | F19, F20, A25 |
-| [x] | M9-23 | Interstitial at a natural break (`docs/AD_OPPORTUNITIES.md`): going back to Home from "Your flips" or "Check my setup", not before the 3rd launch, 12 hours apart, skipped when not loaded. **Release builds show none until the owner creates an interstitial ad unit** (`AdConfig.PROD_INTERSTITIAL`). | S | F33 |
+| [x] | M9-23 | Interstitial at a natural break (`docs/AD_OPPORTUNITIES.md`): going back to Home from "Your flips" or "Check my setup", not before the 3rd launch, 12 hours apart, skipped when not loaded. Unit ID from the owner, 2026-10-07. | S | F33 |
 | [x] | M9-24 | About page rebuilt on All File Reader's layout, with the version code. "Check Out Other Apps" (two random DroidNova apps and the developer page) at the foot of Settings and of About. | S | |
 | [x] | M9-25 | In-app review: a 30 day cooldown between asks, and 3 minutes of quiet after any full-screen ad, on top of every third launch and three value moments | S | A18 |
 
@@ -342,18 +342,17 @@ Device testing for all of M9 happens in one pass at the end (owner decision, 202
 |-------|--------|-------|
 | 1. Native in-app rating | Done. Play's own review sheet. A session qualifies on every 3rd launch; the sheet is asked for only after 3 calls were silenced by a flip (or a clean setup check), while Home shows no problem; 30 days between asks, 3 asks at most, never within 3 minutes of a full-screen ad. Play's own quota applies on top. The app never asks a question first and never asks for a good rating. | `ReviewPolicy`, `InAppReview`, M9-25 |
 | 2. Consistent About section | Done, on All File Reader's layout: header, Rate us, Share Us, Report Bugs, Instagram, WhatsApp, App Version, Privacy Policy, then Check Out Other Apps. Colours come from the app's theme. Not copied: "Open source licences", which Flip to Mute has no screen for. | `AboutScreen`, M9-24 |
-| 3. Thoughtful ad placement | Done. The journey, the placements, the limits and the places ads never show are in `docs/AD_OPPORTUNITIES.md`. Banner, native and rewarded are live with the owner's unit IDs; the interstitial waits for a unit ID. | M9-08, M9-23 |
+| 3. Thoughtful ad placement | Done. The journey, the placements, the limits and the places ads never show are in `docs/AD_OPPORTUNITIES.md`. Banner, native, rewarded and interstitial all have the owner's unit IDs. | M9-08, M9-23 |
 | 4. Premium with useful free access | Built, and switched off as the owner asked. Free: everything the app does, three themes, and the extra three by milestone or rewarded ad. Premium: no ads and the three extra themes at once. Paid themes carry a lock and a line that says what the lock means; Premium is offered in one Settings row and when a locked theme is tapped, nowhere else. | `PremiumSheet`, `AppConstants.PREMIUM_ENABLED`, M9-22 |
 
 **Needed from the owner:**
 
 | What | Where it goes | Until then |
 |------|---------------|------------|
-| Interstitial ad unit ID from AdMob | `AdConfig.PROD_INTERSTITIAL` | Release builds show no interstitial |
 | To switch Premium on: in-app product `one_time_remove_ads` in Play Console, and the app's licence key | `AppConstants.PLAY_STORE_LICENSE_KEY`, then `PREMIUM_ENABLED = true` | Premium stays hidden |
 | Decision: M9 inside v2.0, or as v2.1 | Merge `feature/v2.1-engagement` into `release/v2.0`, or keep it apart | The work stays on its branch |
 
-Done by the owner on 2026-10-07: AdMob App ID, rewarded ad unit ID, native ad unit ID.
+Done by the owner on 2026-10-07: AdMob App ID, and the rewarded, native and interstitial ad unit IDs.
 
 **For the device pass at the end**, beyond the exit criteria below:
 

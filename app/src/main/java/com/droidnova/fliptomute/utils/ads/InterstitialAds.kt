@@ -48,8 +48,7 @@ object InterstitialPolicy {
 
 /**
  * One interstitial, loaded ahead and shown at a natural break, built like All File Reader's
- * InterstitialAdController. Owned by the activity. With no ad unit (release builds, until the
- * owner creates one in AdMob) it does nothing at all.
+ * InterstitialAdController. Owned by the activity. With no ad unit it does nothing at all.
  */
 class InterstitialAds(
     context: Context,
