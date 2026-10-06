@@ -340,4 +340,10 @@
         <item quantity="one">%d fewer than last month</item>
         <item quantity="other">%d fewer than last month</item>
     </plurals>
+    <string name="settings_group_schedule">Schedule</string>
+    <string name="schedule_setting">Only at set times</string>
+    <string name="schedule_setting_description">Outside these days and hours, calls ring normally.</string>
+    <string name="schedule_from">From</string>
+    <string name="schedule_until">Until</string>
+    <string name="home_on_resting_body">Outside your schedule. Active again %1$s.</string>
 </resources>

@@ -5,6 +5,7 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.droidnova.fliptomute.data.preferences.AppPreferencesRepository
+import com.droidnova.fliptomute.data.preferences.FlipSchedule
 import com.droidnova.fliptomute.data.setup.SetupAccessRepository
 import com.droidnova.fliptomute.data.stats.FlipStatsStore
 import com.droidnova.fliptomute.data.themes.ThemeUnlockStore
@@ -17,6 +18,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.droidnova.fliptomute.data.reliability.BatteryOptimizationStatus
 import com.droidnova.fliptomute.ui.common.HintStore
@@ -68,6 +71,7 @@ class SettingsViewModel @Inject constructor(
             flipNotificationEnabled = preferences.flipNotificationEnabled,
             weeklyRecapEnabled = preferences.weeklyRecapEnabled,
             callbackReminderEnabled = preferences.callbackReminderEnabled,
+            schedule = preferences.schedule,
             deviceAdminAvailability = adminAvailability,
             accessState = accessState,
             batteryRestricted = d.batteryRestricted,
@@ -110,6 +114,27 @@ class SettingsViewModel @Inject constructor(
 
     fun onCallbackReminderChanged(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setCallbackReminderEnabled(enabled) }
+    }
+
+    // --- Schedule (future features F9) ---
+
+    fun onScheduleEnabledChanged(enabled: Boolean) = updateSchedule { it.copy(enabled = enabled) }
+
+    /** The last remaining day stays: a schedule with no days would silently never react. */
+    fun onScheduleDayToggled(day: DayOfWeek) = updateSchedule { schedule ->
+        when {
+            day !in schedule.days -> schedule.copy(days = schedule.days + day)
+            schedule.days.size > 1 -> schedule.copy(days = schedule.days - day)
+            else -> schedule
+        }
+    }
+
+    fun onScheduleStartChanged(minute: Int) = updateSchedule { it.copy(startMinute = minute) }
+
+    fun onScheduleEndChanged(minute: Int) = updateSchedule { it.copy(endMinute = minute) }
+
+    private fun updateSchedule(change: (FlipSchedule) -> FlipSchedule) {
+        viewModelScope.launch { preferencesRepository.setSchedule(change(preferencesRepository.preferences.first().schedule)) }
     }
 
     fun onFlipToLockChanged(enabled: Boolean) {

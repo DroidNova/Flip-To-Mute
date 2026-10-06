@@ -12,6 +12,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import com.droidnova.fliptomute.data.okioStorage
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -51,6 +52,31 @@ class DataStoreAppPreferencesRepositoryTest {
             repository.setStartAfterPhoneRestart(false)
             preferences = repository.preferences.first()
             assertFalse(preferences.startAfterPhoneRestart)
+        }
+    }
+
+    @Test fun scheduleAndNotificationSwitchesSurviveRepositoryRecreation() = runTest {
+        val file = uniqueFile("schedule.preferences_pb")
+        val schedule = FlipSchedule(
+            enabled = true,
+            days = setOf(java.time.DayOfWeek.SATURDAY, java.time.DayOfWeek.SUNDAY),
+            startMinute = 22 * 60 + 30,
+            endMinute = 7 * 60,
+        )
+        withDataStore(file) { dataStore ->
+            val repository = DataStoreAppPreferencesRepository(dataStore)
+            // Off and always active until the user sets one
+            assertEquals(FlipSchedule(), repository.preferences.first().schedule)
+            repository.setSchedule(schedule)
+            repository.setFlipNotificationEnabled(false)
+            repository.setCallbackReminderEnabled(false)
+        }
+        withDataStore(file) { dataStore ->
+            val preferences = DataStoreAppPreferencesRepository(dataStore).preferences.first()
+            assertEquals(schedule, preferences.schedule)
+            assertFalse(preferences.flipNotificationEnabled)
+            assertFalse(preferences.callbackReminderEnabled)
+            assertTrue(preferences.weeklyRecapEnabled)
         }
     }
 

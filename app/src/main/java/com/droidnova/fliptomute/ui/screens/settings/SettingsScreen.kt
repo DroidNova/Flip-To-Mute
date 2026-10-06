@@ -1,5 +1,6 @@
 package com.droidnova.fliptomute.ui.screens.settings
 
+import android.text.format.DateFormat
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,16 +31,20 @@ import androidx.compose.material.icons.filled.PhoneCallback
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -78,6 +84,10 @@ import com.droidnova.fliptomute.utils.AppTheme
 import com.droidnova.fliptomute.utils.ThemeMode
 import com.droidnova.fliptomute.utils.about_utils.AppConstants
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Calendar
+import java.util.Locale
 
 /** Everything Settings can ask for (design spec 4.6), as Secret Calculator's SettingsActions. */
 interface SettingsActions {
@@ -92,6 +102,10 @@ interface SettingsActions {
     fun setFlipNotification(enabled: Boolean)
     fun setWeeklyRecap(enabled: Boolean)
     fun setCallbackReminder(enabled: Boolean)
+    fun setScheduleEnabled(enabled: Boolean)
+    fun toggleScheduleDay(day: DayOfWeek)
+    fun setScheduleStart(minute: Int)
+    fun setScheduleEnd(minute: Int)
     fun openKeepRunning()
     fun addTile()
     fun selectThemeMode(mode: ThemeMode)
@@ -168,6 +182,10 @@ fun SettingsRoute(
             override fun setFlipNotification(enabled: Boolean) = viewModel.onFlipNotificationChanged(enabled)
             override fun setWeeklyRecap(enabled: Boolean) = viewModel.onWeeklyRecapChanged(enabled)
             override fun setCallbackReminder(enabled: Boolean) = viewModel.onCallbackReminderChanged(enabled)
+            override fun setScheduleEnabled(enabled: Boolean) = viewModel.onScheduleEnabledChanged(enabled)
+            override fun toggleScheduleDay(day: DayOfWeek) = viewModel.onScheduleDayToggled(day)
+            override fun setScheduleStart(minute: Int) = viewModel.onScheduleStartChanged(minute)
+            override fun setScheduleEnd(minute: Int) = viewModel.onScheduleEndChanged(minute)
             override fun openKeepRunning() = onOpenKeepRunning()
             override fun addTile() {
                 addRequester.request { result ->
@@ -277,6 +295,7 @@ fun SettingsScreen(state: SettingsUiState, actions: SettingsActions, snackbarHos
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             item(key = "flip") { FlipBehaviourGroup(state, actions) }
+            item(key = "schedule") { ScheduleGroup(state, actions) }
             if (state.deviceAdminAvailability != DeviceAdminAvailability.UNSUPPORTED) {
                 item(key = "gestures") { GesturesGroup(state, actions) }
             }
@@ -327,6 +346,86 @@ private fun FlipBehaviourGroup(state: SettingsUiState, actions: SettingsActions)
             summary = stringResource(R.string.detection_feedback_description),
         )
     }
+}
+
+/** Active hours and days (future features F9). Outside them calls ring normally. */
+@Composable
+private fun ScheduleGroup(state: SettingsUiState, actions: SettingsActions) {
+    val schedule = state.schedule
+    // Which end of the period is being edited: true for the start, false for the end
+    var editingStart by remember { mutableStateOf<Boolean?>(null) }
+    SettingsGroup(stringResource(R.string.settings_group_schedule), Modifier.widthIn(max = 560.dp)) {
+        SwitchRow(
+            Icons.Filled.Schedule,
+            stringResource(R.string.schedule_setting),
+            schedule.enabled,
+            actions::setScheduleEnabled,
+            summary = stringResource(R.string.schedule_setting_description),
+        )
+        if (schedule.enabled) {
+            FlowRow(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DayOfWeek.entries.forEach { day ->
+                    ChoicePill(
+                        label = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                        selected = day in schedule.days,
+                        onClick = { actions.toggleScheduleDay(day) },
+                        showCheck = false,
+                    )
+                }
+            }
+            SettingsRow(
+                Icons.Filled.LightMode,
+                stringResource(R.string.schedule_from),
+                onClick = { editingStart = true },
+                summary = formatMinuteOfDay(schedule.startMinute),
+            )
+            SettingsRow(
+                Icons.Filled.DarkMode,
+                stringResource(R.string.schedule_until),
+                onClick = { editingStart = false },
+                summary = formatMinuteOfDay(schedule.endMinute),
+            )
+        }
+    }
+    editingStart?.let { start ->
+        ScheduleTimeDialog(
+            title = stringResource(if (start) R.string.schedule_from else R.string.schedule_until),
+            initialMinute = if (start) schedule.startMinute else schedule.endMinute,
+            onConfirm = { minute ->
+                if (start) actions.setScheduleStart(minute) else actions.setScheduleEnd(minute)
+                editingStart = null
+            },
+            onDismiss = { editingStart = null },
+        )
+    }
+}
+
+/** Typed time entry: it fits the narrowest phones, where the clock dial would not. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScheduleTimeDialog(title: String, initialMinute: Int, onConfirm: (Int) -> Unit, onDismiss: () -> Unit) {
+    val picker = rememberTimePickerState(
+        initialHour = initialMinute / 60,
+        initialMinute = initialMinute % 60,
+        is24Hour = DateFormat.is24HourFormat(LocalContext.current),
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { TimeInput(picker) },
+        confirmButton = { TextButton(onClick = { onConfirm(picker.hour * 60 + picker.minute) }) { Text(stringResource(android.R.string.ok)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel_action)) } },
+    )
+}
+
+/** "9:00 AM" or "09:00", following the phone setting. */
+@Composable
+private fun formatMinuteOfDay(minute: Int): String {
+    val time = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, minute / 60)
+        set(Calendar.MINUTE, minute % 60)
+    }.time
+    return DateFormat.getTimeFormat(LocalContext.current).format(time)
 }
 
 @Composable
@@ -509,6 +608,10 @@ internal object PreviewSettingsActions : SettingsActions {
     override fun setFlipNotification(enabled: Boolean) = Unit
     override fun setWeeklyRecap(enabled: Boolean) = Unit
     override fun setCallbackReminder(enabled: Boolean) = Unit
+    override fun setScheduleEnabled(enabled: Boolean) = Unit
+    override fun toggleScheduleDay(day: DayOfWeek) = Unit
+    override fun setScheduleStart(minute: Int) = Unit
+    override fun setScheduleEnd(minute: Int) = Unit
     override fun openKeepRunning() = Unit
     override fun addTile() = Unit
     override fun selectThemeMode(mode: ThemeMode) = Unit

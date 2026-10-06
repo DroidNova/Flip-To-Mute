@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
@@ -107,6 +108,15 @@ class DataStoreAppPreferencesRepository(
         updateBoolean(Keys.CALLBACK_REMINDER_ENABLED, enabled)
     }
 
+    override suspend fun setSchedule(schedule: FlipSchedule) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SCHEDULE_ENABLED] = schedule.enabled
+            preferences[Keys.SCHEDULE_DAYS] = FlipSchedule.encodeDays(schedule.days)
+            preferences[Keys.SCHEDULE_START_MINUTE] = schedule.startMinute
+            preferences[Keys.SCHEDULE_END_MINUTE] = schedule.endMinute
+        }
+    }
+
     private fun mapPreferences(preferences: Preferences): AppPreferences {
         val selectedAction = preferences[Keys.SELECTED_FLIP_ACTION]
             ?.let { storedValue -> FlipAction.entries.firstOrNull { it.name == storedValue } }
@@ -139,6 +149,12 @@ class DataStoreAppPreferencesRepository(
             flipNotificationEnabled = preferences[Keys.FLIP_NOTIFICATION_ENABLED] ?: true,
             weeklyRecapEnabled = preferences[Keys.WEEKLY_RECAP_ENABLED] ?: true,
             callbackReminderEnabled = preferences[Keys.CALLBACK_REMINDER_ENABLED] ?: true,
+            schedule = FlipSchedule(
+                enabled = preferences[Keys.SCHEDULE_ENABLED] ?: false,
+                days = FlipSchedule.decodeDays(preferences[Keys.SCHEDULE_DAYS]),
+                startMinute = (preferences[Keys.SCHEDULE_START_MINUTE] ?: FlipSchedule().startMinute).coerceIn(0, FlipSchedule.MINUTES_PER_DAY - 1),
+                endMinute = (preferences[Keys.SCHEDULE_END_MINUTE] ?: FlipSchedule().endMinute).coerceIn(0, FlipSchedule.MINUTES_PER_DAY - 1),
+            ),
         )
     }
 
@@ -164,5 +180,9 @@ class DataStoreAppPreferencesRepository(
         val FLIP_NOTIFICATION_ENABLED = booleanPreferencesKey("flip_notification_enabled")
         val WEEKLY_RECAP_ENABLED = booleanPreferencesKey("weekly_recap_enabled")
         val CALLBACK_REMINDER_ENABLED = booleanPreferencesKey("callback_reminder_enabled")
+        val SCHEDULE_ENABLED = booleanPreferencesKey("schedule_enabled")
+        val SCHEDULE_DAYS = stringPreferencesKey("schedule_days")
+        val SCHEDULE_START_MINUTE = intPreferencesKey("schedule_start_minute")
+        val SCHEDULE_END_MINUTE = intPreferencesKey("schedule_end_minute")
     }
 }

@@ -1,5 +1,6 @@
 package com.droidnova.fliptomute.ui.screens.settings
 
+import com.droidnova.fliptomute.data.preferences.FlipSchedule
 import com.droidnova.fliptomute.data.setup.SetupAccessState
 import com.droidnova.fliptomute.deviceadmin.DeviceAdminAvailability
 import com.droidnova.fliptomute.ui.screens.home.FlipAction
@@ -18,6 +19,7 @@ data class SettingsUiState(
     val flipNotificationEnabled: Boolean = true,
     val weeklyRecapEnabled: Boolean = true,
     val callbackReminderEnabled: Boolean = true,
+    val schedule: FlipSchedule = FlipSchedule(),
     val deviceAdminAvailability: DeviceAdminAvailability = DeviceAdminAvailability.INACTIVE,
     val accessState: SetupAccessState = SetupAccessState(),
     /** True when Android may stop Flip to Mute to save battery; null when the phone cannot tell. */

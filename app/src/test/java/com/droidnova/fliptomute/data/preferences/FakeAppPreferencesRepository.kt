@@ -72,6 +72,10 @@ class FakeAppPreferencesRepository(
         mutablePreferences.update { it.copy(callbackReminderEnabled = enabled) }
     }
 
+    override suspend fun setSchedule(schedule: FlipSchedule) {
+        mutablePreferences.update { it.copy(schedule = schedule) }
+    }
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         mutablePreferences.update { it.copy(onboardingCompleted = completed) }
     }

@@ -78,6 +78,28 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun scheduleChangesAreSaved_andTheLastDayCannotBeRemoved() = runTest {
+        val repository = FakeAppPreferencesRepository()
+        val viewModel = SettingsViewModel(repository, FakeSetupAccessRepository())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        assertFalse(viewModel.uiState.value.schedule.enabled)
+
+        viewModel.onScheduleEnabledChanged(true)
+        viewModel.onScheduleStartChanged(8 * 60)
+        viewModel.onScheduleEndChanged(20 * 60)
+        viewModel.onScheduleDayToggled(java.time.DayOfWeek.SATURDAY)
+        val saved = repository.current.schedule
+        assertTrue(saved.enabled)
+        assertEquals(8 * 60, saved.startMinute)
+        assertEquals(20 * 60, saved.endMinute)
+        assertTrue(java.time.DayOfWeek.SATURDAY in saved.days)
+
+        java.time.DayOfWeek.entries.forEach { if (it in repository.current.schedule.days) viewModel.onScheduleDayToggled(it) }
+        assertEquals(1, repository.current.schedule.days.size)
+        assertEquals(repository.current.schedule, viewModel.uiState.value.schedule)
+    }
+
+    @Test
     fun changingDetectionFeedbackUpdatesState() = runTest {
         val viewModel = SettingsViewModel(FakeAppPreferencesRepository(), FakeSetupAccessRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }

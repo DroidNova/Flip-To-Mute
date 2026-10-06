@@ -218,6 +218,9 @@ class FlipMonitoringCoordinator(
                         if (isIgnoringCalls()) {
                             // Timed pause: this call rings normally (M5-06)
                             debugLog("Call ignored: timed pause")
+                        } else if (!latestPreferences.schedule.isActiveAt(now())) {
+                            // Outside the active hours or days: this call rings normally too (future features F9)
+                            debugLog("Call ignored: outside the schedule")
                         } else if (!orientationMonitor.isSensorAvailable) {
                             fail(MonitoringFailure.SENSOR_UNAVAILABLE)
                         } else {

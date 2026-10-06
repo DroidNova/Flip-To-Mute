@@ -292,13 +292,21 @@ private fun headline(state: HomeUiState): String = when (state.status) {
 private fun supportingLine(state: HomeUiState): String? = when (state.status) {
     HomeStatus.SETUP_NEEDED -> stringResource(R.string.home_setup_needed_body)
     HomeStatus.OFF -> stringResource(R.string.home_off_body)
-    HomeStatus.ON -> stringResource(R.string.home_on_body)
+    HomeStatus.ON -> state.scheduleNextStartEpochMs?.let { stringResource(R.string.home_on_resting_body, formatDayAndTime(it)) }
+        ?: stringResource(R.string.home_on_body)
     HomeStatus.PAUSED -> stringResource(if (state.pausedUntilEpochMs != null) R.string.paused_until_text else R.string.home_paused_body)
     else -> null
 }
 
 @Composable
 private fun formatTime(epochMs: Long): String = DateFormat.getTimeFormat(LocalContext.current).format(Date(epochMs))
+
+/** "Mon, 9:00 AM". */
+@Composable
+private fun formatDayAndTime(epochMs: Long): String = DateUtils.formatDateTime(
+    LocalContext.current, epochMs,
+    DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_ABBREV_WEEKDAY,
+)
 
 private fun HomeStatus.toPowerControl(): PowerControlState = when (this) {
     HomeStatus.ON -> PowerControlState.ON

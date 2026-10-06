@@ -37,4 +37,6 @@ interface AppPreferencesRepository {
     suspend fun setWeeklyRecapEnabled(enabled: Boolean)
 
     suspend fun setCallbackReminderEnabled(enabled: Boolean)
+
+    suspend fun setSchedule(schedule: FlipSchedule)
 }

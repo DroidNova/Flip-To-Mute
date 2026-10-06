@@ -54,6 +54,8 @@ data class HomeUiState(
     // v2.0 Home
     val status: HomeStatus = HomeStatus.CHECKING,
     val pausedUntilEpochMs: Long? = null,
+    /** Outside the schedule: when Flip to Mute reacts to calls again. Null while it is reacting. */
+    val scheduleNextStartEpochMs: Long? = null,
     val flipChoice: FlipChoice = FlipChoice.SILENCE,
     val cards: List<HomeCard> = emptyList(),
     val dialog: HomeDialog? = null,

@@ -22,6 +22,8 @@ data class AppPreferences(
     val weeklyRecapEnabled: Boolean = true,
     /** After a silenced call that was not answered, offer the way back to it (future features F37). */
     val callbackReminderEnabled: Boolean = true,
+    /** Active hours and days; off means always active (future features F9). */
+    val schedule: FlipSchedule = FlipSchedule(),
 )
 
 data class CallActionSelection(

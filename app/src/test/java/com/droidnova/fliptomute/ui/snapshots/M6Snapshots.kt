@@ -26,6 +26,7 @@ import com.droidnova.fliptomute.ui.screens.keep_running.KeepRunningUiState
 import com.droidnova.fliptomute.ui.screens.settings.PreviewSettingsActions
 import com.droidnova.fliptomute.ui.screens.settings.SettingsScreen
 import com.droidnova.fliptomute.ui.screens.settings.SettingsUiState
+import com.droidnova.fliptomute.data.preferences.FlipSchedule
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.utils.AppTheme
 import com.droidnova.fliptomute.utils.about_utils.OtherAppItem
@@ -48,6 +49,10 @@ class M6Snapshots {
 
     @Test fun settingsLockedThemes() = snapshot("settings_locked_themes") {
         SettingsScreen(SettingsUiState(lockedThemes = setOf(AppTheme.ROSE, AppTheme.MIDNIGHT), totalFlips = 12), PreviewSettingsActions)
+    }
+
+    @Test fun settingsSchedule() = snapshot("settings_schedule") {
+        SettingsScreen(SettingsUiState(schedule = FlipSchedule(enabled = true)), PreviewSettingsActions)
     }
 
     @Test fun settingsDark() = snapshot("settings_dark", dark = true) { SettingsScreen(SettingsUiState(), PreviewSettingsActions) }

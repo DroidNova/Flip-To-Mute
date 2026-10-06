@@ -147,6 +147,7 @@ class HomeViewModel @Inject constructor(
             showPermissionsSheet = pendingActionName != PendingMonitoringAction.NONE.name,
             status = status,
             pausedUntilEpochMs = l.pausedUntil.takeIf { status == HomeStatus.PAUSED },
+            scheduleNextStartEpochMs = l.preferences.schedule.nextStartAfter(time).takeIf { status == HomeStatus.ON },
             flipChoice = l.preferences.callActionSelection.toFlipChoice(),
             cards = orderCards(status, attention, batteryWarning, l.stats, discovery),
             dialog = t.dialog,

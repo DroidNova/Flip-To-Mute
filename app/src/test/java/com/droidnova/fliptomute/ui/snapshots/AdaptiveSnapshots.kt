@@ -68,7 +68,7 @@ class AdaptiveSnapshots {
         assertTouchTargets()
     }
 
-    @Test @Config(qualifiers = "w360dp-h3000dp-xhdpi", fontScale = 2.0f)
+    @Test @Config(qualifiers = "w360dp-h4200dp-xhdpi", fontScale = 2.0f)
     fun settingsAtDoubleFont() {
         snapshot("a11y_settings_font200") { SettingsScreen(SettingsUiState(), PreviewSettingsActions) }
         assertTouchTargets()
