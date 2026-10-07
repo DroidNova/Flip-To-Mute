@@ -30,7 +30,7 @@ data class SettingsUiState(
     /** True when Android may stop Flip to Mute to save battery; null when the phone cannot tell. */
     val batteryRestricted: Boolean? = null,
     val tileAdded: Boolean = false,
-    val appTheme: AppTheme = AppTheme.BLUE,
+    val appTheme: AppTheme = AppTheme.TEAL,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     /** Earned themes that are not open yet (future features F36). */
     val lockedThemes: Set<AppTheme> = emptySet(),

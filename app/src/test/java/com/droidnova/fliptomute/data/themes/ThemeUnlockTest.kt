@@ -48,7 +48,7 @@ class ThemeUnlockPolicyTest {
 
     @Test fun storedValuesStillMapToTheirTheme() {
         AppTheme.entries.forEach { assertEquals(it, AppTheme.fromValue(it.value)) }
-        assertEquals(AppTheme.BLUE, AppTheme.fromValue("no_such_theme"))
+        assertEquals(AppTheme.TEAL, AppTheme.fromValue("no_such_theme"))
     }
 }
 
@@ -96,7 +96,7 @@ class ThemeUnlockStoreTest {
 
         time += ThemeUnlockPolicy.AD_UNLOCK_MS
         store.enforce(totalFlips = 0)
-        assertEquals(AppTheme.BLUE, Appearance.appTheme)
+        assertEquals(AppTheme.TEAL, Appearance.appTheme)
     }
 
     @Test fun aThemeEarnedByMilestoneIsNeverTakenBack() {

@@ -6,7 +6,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 // Colour schemes copied unchanged from Secret Calculator (ui/theme/Color.kt there), so both apps
-// share tested palettes (architecture A8). Blue is the default; Teal and Sunset are the alternatives.
+// share tested palettes (architecture A8). Teal is the default; Blue and Sunset are the alternatives.
 
 internal val BlueColorScheme: ColorScheme = darkColorScheme(
     primary = Color(0xFFC3C0FF),

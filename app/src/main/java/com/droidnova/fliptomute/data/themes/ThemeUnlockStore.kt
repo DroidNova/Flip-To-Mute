@@ -44,7 +44,7 @@ class ThemeUnlockStore(
 
     /** The week from an ad ran out before the milestone was reached: back to the default theme. */
     fun enforce(totalFlips: Int) {
-        if (!isUnlocked(Appearance.appTheme, totalFlips)) Appearance.updateTheme(AppTheme.BLUE)
+        if (!isUnlocked(Appearance.appTheme, totalFlips)) Appearance.updateTheme(AppTheme.TEAL)
     }
 
     private companion object {

@@ -100,9 +100,11 @@ class AdaptiveSnapshots {
         val minPx = 48f * compose.activity.resources.displayMetrics.density - 1f
         compose.onAllNodes(hasClickAction()).fetchSemanticsNodes().forEach { node ->
             val bounds = node.touchBoundsInRoot
+            // A pill in a row that scrolls sideways may be clipped or out of view: its own layout size still counts
+            val size = node.size
             assertTrue(
                 "Touch target ${bounds} under 48 dp: ${node.config}",
-                bounds.width >= minPx && bounds.height >= minPx,
+                (bounds.width >= minPx || size.width >= minPx) && (bounds.height >= minPx || size.height >= minPx),
             )
         }
     }

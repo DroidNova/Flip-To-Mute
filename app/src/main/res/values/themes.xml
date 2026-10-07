@@ -8,4 +8,15 @@
     <style name="Theme.FlipToMute" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>
+
+    <!--
+        Launch theme for MainActivity, as in Notification History: the system splash on Android 12+
+        and the compat splash below, showing the launcher icon's picture on the app's background.
+        SplashIntro takes over from it on the first frame.
+    -->
+    <style name="Theme.FlipToMute.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.FlipToMute</item>
+    </style>
 </resources>

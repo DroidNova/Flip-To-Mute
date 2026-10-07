@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.droidnova.fliptomute.R
+import com.droidnova.fliptomute.ui.components.AppIcon
 import com.droidnova.fliptomute.utils.about_utils.AppConstants
 import com.droidnova.fliptomute.utils.about_utils.IntentUtil
 import com.droidnova.fliptomute.utils.about_utils.OtherAppItem
@@ -209,11 +210,7 @@ private fun AppCard(title: String, description: String?, @DrawableRes iconRes: I
 @Composable
 private fun AppHeader() {
     Column(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(
-            painter = painterResource(R.drawable.ic_flip_to_mute),
-            contentDescription = stringResource(R.string.app_icon_description),
-            modifier = Modifier.size(80.dp).clip(RoundedCornerShape(20.dp)),
-        )
+        AppIcon(80.dp, contentDescription = stringResource(R.string.app_icon_description))
         Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.app_name),

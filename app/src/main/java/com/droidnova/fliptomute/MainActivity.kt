@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,10 +26,12 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -59,6 +62,7 @@ import com.droidnova.fliptomute.ui.navigation.AppNavHost
 import com.droidnova.fliptomute.ui.navigation.Routes
 import com.droidnova.fliptomute.ui.screens.onboarding.OnboardingGate
 import com.droidnova.fliptomute.ui.screens.onboarding.StartDestination
+import com.droidnova.fliptomute.ui.screens.splash.SplashIntro
 import com.droidnova.fliptomute.ui.theme.FlipToMuteTheme
 import com.droidnova.fliptomute.utils.MonitoringLog
 import com.droidnova.fliptomute.utils.about_utils.AppConstants
@@ -103,7 +107,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * The single activity, built like Secret Calculator's AppActivity (architecture A3): one root column
- * that pads for the system bars once, the nav host, and the banner underneath.
+ * that pads for the system bars once, the nav host, and the banner underneath. A cold start opens
+ * with the splash intro from Notification History (X16), behind which the launch ads load.
  *
  * It stays at `com.droidnova.fliptomute.MainActivity` on purpose: moving it would rename the
  * launcher component and can remove users' home-screen icons (architecture X12).
@@ -152,14 +157,26 @@ class MainActivity : AppCompatActivity(), PremiumController {
     /** A flexible in-app update finished downloading; ask for the restart (M7-09). */
     private var updateReady by mutableStateOf(false)
 
+    /** The first screen is known; the system splash stays on screen until then. */
+    private var startupDecided by mutableStateOf(false)
+
+    /** The ads asked for at launch have answered, or there are none to wait for: the intro may let the app in. */
+    private var launchAdsSettled by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // The system splash holds until the first screen is known; SplashIntro takes over on the first frame
+        splash.setKeepOnScreenCondition { !startupDecided }
+        // Consent, Remote Config, the ads SDK and the launch ads start now, behind the splash, so Home opens with them ready
+        setUpAds()
         if (savedInstanceState != null) {
-            showContent()
+            startupDecided = true
+            showContent(playIntro = false)
             return
         }
-        // Decide between the first run and Home before drawing; the themed window background shows meanwhile
+        // Decide between the first run and Home before drawing; the splash shows meanwhile
         lifecycleScope.launch {
             val preferences = preferencesRepository.preferences.first()
             val setupComplete = setupAccessRepository.refreshAndGet().isSetupComplete
@@ -168,6 +185,7 @@ class MainActivity : AppCompatActivity(), PremiumController {
             }
             val destination = OnboardingGate.decide(preferences.onboardingCompleted, preferences.monitoringEnabled, setupComplete)
             if (destination == StartDestination.ONBOARDING) {
+                startupDecided = true
                 startActivity(Intent(this@MainActivity, OnboardingActivity::class.java))
                 finish()
                 return@launch
@@ -175,16 +193,17 @@ class MainActivity : AppCompatActivity(), PremiumController {
             consumeLaunchRequest(intent)
             funnel.appOpened()
             reviewStore.recordLaunch()
-            showContent()
+            startupDecided = true
+            showContent(playIntro = true)
         }
     }
 
-    private fun showContent() {
+    /** [playIntro]: a fresh launch plays the icon-and-name intro over the app; a recreated activity does not. */
+    private fun showContent(playIntro: Boolean) {
         // A theme opened for a week by an ad goes back to the default when the week is over
         themeUnlockStore.enforce(flipStatsStore.stats.value.total)
         mutablePremiumUi.value = PremiumUi(isPremium = isPremiumPurchased())
         initializeBilling()
-        setUpAds()
         setContent {
             FlipToMuteTheme {
                 // The root is a plain Column, as in Secret Calculator: give text a readable default colour
@@ -192,73 +211,86 @@ class MainActivity : AppCompatActivity(), PremiumController {
                     LocalContentColor provides MaterialTheme.colorScheme.onBackground,
                     LocalPremiumController provides this,
                 ) {
-                    Column(
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                            // Edge to edge: system bars, cutouts and the keyboard are padded once, here
-                            .windowInsetsPadding(WindowInsets.safeDrawing),
-                    ) {
-                        val navController = rememberNavController()
-                        DisposableEffect(navController) {
-                            val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-                                val previousRoute = currentRoute
-                                currentRoute = destination.route
-                                onRouteChanged(previousRoute, destination.route)
-                            }
-                            navController.addOnDestinationChangedListener(listener)
-                            onDispose { navController.removeOnDestinationChangedListener(listener) }
-                        }
-                        val monitoringRequest by externalMonitoringRequest.collectAsStateWithLifecycle()
-                        val premium by premiumUi.collectAsStateWithLifecycle()
-                        // Read here so the switches are read again once Remote Config arrives
-                        val remoteReady = remoteConfigReady
-                        val flipStats by flipStatsStore.stats.collectAsStateWithLifecycle()
-                        LaunchedEffect(currentRoute, adsReady, remoteReady, premium.isPremium, flipStats.total > 0) {
-                            loadActivityNativeAd(remoteReady)
-                        }
-                        // The empty "Your flips" screen has no place for the native ad: the banner stays there
-                        val nativeAd = activityNativeAd.takeUnless { premium.isPremium || flipStats.total == 0 }
-                        AppNavHost(
-                            navController = navController,
-                            externalMonitoringRequest = monitoringRequest,
-                            onExternalMonitoringRequestConsumed = ::clearLaunchRequest,
-                            onOpenAccess = { startActivity(OnboardingActivity.accessIntent(this@MainActivity)) },
-                            onReportProblem = { summary -> IntentUtil.sendSupportMail(this@MainActivity, isBug = true, summary = summary) },
-                            onOpenPrivacyPolicy = { IntentUtil.openUrl(this@MainActivity, AppConstants.PRIVACY_POLICY_URL) },
-                            onRateUsTapped = { analytics.log(AnalyticsEvents.RATE_US_TAPPED, emptyMap()) },
-                            onHomeCalm = { inAppReview.maybeAsk(this@MainActivity) },
-                            onStartUpdate = {
-                                inAppUpdate.start(
-                                    this@MainActivity,
-                                    onDownloaded = { updateReady = true },
-                                    onFallback = { IntentUtil.openPlayStore(this@MainActivity, packageName) },
-                                )
-                            },
-                            onActivityOpened = { source ->
-                                analytics.log(AnalyticsEvents.ACTIVITY_OPENED, mapOf(AnalyticsEvents.PARAM_SOURCE to source))
-                            },
-                            privacyOptionsRequired = privacyOptionsRequired,
-                            onOpenPrivacyOptions = {
-                                AdConsent.showPrivacyOptions(this@MainActivity) { privacyOptionsRequired = AdConsent.isPrivacyOptionsRequired(this@MainActivity) }
-                            },
-                            rewardedThemeAvailable = adsReady && remoteConfigReady && RemoteAdGate.isRewardedThemeEnabled() &&
-                                AdConfig.rewardedThemeUnitId(this@MainActivity) != null,
-                            onWatchAdForTheme = ::showRewardedForTheme,
-                            activityNativeAd = nativeAd?.let { ad -> { NativeAdCard(ad) } },
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (remoteReady && !premium.isPremium &&
-                            shouldShowBanner(
-                                adsReady = adsReady,
-                                placement = BannerPlacement.forRoute(currentRoute),
-                                nativeAdShowing = currentRoute == Routes.ACTIVITY && nativeAd != null,
-                                isEnabled = RemoteAdGate::isBannerEnabled,
-                            )
+                    // Once per launch (kept across rotation): the intro. The app is only built after its
+                    // entrance, so building it cannot stutter the animation (as in Notification History).
+                    var showIntro by rememberSaveable { mutableStateOf(playIntro) }
+                    var buildApp by rememberSaveable { mutableStateOf(!playIntro) }
+                    Box(Modifier.fillMaxSize()) {
+                        if (buildApp) Column(
+                            Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                                // Edge to edge: system bars, cutouts and the keyboard are padded once, here
+                                .windowInsetsPadding(WindowInsets.safeDrawing),
                         ) {
-                            AndroidView(
-                                factory = { bannerAd().also { (it.parent as? ViewGroup)?.removeView(it) } },
-                                modifier = Modifier.fillMaxWidth(),
+                            val navController = rememberNavController()
+                            DisposableEffect(navController) {
+                                val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+                                    val previousRoute = currentRoute
+                                    currentRoute = destination.route
+                                    onRouteChanged(previousRoute, destination.route)
+                                }
+                                navController.addOnDestinationChangedListener(listener)
+                                onDispose { navController.removeOnDestinationChangedListener(listener) }
+                            }
+                            val monitoringRequest by externalMonitoringRequest.collectAsStateWithLifecycle()
+                            val premium by premiumUi.collectAsStateWithLifecycle()
+                            // Read here so the switches are read again once Remote Config arrives
+                            val remoteReady = remoteConfigReady
+                            val flipStats by flipStatsStore.stats.collectAsStateWithLifecycle()
+                            LaunchedEffect(currentRoute, adsReady, remoteReady, premium.isPremium, flipStats.total > 0) {
+                                loadActivityNativeAd(remoteReady)
+                            }
+                            // The empty "Your flips" screen has no place for the native ad: the banner stays there
+                            val nativeAd = activityNativeAd.takeUnless { premium.isPremium || flipStats.total == 0 }
+                            AppNavHost(
+                                navController = navController,
+                                externalMonitoringRequest = monitoringRequest,
+                                onExternalMonitoringRequestConsumed = ::clearLaunchRequest,
+                                onOpenAccess = { startActivity(OnboardingActivity.accessIntent(this@MainActivity)) },
+                                onReportProblem = { summary -> IntentUtil.sendSupportMail(this@MainActivity, isBug = true, summary = summary) },
+                                onOpenPrivacyPolicy = { IntentUtil.openUrl(this@MainActivity, AppConstants.PRIVACY_POLICY_URL) },
+                                onRateUsTapped = { analytics.log(AnalyticsEvents.RATE_US_TAPPED, emptyMap()) },
+                                onHomeCalm = { inAppReview.maybeAsk(this@MainActivity) },
+                                onStartUpdate = {
+                                    inAppUpdate.start(
+                                        this@MainActivity,
+                                        onDownloaded = { updateReady = true },
+                                        onFallback = { IntentUtil.openPlayStore(this@MainActivity, packageName) },
+                                    )
+                                },
+                                onActivityOpened = { source ->
+                                    analytics.log(AnalyticsEvents.ACTIVITY_OPENED, mapOf(AnalyticsEvents.PARAM_SOURCE to source))
+                                },
+                                privacyOptionsRequired = privacyOptionsRequired,
+                                onOpenPrivacyOptions = {
+                                    AdConsent.showPrivacyOptions(this@MainActivity) { privacyOptionsRequired = AdConsent.isPrivacyOptionsRequired(this@MainActivity) }
+                                },
+                                rewardedThemeAvailable = adsReady && remoteConfigReady && RemoteAdGate.isRewardedThemeEnabled() &&
+                                    AdConfig.rewardedThemeUnitId(this@MainActivity) != null,
+                                onWatchAdForTheme = ::showRewardedForTheme,
+                                activityNativeAd = nativeAd?.let { ad -> { NativeAdCard(ad) } },
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (remoteReady && !premium.isPremium &&
+                                shouldShowBanner(
+                                    adsReady = adsReady,
+                                    placement = BannerPlacement.forRoute(currentRoute),
+                                    nativeAdShowing = currentRoute == Routes.ACTIVITY && nativeAd != null,
+                                    isEnabled = RemoteAdGate::isBannerEnabled,
+                                )
+                            ) {
+                                AndroidView(
+                                    factory = { bannerAd().also { (it.parent as? ViewGroup)?.removeView(it) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
+                        if (showIntro) {
+                            SplashIntro(
+                                ready = launchAdsSettled,
+                                onEntranceDone = { buildApp = true },
+                                onFinished = { showIntro = false },
                             )
                         }
                     }
@@ -376,12 +408,15 @@ class MainActivity : AppCompatActivity(), PremiumController {
     // --- Ads, as in Secret Calculator's AppActivity ---
 
     private fun setUpAds() {
-        RemoteAdGate.initialize { remoteConfigReady = true }
+        RemoteAdGate.initialize {
+            remoteConfigReady = true
+            preloadLaunchAds()
+        }
         // A stored answer allows ads at once; the update below can still change it
         if (AdConsent.canRequestAds(this)) startAds()
         AdConsent.gather(this) { canRequestAds ->
             privacyOptionsRequired = AdConsent.isPrivacyOptionsRequired(this)
-            if (canRequestAds) startAds()
+            if (canRequestAds) startAds() else launchAdsSettled = true
         }
     }
 
@@ -390,7 +425,25 @@ class MainActivity : AppCompatActivity(), PremiumController {
         lifecycleScope.launch {
             withContext(Dispatchers.IO) { MobileAds.initialize(applicationContext) }
             adsReady = true
+            preloadLaunchAds()
         }
+    }
+
+    /**
+     * Asks for the ads of this launch as soon as the SDK and Remote Config are both ready, while the
+     * splash is still up: the banner (the first screen attaches it), the interstitial when the policy
+     * allows one, and the native ad for "Your flips" when there are flips to show it with. The intro
+     * waits for the banner's answer, but never long (SplashIntro).
+     */
+    private fun preloadLaunchAds() {
+        if (!adsReady || !remoteConfigReady) return
+        if (isPremiumPurchased()) {
+            launchAdsSettled = true
+            return
+        }
+        if (BannerPlacement.entries.any(RemoteAdGate::isBannerEnabled)) bannerAd() else launchAdsSettled = true
+        if (interstitialAllowed()) interstitialAds.preload()
+        loadActivityNativeAd(remoteReady = true, aheadOfVisit = true)
     }
 
     /** The bottom banner, created and loaded once, then moved between screens. */
@@ -404,7 +457,13 @@ class MainActivity : AppCompatActivity(), PremiumController {
     private fun loadBannerWithRetry(adView: AdView, attemptsLeft: Int) {
         if (attemptsLeft <= 0) return
         adView.adListener = object : AdListener() {
+            override fun onAdLoaded() {
+                launchAdsSettled = true
+            }
+
             override fun onAdFailedToLoad(error: LoadAdError) {
+                // The intro does not wait for a retry
+                launchAdsSettled = true
                 MonitoringLog.d(this@MainActivity, "Banner failed to load: ${error.message}")
                 // Tied to the activity, so a retry never outlives it
                 lifecycleScope.launch {
@@ -418,25 +477,31 @@ class MainActivity : AppCompatActivity(), PremiumController {
         adView.loadAd(AdRequest.Builder().addNetworkExtrasBundle(AdMobAdapter::class.java, extras).build())
     }
 
+    /** Whether an interstitial may be shown in this session now, within the limits of [InterstitialPolicy]. */
+    private fun interstitialAllowed(): Boolean = adsReady && remoteConfigReady && InterstitialPolicy.mayShow(
+        enabled = RemoteAdGate.isInterstitialEnabled(),
+        adsRemoved = isPremiumPurchased(),
+        launchCount = reviewStore.state().launchCount,
+        lastShownAt = interstitialAds.lastShownAt,
+        now = System.currentTimeMillis(),
+        cooldownHours = RemoteAdGate.interstitialCooldownHours(),
+    )
+
     /** Full-screen ads only at a natural break, and only within the limits of [InterstitialPolicy]. */
     private fun onRouteChanged(fromRoute: String?, toRoute: String?) {
-        val allowed = adsReady && remoteConfigReady && InterstitialPolicy.mayShow(
-            enabled = RemoteAdGate.isInterstitialEnabled(),
-            adsRemoved = isPremiumPurchased(),
-            launchCount = reviewStore.state().launchCount,
-            lastShownAt = interstitialAds.lastShownAt,
-            now = System.currentTimeMillis(),
-            cooldownHours = RemoteAdGate.interstitialCooldownHours(),
-        )
-        if (!allowed) return
+        if (!interstitialAllowed()) return
         if (InterstitialPolicy.shouldPreloadOn(toRoute)) interstitialAds.preload()
         if (InterstitialPolicy.isNaturalBreak(fromRoute, toRoute)) interstitialAds.show(this)
     }
 
-    /** One native ad for the activity screen, kept until the activity ends. A failed load may be tried again on the next visit. */
-    private fun loadActivityNativeAd(remoteReady: Boolean) {
+    /**
+     * One native ad for the activity screen, kept until the activity ends. Asked for at launch
+     * ([aheadOfVisit]) so it is ready on the first visit, or on the visit itself. A failed load may
+     * be tried again on the next visit.
+     */
+    private fun loadActivityNativeAd(remoteReady: Boolean, aheadOfVisit: Boolean = false) {
         val wanted = shouldLoadNativeAd(
-            onActivityScreen = currentRoute == Routes.ACTIVITY,
+            onActivityScreen = aheadOfVisit || currentRoute == Routes.ACTIVITY,
             hasFlips = flipStatsStore.stats.value.total > 0,
             adsReady = adsReady,
             remoteEnabled = remoteReady && RemoteAdGate.isNativeActivityEnabled(),

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Window background before Compose draws: the Blue theme's background (M3-05) -->
-    <color name="window_background">#FFFBF8FF</color>
+    <!-- Window and splash background before Compose draws: the Teal theme's background (M3-05) -->
+    <color name="window_background">#FFF4FBFA</color>
 </resources>

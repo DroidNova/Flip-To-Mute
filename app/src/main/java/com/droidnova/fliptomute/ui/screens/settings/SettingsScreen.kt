@@ -5,13 +5,16 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
@@ -57,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -433,7 +437,7 @@ private fun FlipBehaviourGroup(state: SettingsUiState, actions: SettingsActions)
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = 4.dp, top = 6.dp),
         )
-        FlowRow(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ChoicePillRow(Modifier.padding(top = 8.dp)) {
             FlipSensitivity.entries.forEach { sensitivity ->
                 ChoicePill(
                     label = stringResource(sensitivity.labelRes()),
@@ -466,7 +470,7 @@ private fun ScheduleGroup(state: SettingsUiState, actions: SettingsActions) {
             summary = stringResource(R.string.schedule_setting_description),
         )
         if (schedule.enabled) {
-            FlowRow(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChoicePillRow(Modifier.padding(vertical = 8.dp)) {
                 DayOfWeek.entries.forEach { day ->
                     ChoicePill(
                         label = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
@@ -631,7 +635,7 @@ private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = 4.dp, top = 6.dp),
         )
-        FlowRow(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ChoicePillRow(Modifier.padding(vertical = 8.dp)) {
             ThemeMode.entries.forEach { mode ->
                 ChoicePill(
                     label = stringResource(mode.labelRes()),
@@ -647,7 +651,7 @@ private fun AppearanceGroup(state: SettingsUiState, actions: SettingsActions) {
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = 4.dp),
         )
-        FlowRow(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ChoicePillRow(Modifier.padding(vertical = 8.dp)) {
             AppTheme.entries.forEach { theme ->
                 ChoicePill(
                     label = stringResource(theme.labelRes()),
@@ -691,6 +695,29 @@ private fun HelpGroup(state: SettingsUiState, actions: SettingsActions) {
             SettingsRow(Icons.Filled.PrivacyTip, stringResource(R.string.privacy_options), onClick = actions::openPrivacyOptions)
         }
     }
+}
+
+/**
+ * A single line of pills that scrolls sideways instead of wrapping (owner, 2026-10-07). It bleeds
+ * through the group card's side padding, so pills slide under the card's edge and not under a gap.
+ */
+@Composable
+private fun ChoicePillRow(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    val bleed = 12.dp
+    Row(
+        modifier
+            .fillMaxWidth()
+            .layout { measurable, constraints ->
+                val extra = (bleed * 2).roundToPx()
+                val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = constraints.maxWidth + extra))
+                layout(placeable.width - extra, placeable.height) { placeable.place(-extra / 2, 0) }
+            }
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = bleed),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
 }
 
 private fun FlipSensitivity.labelRes(): Int = when (this) {

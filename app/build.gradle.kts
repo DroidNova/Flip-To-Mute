@@ -112,6 +112,8 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     // AppCompatActivity shell, as in Secret Calculator (M2-07)
     implementation(libs.androidx.appcompat)
+    // Launch splash that hands over to SplashIntro, as in Notification History (X16)
+    implementation(libs.androidx.core.splashscreen)
     // Play In-App Review, as in Secret Calculator (M6-07)
     implementation(libs.play.review.ktx)
     // Play in-app update, flexible flow (M7-09)

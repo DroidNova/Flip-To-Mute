@@ -57,10 +57,10 @@ palettes. Theme mode defaults to System. Full schemes are in `ui/theme/Color.kt`
 
 | Theme | Role | Light | Dark |
 |-------|------|-------|------|
-| Blue (default) | Primary | `#575992` | `#C3C0FF` |
+| Blue | Primary | `#575992` | `#C3C0FF` |
 | | Primary container | `#E1E0FF` | `#424078` |
 | | Background | `#FBF8FF` | `#131318` |
-| Teal | Primary | `#006A6A` | `#80D5D4` |
+| Teal (default, owner 2026-10-07) | Primary | `#006A6A` | `#80D5D4` |
 | | Primary container | `#9CF1F0` | `#004F4F` |
 | | Background | `#F4FBFA` | `#0E1514` |
 | Sunset | Primary | `#994700` | `#FFB68E` |

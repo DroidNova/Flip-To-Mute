@@ -14,7 +14,7 @@ import com.droidnova.fliptomute.utils.ThemeMode
  * which Android runs before any activity, service or receiver (architecture X1).
  */
 object Appearance {
-    var appTheme: AppTheme by mutableStateOf(AppTheme.BLUE)
+    var appTheme: AppTheme by mutableStateOf(AppTheme.TEAL)
         private set
     var themeMode: ThemeMode by mutableStateOf(ThemeMode.SYSTEM)
         private set
